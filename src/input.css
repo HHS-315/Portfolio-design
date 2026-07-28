@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { --cursor-size: 14px; }
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body { background: #F4F1EA; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    color: #0A0A0A;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: #FFE100; color: #0A0A0A; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 3px solid #7C3AED;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .font-display { font-family: 'Archivo', sans-serif; }
+
+  /* Grid paper background */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(10,10,10,.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(10,10,10,.05) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .border-hard   { border: 3px solid #0A0A0A; }
+  .border-hard-2 { border: 2px solid #0A0A0A; }
+
+  /* Mechanical press interaction */
+  .press { transition: transform .12s ease, box-shadow .12s ease; }
+  .press:hover  { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 0 #0A0A0A; }
+  .press:active { transform: translate(3px,3px);   box-shadow: 2px 2px 0 0 #0A0A0A; }
+
+  /* Marquee */
+  .marquee { display: flex; width: max-content; animation: marquee 26s linear infinite; }
+  .marquee.reverse { animation-direction: reverse; }
+
+  /* Custom cursor (desktop) */
+  .cursor-dot, .cursor-ring {
+    position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
+    border-radius: 9999px; mix-blend-mode: difference; will-change: transform;
+  }
+  .cursor-dot  { width: 8px; height: 8px; background: #fff; transform: translate(-50%,-50%); }
+  .cursor-ring {
+    width: 42px; height: 42px; border: 2px solid #fff; transform: translate(-50%,-50%);
+    transition: width .2s, height .2s, background .2s;
+  }
+  .cursor-ring.hovered { width: 66px; height: 66px; background: rgba(255,255,255,.15); }
+
+  /* Reveal defaults (before GSAP kicks in) */
+  .reveal { opacity: 0; transform: translateY(28px); }
+
+  /* Preloader */
+  #preloader {
+    position: fixed; inset: 0; z-index: 10000; background: #0A0A0A; color: #F4F1EA;
+    display: flex; align-items: flex-end; justify-content: space-between; padding: 6vw;
+  }
+
+  /* Sticker rotate */
+  .rot-2 { transform: rotate(-2deg); }
+  .rot2  { transform: rotate(2deg); }
+
+  a, button, .cursor-hover { cursor: pointer; }
+}
+
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+@media (hover: none), (pointer: coarse) {
+  .cursor-dot, .cursor-ring { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee { animation: none; }
+  html { scroll-behavior: auto !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}

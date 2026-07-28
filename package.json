@@ -1,0 +1,16 @@
+{
+  "name": "yujin-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Designer portfolio — UX/UI, AI graphic design, vibe coding",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5"
+  }
+}

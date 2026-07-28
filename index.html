@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko" class="scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>YUJIN LEE — 디자이너 포트폴리오</title>
+<meta name="description" content="UX/UI · AI 그래픽 디자인 · 바이브코딩. 경계를 넘나드는 디자이너 이유진의 포트폴리오." />
+<meta name="theme-color" content="#F4F1EA" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F4F1EA'/%3E%3Crect x='9' y='9' width='14' height='14' fill='%23EC4899' stroke='%230A0A0A' stroke-width='3' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
+
+<!-- Social preview -->
+<meta property="og:title" content="YUJIN LEE — 디자이너 포트폴리오" />
+<meta property="og:description" content="UX/UI · AI 그래픽 디자인 · 바이브코딩" />
+<meta property="og:type" content="website" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<!-- Compiled styles (Tailwind + custom, self-hosted) -->
+<link rel="stylesheet" href="./assets/styles.css" />
+
+<!-- GSAP (self-hosted) -->
+<script defer src="./assets/js/gsap.min.js"></script>
+<script defer src="./assets/js/ScrollTrigger.min.js"></script>
+</head>
+<body class="bg-cream text-ink antialiased">
+
+<!-- ===== Preloader ===== -->
+<div id="preloader">
+  <div class="font-display text-[13vw] md:text-[9vw] font-900 leading-none" id="preCount">0</div>
+  <div class="font-display font-800 uppercase text-sm md:text-lg tracking-widest text-right">
+    Loading<br />Portfolio
+  </div>
+</div>
+
+<!-- ===== Custom cursor ===== -->
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- ===== Nav ===== -->
+<header class="fixed top-0 inset-x-0 z-[900]">
+  <nav class="mx-auto max-w-[1400px] px-4 sm:px-6 mt-3">
+    <div class="flex items-center justify-between bg-cream border-hard shadow-hard-sm px-4 sm:px-5 py-3">
+      <a href="#top" class="font-display font-900 text-lg sm:text-xl tracking-tight flex items-center gap-2">
+        <span class="inline-block w-3 h-3 bg-pink border-hard-2 rotate-45"></span>YUJIN<span class="text-violet">.</span>
+      </a>
+      <ul class="hidden md:flex items-center gap-1 font-display font-700 text-sm uppercase">
+        <li><a href="#work" class="px-3 py-2 hover:bg-yellow border-hard-2 border-transparent hover:border-ink transition">작업</a></li>
+        <li><a href="#about" class="px-3 py-2 hover:bg-lime border-hard-2 border-transparent hover:border-ink transition">소개</a></li>
+        <li><a href="#process" class="px-3 py-2 hover:bg-violet hover:text-white border-hard-2 border-transparent hover:border-ink transition">과정</a></li>
+        <li><a href="#contact" class="px-3 py-2 hover:bg-pink hover:text-white border-hard-2 border-transparent hover:border-ink transition">연락</a></li>
+      </ul>
+      <a href="#contact" class="hidden md:inline-flex items-center gap-2 bg-ink text-cream font-display font-800 text-sm uppercase px-4 py-2 border-hard press shadow-hard-sm">
+        협업 제안
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <!-- mobile toggle -->
+      <button id="menuBtn" class="md:hidden bg-yellow border-hard shadow-hard-sm px-3 py-2 press" aria-label="메뉴 열기" aria-expanded="false">
+        <svg id="menuIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="3"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- mobile menu -->
+  <div id="mobileMenu" class="md:hidden hidden mx-4 sm:mx-6 mt-2 bg-cream border-hard shadow-hard p-3">
+    <ul class="font-display font-800 uppercase text-lg divide-y-2 divide-ink/10">
+      <li><a href="#work"    class="block py-3">작업</a></li>
+      <li><a href="#about"   class="block py-3">소개</a></li>
+      <li><a href="#process" class="block py-3">과정</a></li>
+      <li><a href="#contact" class="block py-3">연락하기</a></li>
+    </ul>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===== Hero ===== -->
+<section class="relative bg-grid min-h-[100svh] flex items-center pt-28 pb-16 overflow-hidden">
+  <!-- floating deco blobs -->
+  <div class="blob absolute -z-0 top-[18%] right-[8%] w-24 h-24 md:w-40 md:h-40 bg-violet border-hard shadow-hard rounded-full"></div>
+  <div class="blob absolute -z-0 bottom-[6%] left-[4%] md:bottom-auto md:left-auto md:top-[44%] md:right-[13%] w-20 h-20 md:w-28 md:h-28 bg-lime border-hard shadow-hard rot2"></div>
+  <div class="blob absolute -z-0 top-[30%] left-[42%] w-14 h-14 md:w-20 md:h-20 bg-pink border-hard shadow-hard-sm rounded-full"></div>
+
+  <div class="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6 w-full">
+    <div class="inline-flex items-center gap-2 bg-yellow border-hard shadow-hard-sm px-3 py-1.5 font-display font-800 uppercase text-xs sm:text-sm rot-2 mb-6">
+      <span class="w-2.5 h-2.5 bg-ink rounded-full animate-pulse"></span>
+      2026 · 협업 가능
+    </div>
+
+    <h1 class="font-display font-900 uppercase leading-[0.86] tracking-tighter text-[16vw] sm:text-[13vw] lg:text-[10.5rem]">
+      <span class="hero-line block">디자인은</span>
+      <span class="hero-line block">
+        <span class="text-violet">경계</span>를
+      </span>
+      <span class="hero-line block">
+        <span class="inline-block bg-pink text-white px-3 -rotate-2 border-hard shadow-hard">넘는다</span>
+      </span>
+    </h1>
+
+    <div class="mt-8 md:mt-10 grid md:grid-cols-[1.2fr_1fr] gap-6 items-end">
+      <p class="hero-sub max-w-xl font-body text-base sm:text-lg leading-relaxed">
+        안녕하세요, 디자이너 <b class="font-display font-800">이유진</b>입니다.
+        <b>UX/UI</b>, <b>AI 그래픽 디자인</b>, 그리고 <b>바이브코딩</b>으로
+        아이디어를 살아 움직이는 제품으로 만듭니다. 화면 너머의 경험을 설계합니다.
+      </p>
+      <div class="hero-sub flex flex-wrap gap-3">
+        <a href="#work" class="inline-flex items-center gap-2 bg-ink text-cream font-display font-800 uppercase px-5 py-3 border-hard shadow-hard press">
+          작업 보기
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+        </a>
+        <a href="#contact" class="inline-flex items-center gap-2 bg-lime font-display font-800 uppercase px-5 py-3 border-hard shadow-hard press">
+          연락하기
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- scroll cue -->
+  <div class="absolute bottom-5 left-1/2 -translate-x-1/2 font-display font-700 text-xs uppercase tracking-widest flex flex-col items-center gap-1 opacity-70">
+    Scroll
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="animate-bounce"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+  </div>
+</section>
+
+<!-- ===== Marquee strip ===== -->
+<div class="bg-ink text-cream border-y-[3px] border-ink py-3 overflow-hidden select-none">
+  <div class="marquee items-center font-display font-800 uppercase text-lg md:text-2xl">
+    <span class="flex items-center">
+      <span class="px-6">UX/UI 디자인</span><span class="text-yellow">✳</span>
+      <span class="px-6">AI 그래픽</span><span class="text-pink">✳</span>
+      <span class="px-6">바이브코딩</span><span class="text-lime">✳</span>
+      <span class="px-6">인터랙션</span><span class="text-violet">✳</span>
+      <span class="px-6">브랜딩</span><span class="text-yellow">✳</span>
+      <span class="px-6">프로토타이핑</span><span class="text-pink">✳</span>
+    </span>
+    <span class="flex items-center" aria-hidden="true">
+      <span class="px-6">UX/UI 디자인</span><span class="text-yellow">✳</span>
+      <span class="px-6">AI 그래픽</span><span class="text-pink">✳</span>
+      <span class="px-6">바이브코딩</span><span class="text-lime">✳</span>
+      <span class="px-6">인터랙션</span><span class="text-violet">✳</span>
+      <span class="px-6">브랜딩</span><span class="text-yellow">✳</span>
+      <span class="px-6">프로토타이핑</span><span class="text-pink">✳</span>
+    </span>
+  </div>
+</div>
+
+<!-- ===== Stats ===== -->
+<section class="mx-auto max-w-[1400px] px-4 sm:px-6 py-16 md:py-24">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="stat reveal bg-cream border-hard shadow-hard p-5 rot-2">
+      <div class="font-display font-900 text-4xl md:text-6xl" data-count="60">0</div>
+      <div class="font-display font-700 uppercase text-xs mt-1">+ 완료 프로젝트</div>
+    </div>
+    <div class="stat reveal bg-violet text-white border-hard shadow-hard p-5">
+      <div class="font-display font-900 text-4xl md:text-6xl" data-count="6">0</div>
+      <div class="font-display font-700 uppercase text-xs mt-1">년 경력</div>
+    </div>
+    <div class="stat reveal bg-cream border-hard shadow-hard p-5 rot2">
+      <div class="font-display font-900 text-4xl md:text-6xl" data-count="24">0</div>
+      <div class="font-display font-700 uppercase text-xs mt-1">협업 브랜드</div>
+    </div>
+    <div class="stat reveal bg-yellow border-hard shadow-hard p-5">
+      <div class="font-display font-900 text-4xl md:text-6xl"><span data-count="98">0</span>%</div>
+      <div class="font-display font-700 uppercase text-xs mt-1">재협업 의향</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Work ===== -->
+<section id="work" class="mx-auto max-w-[1400px] px-4 sm:px-6 py-10 md:py-16 scroll-mt-24">
+  <div class="flex flex-wrap items-end justify-between gap-6 mb-10">
+    <div>
+      <div class="inline-block bg-pink text-white font-display font-800 uppercase text-xs px-3 py-1 border-hard shadow-hard-sm rot-2 mb-4">Selected Work</div>
+      <h2 class="reveal font-display font-900 uppercase text-5xl sm:text-7xl leading-[0.9] tracking-tighter">
+        작업물<span class="text-violet">.</span>
+      </h2>
+    </div>
+    <!-- filters -->
+    <div class="flex flex-wrap gap-2 font-display font-800 uppercase text-sm" id="filters">
+      <button class="filter is-active bg-ink text-cream border-hard shadow-hard-sm px-4 py-2 press" data-filter="all">전체</button>
+      <button class="filter bg-cream border-hard shadow-hard-sm px-4 py-2 press" data-filter="uxui">UX/UI</button>
+      <button class="filter bg-cream border-hard shadow-hard-sm px-4 py-2 press" data-filter="ai">AI 그래픽</button>
+      <button class="filter bg-cream border-hard shadow-hard-sm px-4 py-2 press" data-filter="vibe">바이브코딩</button>
+    </div>
+  </div>
+
+  <!-- grid -->
+  <div id="workGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+    <!-- cards injected by JS -->
+  </div>
+</section>
+
+<!-- ===== About ===== -->
+<section id="about" class="bg-ink text-cream border-y-[3px] border-ink py-20 md:py-28 scroll-mt-24 overflow-hidden">
+  <div class="mx-auto max-w-[1400px] px-4 sm:px-6 grid lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
+    <div>
+      <div class="inline-block bg-lime text-ink font-display font-800 uppercase text-xs px-3 py-1 border-hard border-lime shadow-none rot-2 mb-5">About</div>
+      <h2 class="reveal font-display font-900 uppercase text-4xl sm:text-6xl leading-[0.92] tracking-tighter">
+        생각을<br /><span class="text-yellow">만질 수 있는</span><br />것으로.
+      </h2>
+      <p class="reveal mt-7 font-body text-base sm:text-lg leading-relaxed text-cream/80 max-w-xl">
+        저는 리서치부터 픽셀, 그리고 배포까지 전 과정을 아우르는 디자이너입니다.
+        사용자의 문제를 발견하고, AI 도구로 시각 언어를 빠르게 실험하며,
+        코드로 직접 프로토타입을 만들어 검증합니다. 아이디어와 구현 사이의
+        거리를 최대한 좁히는 것이 제 방식입니다.
+      </p>
+      <div class="reveal mt-8 flex flex-wrap gap-3">
+        <a href="#contact" class="inline-flex items-center gap-2 bg-yellow text-ink font-display font-800 uppercase px-5 py-3 border-hard border-yellow press shadow-none">
+          이력서 요청
+        </a>
+        <a href="#work" class="inline-flex items-center gap-2 border-hard border-cream text-cream font-display font-800 uppercase px-5 py-3 hover:bg-cream hover:text-ink transition">
+          작업 다시 보기
+        </a>
+      </div>
+    </div>
+
+    <!-- skill cards -->
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="reveal bg-violet text-white border-hard border-violet p-6 rot-2">
+        <div class="font-display font-900 text-2xl mb-2">UX/UI</div>
+        <p class="text-sm text-white/85 leading-relaxed">유저 리서치, 정보 구조, 인터랙션, 디자인 시스템까지 일관된 경험을 설계합니다.</p>
+        <div class="mt-4 flex flex-wrap gap-1.5 text-xs font-display font-700">
+          <span class="bg-white/15 px-2 py-1">Figma</span><span class="bg-white/15 px-2 py-1">Design System</span><span class="bg-white/15 px-2 py-1">Prototyping</span>
+        </div>
+      </div>
+      <div class="reveal bg-pink text-white border-hard border-pink p-6 sm:mt-6">
+        <div class="font-display font-900 text-2xl mb-2">AI 그래픽</div>
+        <p class="text-sm text-white/85 leading-relaxed">생성형 AI로 무드보드부터 키비주얼까지, 빠르게 방향을 실험하고 다듬습니다.</p>
+        <div class="mt-4 flex flex-wrap gap-1.5 text-xs font-display font-700">
+          <span class="bg-white/15 px-2 py-1">Midjourney</span><span class="bg-white/15 px-2 py-1">Firefly</span><span class="bg-white/15 px-2 py-1">Retouch</span>
+        </div>
+      </div>
+      <div class="reveal bg-lime text-ink border-hard border-lime p-6 rot2">
+        <div class="font-display font-900 text-2xl mb-2">바이브코딩</div>
+        <p class="text-sm text-ink/80 leading-relaxed">AI 페어 코딩으로 디자인을 실제 동작하는 웹으로 구현하고 검증합니다.</p>
+        <div class="mt-4 flex flex-wrap gap-1.5 text-xs font-display font-700">
+          <span class="bg-ink/10 px-2 py-1">React</span><span class="bg-ink/10 px-2 py-1">Tailwind</span><span class="bg-ink/10 px-2 py-1">GSAP</span>
+        </div>
+      </div>
+      <div class="reveal bg-cream text-ink border-hard border-cream p-6 sm:-mt-2">
+        <div class="font-display font-900 text-2xl mb-2">브랜딩</div>
+        <p class="text-sm text-ink/70 leading-relaxed">톤앤매너, 타이포, 컬러 시스템으로 제품에 뚜렷한 성격을 부여합니다.</p>
+        <div class="mt-4 flex flex-wrap gap-1.5 text-xs font-display font-700">
+          <span class="bg-ink/10 px-2 py-1">Identity</span><span class="bg-ink/10 px-2 py-1">Typography</span><span class="bg-ink/10 px-2 py-1">Motion</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Process ===== -->
+<section id="process" class="mx-auto max-w-[1400px] px-4 sm:px-6 py-20 md:py-28 scroll-mt-24">
+  <div class="mb-12">
+    <div class="inline-block bg-blue text-white font-display font-800 uppercase text-xs px-3 py-1 border-hard shadow-hard-sm rot2 mb-4">Process</div>
+    <h2 class="reveal font-display font-900 uppercase text-5xl sm:text-7xl leading-[0.9] tracking-tighter">
+      일하는 방식<span class="text-pink">.</span>
+    </h2>
+  </div>
+
+  <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="proc reveal bg-cream border-hard shadow-hard p-6">
+      <div class="font-display font-900 text-6xl text-violet leading-none">01</div>
+      <div class="font-display font-800 uppercase text-lg mt-3">발견</div>
+      <p class="text-sm text-ink/70 mt-2 leading-relaxed">문제와 사용자를 파고듭니다. 리서치와 인터뷰로 진짜 니즈를 찾습니다.</p>
+    </div>
+    <div class="proc reveal bg-cream border-hard shadow-hard p-6 md:mt-8">
+      <div class="font-display font-900 text-6xl text-pink leading-none">02</div>
+      <div class="font-display font-800 uppercase text-lg mt-3">실험</div>
+      <p class="text-sm text-ink/70 mt-2 leading-relaxed">AI 그래픽으로 방향을 빠르게 시각화하고 여러 갈래를 테스트합니다.</p>
+    </div>
+    <div class="proc reveal bg-cream border-hard shadow-hard p-6">
+      <div class="font-display font-900 text-6xl text-blue leading-none">03</div>
+      <div class="font-display font-800 uppercase text-lg mt-3">구현</div>
+      <p class="text-sm text-ink/70 mt-2 leading-relaxed">바이브코딩으로 실제 동작하는 프로토타입을 만들어 검증합니다.</p>
+    </div>
+    <div class="proc reveal bg-cream border-hard shadow-hard p-6 md:mt-8">
+      <div class="font-display font-900 text-6xl text-lime leading-none" style="-webkit-text-stroke:2px #0A0A0A">04</div>
+      <div class="font-display font-800 uppercase text-lg mt-3">전달</div>
+      <p class="text-sm text-ink/70 mt-2 leading-relaxed">개발과 협업해 픽셀 완성도까지 챙기며 제품을 세상에 내보냅니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Contact / CTA ===== -->
+<section id="contact" class="relative bg-violet text-white border-y-[3px] border-ink py-24 md:py-32 scroll-mt-24 overflow-hidden">
+  <div class="blob absolute top-10 left-[8%] w-16 h-16 bg-yellow border-hard shadow-hard rounded-full"></div>
+  <div class="blob absolute bottom-12 right-[10%] w-24 h-24 bg-pink border-hard shadow-hard rot2"></div>
+
+  <div class="relative z-10 mx-auto max-w-[1100px] px-4 sm:px-6 text-center">
+    <div class="inline-block bg-cream text-ink font-display font-800 uppercase text-xs px-3 py-1 border-hard shadow-hard-sm rot-2 mb-6">Let's Work</div>
+    <h2 class="reveal font-display font-900 uppercase text-[13vw] md:text-[8rem] leading-[0.85] tracking-tighter">
+      함께<br /><span class="inline-block bg-yellow text-ink px-4 -rotate-2 border-hard shadow-hard-lg my-2">만들어요</span>
+    </h2>
+    <p class="reveal mt-8 font-body text-lg text-white/85 max-w-xl mx-auto">
+      새로운 프로젝트, 협업, 혹은 그냥 인사도 환영합니다. 24시간 안에 답장드릴게요.
+    </p>
+    <div class="reveal mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="mailto:hello@yujin.design" class="inline-flex items-center gap-3 bg-ink text-cream font-display font-800 uppercase text-lg px-7 py-4 border-hard shadow-hard-lg press">
+        hello@yujin.design
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <div class="flex gap-3 font-display font-800 uppercase text-sm">
+        <a href="#" class="bg-cream text-ink px-4 py-4 border-hard shadow-hard press">Behance</a>
+        <a href="#" class="bg-cream text-ink px-4 py-4 border-hard shadow-hard press">Instagram</a>
+        <a href="#" class="bg-cream text-ink px-4 py-4 border-hard shadow-hard press">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== Footer ===== -->
+<footer class="bg-ink text-cream py-10">
+  <div class="mx-auto max-w-[1400px] px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="font-display font-900 text-2xl">YUJIN<span class="text-pink">.</span></div>
+    <p class="font-body text-sm text-cream/60">© 2026 이유진. 모든 권리 보유. 코드와 커피로 제작.</p>
+    <a href="#top" class="font-display font-800 uppercase text-sm flex items-center gap-2 hover:text-yellow transition">
+      맨 위로
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+    </a>
+  </div>
+</footer>
+
+<script>
+/* ============ Data ============ */
+const PROJECTS = [
+  { t:'뉴로 뱅킹 앱', c:'uxui', tag:'UX/UI', d:'Z세대를 위한 모바일 뱅킹 리디자인', bg:'#7C3AED', fg:'#fff' },
+  { t:'플럭스 AI 키비주얼', c:'ai', tag:'AI 그래픽', d:'생성형 AI 캠페인 비주얼 시리즈', bg:'#EC4899', fg:'#fff' },
+  { t:'모션 랩 웹사이트', c:'vibe', tag:'바이브코딩', d:'GSAP 인터랙티브 랜딩 구현', bg:'#B6F400', fg:'#0A0A0A' },
+  { t:'커머스 대시보드', c:'uxui', tag:'UX/UI', d:'셀러용 데이터 대시보드 설계', bg:'#2563EB', fg:'#fff' },
+  { t:'드림스케이프', c:'ai', tag:'AI 그래픽', d:'초현실 브랜드 아트 컬렉션', bg:'#FFE100', fg:'#0A0A0A' },
+  { t:'포트폴리오 엔진', c:'vibe', tag:'바이브코딩', d:'노코드 감성의 코드 템플릿', bg:'#0A0A0A', fg:'#F4F1EA' },
+  { t:'헬스케어 온보딩', c:'uxui', tag:'UX/UI', d:'복잡한 가입 흐름 단순화', bg:'#EC4899', fg:'#fff' },
+  { t:'뮤직 페스티벌 아이덴티티', c:'ai', tag:'AI 그래픽', d:'AI 기반 포스터 & 굿즈', bg:'#7C3AED', fg:'#fff' },
+  { t:'인터랙티브 리포트', c:'vibe', tag:'바이브코딩', d:'스크롤 기반 데이터 스토리', bg:'#2563EB', fg:'#fff' },
+];
+
+const grid = document.getElementById('workGrid');
+function cardHTML(p, i){
+  const rot = i % 3 === 0 ? 'rot-2' : (i % 3 === 1 ? '' : 'rot2');
+  return `
+  <article class="work-card group reveal border-hard shadow-hard bg-cream press cursor-hover ${rot}" data-cat="${p.c}">
+    <div class="relative overflow-hidden border-b-[3px] border-ink aspect-[4/3] flex items-center justify-center"
+         style="background:${p.bg};color:${p.fg}">
+      <span class="font-display font-900 text-7xl opacity-20 select-none">0${i+1}</span>
+      <span class="absolute inset-0 grid place-items-center px-4 text-center font-display font-900 uppercase text-2xl leading-tight">${p.t}</span>
+      <span class="absolute top-3 left-3 bg-cream text-ink border-hard-2 font-display font-800 uppercase text-[10px] px-2 py-1">${p.tag}</span>
+      <span class="absolute bottom-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-ink text-cream px-3 py-2 font-display font-800 uppercase text-xs flex items-center gap-1">
+        보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </div>
+    <div class="p-4 flex items-center justify-between gap-3">
+      <div>
+        <h3 class="font-display font-800 text-lg leading-tight">${p.t}</h3>
+        <p class="text-sm text-ink/60">${p.d}</p>
+      </div>
+    </div>
+  </article>`;
+}
+grid.innerHTML = PROJECTS.map(cardHTML).join('');
+
+/* ============ Filters ============ */
+const filterBtns = document.querySelectorAll('.filter');
+filterBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach(b => { b.classList.remove('is-active','bg-ink','text-cream'); b.classList.add('bg-cream'); });
+    btn.classList.add('is-active','bg-ink','text-cream'); btn.classList.remove('bg-cream');
+    const f = btn.dataset.filter;
+    document.querySelectorAll('.work-card').forEach(card => {
+      const show = f === 'all' || card.dataset.cat === f;
+      if (window.gsap && !reduceMotion) {
+        if (show) {
+          card.style.display = '';
+          gsap.fromTo(card, {opacity:0, scale:.9, y:16}, {opacity:1, scale:1, y:0, duration:.4, ease:'back.out(1.4)'});
+        } else {
+          gsap.to(card, {opacity:0, scale:.9, duration:.2, onComplete:()=> card.style.display='none'});
+        }
+      } else {
+        card.style.display = show ? '' : 'none';
+      }
+    });
+  });
+});
+
+/* ============ Motion ============ */
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function initMotion(){
+  if (reduceMotion || !window.gsap) return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Hero lines
+  gsap.from('.hero-line', { y: 120, opacity: 0, rotateX: -40, stagger: 0.12, duration: 1, ease: 'power4.out', delay: 0.15 });
+  gsap.from('.hero-sub', { y: 30, opacity: 0, stagger: 0.12, duration: 0.9, ease: 'power3.out', delay: 0.6 });
+
+  // Floating blobs parallax
+  gsap.utils.toArray('.blob').forEach((b, i) => {
+    gsap.to(b, { yPercent: (i % 2 ? 1 : -1) * 30, ease: 'none',
+      scrollTrigger: { trigger: b, start: 'top bottom', end: 'bottom top', scrub: 1 } });
+    gsap.to(b, { rotate: (i % 2 ? 12 : -12), duration: 4 + i, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  });
+
+  // Generic reveals
+  gsap.utils.toArray('.reveal').forEach(el => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 85%' }
+    });
+  });
+
+  // Cards stagger
+  ScrollTrigger.batch('.work-card', {
+    start: 'top 88%',
+    onEnter: batch => gsap.to(batch, { opacity:1, y:0, duration:.6, stagger:.08, ease:'power3.out' }),
+  });
+  gsap.set('.work-card', { opacity: 0, y: 30 });
+
+  // Counters
+  gsap.utils.toArray('[data-count]').forEach(el => {
+    const end = +el.dataset.count;
+    ScrollTrigger.create({
+      trigger: el, start: 'top 90%', once: true,
+      onEnter: () => gsap.to(el, { textContent: end, duration: 1.6, ease: 'power2.out', snap: { textContent: 1 },
+        onUpdate: () => el.textContent = Math.round(el.textContent) })
+    });
+  });
+}
+
+/* ============ Preloader ============ */
+function runPreloader(done){
+  const pre = document.getElementById('preloader');
+  const num = document.getElementById('preCount');
+  if (reduceMotion || !window.gsap){
+    pre.style.display = 'none'; done(); return;
+  }
+  const obj = { v: 0 };
+  gsap.to(obj, { v: 100, duration: 1.4, ease: 'power2.inOut',
+    onUpdate: () => num.textContent = Math.round(obj.v),
+    onComplete: () => {
+      gsap.to(pre, { yPercent: -100, duration: 0.7, ease: 'expo.inOut', delay: 0.15,
+        onComplete: () => { pre.style.display = 'none'; done(); } });
+    }});
+}
+
+/* ============ Custom cursor ============ */
+function initCursor(){
+  if (window.matchMedia('(pointer: coarse)').matches || !window.gsap) return;
+  const dot = document.getElementById('cursorDot');
+  const ring = document.getElementById('cursorRing');
+  const xTo = gsap.quickTo(ring, 'x', { duration: 0.35, ease: 'power3' });
+  const yTo = gsap.quickTo(ring, 'y', { duration: 0.35, ease: 'power3' });
+  window.addEventListener('mousemove', e => {
+    gsap.set(dot, { x: e.clientX, y: e.clientY });
+    xTo(e.clientX); yTo(e.clientY);
+  });
+  document.querySelectorAll('a, button, .cursor-hover').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('hovered'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('hovered'));
+  });
+}
+
+/* ============ Magnetic buttons ============ */
+function initMagnetic(){
+  if (window.matchMedia('(pointer: coarse)').matches || reduceMotion || !window.gsap) return;
+  document.querySelectorAll('.press').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const r = el.getBoundingClientRect();
+      const mx = e.clientX - r.left - r.width/2;
+      const my = e.clientY - r.top - r.height/2;
+      gsap.to(el, { x: mx*0.18, y: my*0.18, duration: 0.4, ease: 'power3.out' });
+    });
+    el.addEventListener('mouseleave', () => gsap.to(el, { x:0, y:0, duration:0.5, ease:'elastic.out(1,0.4)' }));
+  });
+}
+
+/* ============ Mobile menu ============ */
+const menuBtn = document.getElementById('menuBtn');
+const mobileMenu = document.getElementById('mobileMenu');
+const menuIcon = document.getElementById('menuIcon');
+let menuOpen = false;
+menuBtn.addEventListener('click', () => {
+  menuOpen = !menuOpen;
+  mobileMenu.classList.toggle('hidden', !menuOpen);
+  menuBtn.setAttribute('aria-expanded', String(menuOpen));
+  menuIcon.innerHTML = menuOpen
+    ? '<path d="M6 6l12 12M18 6L6 18"/>'
+    : '<path d="M3 6h18M3 12h18M3 18h18"/>';
+});
+mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  menuOpen = false; mobileMenu.classList.add('hidden');
+  menuBtn.setAttribute('aria-expanded','false');
+  menuIcon.innerHTML = '<path d="M3 6h18M3 12h18M3 18h18"/>';
+}));
+
+/* ============ Boot ============ */
+window.addEventListener('load', () => {
+  runPreloader(() => {
+    initMotion();
+    if (window.ScrollTrigger) ScrollTrigger.refresh();
+  });
+  initCursor();
+  initMagnetic();
+});
+</script>
+</body>
+</html>
