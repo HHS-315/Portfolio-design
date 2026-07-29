@@ -1,9 +1,11 @@
 {
-  "name": "yujin-portfolio",
+  "name": "hyeseon-portfolio",
   "version": "1.0.0",
   "private": true,
-  "description": "Designer portfolio — UX/UI, AI graphic design, vibe coding",
+  "description": "Hwang Hyeseon — design voyage portfolio (UX/UI, AI graphic design, vibe coding)",
   "scripts": {
+    "sync": "git pull --ff-only origin claude/git-sync-main-9ab8dc",
+    "predev": "git pull --ff-only origin claude/git-sync-main-9ab8dc || echo [sync] 최신 받기 건너뜀 (오프라인이거나 로컬 변경 있음)",
     "dev": "concurrently -k -n css,serve -c magenta,cyan \"npm:watch:css\" \"serve -l 8000 .\"",
     "start": "serve -l 8000 .",
     "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
