@@ -1,22 +1,26 @@
 # YUJIN — 디자이너 포트폴리오
 
-UX/UI · AI 그래픽 디자인 · 바이브코딩 작업물을 담은 **네오브루탈리즘** 스타일의
-싱글 페이지 포트폴리오입니다. 모든 기기에서 동작하며, GSAP 기반의 고급 애니메이션이
-들어가 있습니다.
+UX/UI · AI 그래픽 디자인 · 바이브코딩 작업물을 담은 **미니멀 럭셔리(에디토리얼)**
+스타일의 싱글 페이지 포트폴리오입니다. 모든 기기에서 동작하며, GSAP 기반의
+절제되고 부드러운 애니메이션이 들어가 있습니다.
 
 ## 특징
 
-- **네오브루탈리즘 디자인** — 두꺼운 검정 테두리, 하드 오프셋 섀도우, 하이 채도 컬러 블로킹
+- **미니멀 럭셔리 디자인** — 오버사이즈 세리프 타이포그래피, 넉넉한 여백,
+  헤어라인 구분선, 웜 뉴트럴 팔레트, 절제된 브론즈 악센트
+- **정교한 한글 타이포그래피** — 제목은 명조(Noto Serif KR), 본문은 고딕(Noto Sans KR).
+  라틴은 Playfair Display + Inter. 한글 폰트는 **로컬에 self-host**하여 기기와 무관하게
+  동일한 세리프 렌더링 보장
 - **반응형** — 모바일(375px) → 태블릿 → 데스크톱(1440px+) 전 구간 대응
-- **고급 애니메이션 (GSAP + ScrollTrigger)**
-  - 프리로더 카운터 & 커튼 트랜지션
-  - 히어로 라인별 등장, 시차(parallax) 데코 블록
-  - 스크롤 리빌 스태거, 숫자 카운트업
-  - 커스텀 커서 · 마그네틱 버튼 (데스크톱)
-  - 무한 마퀴 스트립
+- **부드러운 애니메이션 (GSAP + ScrollTrigger)**
+  - 프리로더 로고 리빌 + 프로그레스 바
+  - 히어로 라인마스크(줄 단위 밀어올림) 등장
+  - 스크롤 리빌, 작업 이미지 시차(parallax), 숫자 카운트업
+  - 미니멀 커스텀 커서, 언더라인 호버 (데스크톱)
+  - 조용한 세리프 마퀴 스트립
 - **작업물 필터** — 전체 / UX·UI / AI 그래픽 / 바이브코딩
-- **접근성** — `prefers-reduced-motion` 존중, 키보드 포커스 링, 4.5:1 대비, SVG 아이콘(이모지 미사용)
-- **자체 완결형** — CDN 의존 없음. CSS/JS를 로컬에 번들하여 오프라인에서도 열림
+- **접근성** — `prefers-reduced-motion` 존중, 키보드 포커스 링, SVG 아이콘(이모지 미사용)
+- **자체 완결형** — CDN 의존 없음. CSS/JS/한글 폰트를 로컬에 번들하여 오프라인에서도 열림
 
 ## 바로 보기
 
@@ -34,7 +38,8 @@ HTML의 Tailwind 클래스를 수정하면 CSS가 자동으로 다시 빌드되�
 
 ### 방법 2 — 서버 없이 파일로 열기
 
-빌드 없이 `index.html`을 브라우저에서 바로 열어도 됩니다. (Google Fonts만 온라인 로드)
+빌드 없이 `index.html`을 브라우저에서 바로 열어도 됩니다. 한글 폰트·CSS·JS는
+모두 로컬에 포함돼 있고, Latin 폰트(Playfair/Inter)만 온라인으로 로드됩니다.
 
 ```bash
 open index.html      # macOS   (Windows: start index.html / Linux: xdg-open index.html)
@@ -55,18 +60,19 @@ npm run watch:css    # 자동 재빌드만 (서버 없음)
 ## 구조
 
 ```
-index.html              # 페이지 마크업 + 인터랙션 스크립트
-src/input.css           # Tailwind 지시문 + 커스텀 컴포넌트 CSS (소스)
-assets/styles.css       # 컴파일된 스타일 (커밋됨 — 열람 시 이 파일 사용)
+index.html               # 페이지 마크업 + 인터랙션 스크립트
+src/input.css            # Tailwind 지시문 + @font-face + 커스텀 컴포넌트 CSS (소스)
+assets/styles.css        # 컴파일된 스타일 (커밋됨 — 열람 시 이 파일 사용)
 assets/js/gsap.min.js
 assets/js/ScrollTrigger.min.js
-tailwind.config.js      # 컬러/폰트/섀도우 토큰
+assets/fonts/            # self-host 한글 웹폰트 (Noto Serif/Sans KR, Hangul 서브셋)
+tailwind.config.js       # 컬러/폰트/섀도우 토큰
 ```
 
 ## 콘텐츠 교체
 
 현재 작업물은 **플레이스홀더**입니다. `index.html` 하단의 `PROJECTS` 배열을 편집해
-실제 프로젝트 제목·설명·카테고리·색상을 넣고, 필요하면 컬러 타일 대신 이미지를
+실제 프로젝트 제목·설명·카테고리·연도·색상을 넣고, 필요하면 톤 타일 대신 이미지를
 넣도록 `cardHTML()`을 수정하세요. 연락처(`hello@yujin.design`)와 소셜 링크도
 실제 값으로 교체하면 됩니다.
 
@@ -74,12 +80,11 @@ tailwind.config.js      # 컬러/폰트/섀도우 토큰
 
 | 역할 | 컬러 |
 |------|------|
-| Background | `#F4F1EA` (cream) |
-| Ink | `#0A0A0A` |
-| Violet (primary) | `#7C3AED` |
-| Pink (accent) | `#EC4899` |
-| Yellow | `#FFE100` |
-| Blue | `#2563EB` |
-| Lime | `#B6F400` |
+| Background (bone) | `#F5F2EC` |
+| Surface | `#FBFAF6` |
+| Ink (near-black) | `#16130F` |
+| Stone (본문 보조) | `#7A736A` |
+| Line (헤어라인) | `#E2DBCF` |
+| Accent (브론즈) | `#9C7A54` |
 
-폰트: **Archivo**(디스플레이) + **Space Grotesk**(본문)
+폰트: **Playfair Display + Noto Serif KR**(디스플레이) · **Inter + Noto Sans KR**(본문)

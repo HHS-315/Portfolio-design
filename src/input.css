@@ -2,72 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Self-hosted Korean webfonts (subset: Hangul) ===== */
+@font-face {
+  font-family: 'Noto Serif KR';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('./fonts/noto-serif-kr-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Serif KR';
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url('./fonts/noto-serif-kr-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('./fonts/noto-sans-kr-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url('./fonts/noto-sans-kr-500.woff2') format('woff2');
+}
+
 @layer base {
-  :root { --cursor-size: 14px; }
   * { -webkit-tap-highlight-color: transparent; }
-  html, body { background: #F4F1EA; }
+  html, body { background: #F5F2EC; }
   body {
-    font-family: 'Space Grotesk', sans-serif;
-    color: #0A0A0A;
+    font-family: 'Inter', 'Noto Sans KR', system-ui, sans-serif;
+    color: #16130F;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-  ::selection { background: #FFE100; color: #0A0A0A; }
+  ::selection { background: #16130F; color: #F5F2EC; }
 
   a:focus-visible, button:focus-visible {
-    outline: 3px solid #7C3AED;
-    outline-offset: 3px;
-    border-radius: 4px;
+    outline: 2px solid #9C7A54;
+    outline-offset: 4px;
+    border-radius: 2px;
   }
 }
 
 @layer components {
-  .font-display { font-family: 'Archivo', sans-serif; }
+  .font-display { font-family: 'Playfair Display', 'Noto Serif KR', Georgia, serif; }
 
-  /* Grid paper background */
-  .bg-grid {
-    background-image:
-      linear-gradient(to right, rgba(10,10,10,.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(10,10,10,.05) 1px, transparent 1px);
-    background-size: 42px 42px;
+  /* Small uppercase editorial label */
+  .eyebrow {
+    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #9C7A54;
   }
 
-  .border-hard   { border: 3px solid #0A0A0A; }
-  .border-hard-2 { border: 2px solid #0A0A0A; }
+  /* Hairline divider */
+  .hairline { border-color: #E2DBCF; }
 
-  /* Mechanical press interaction */
-  .press { transition: transform .12s ease, box-shadow .12s ease; }
-  .press:hover  { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 0 #0A0A0A; }
-  .press:active { transform: translate(3px,3px);   box-shadow: 2px 2px 0 0 #0A0A0A; }
+  /* Line-mask reveal — headline lines sit inside overflow-hidden rows */
+  .line-mask { overflow: hidden; display: block; }
+  .line-inner { display: block; will-change: transform; }
 
-  /* Marquee */
-  .marquee { display: flex; width: max-content; animation: marquee 26s linear infinite; }
-  .marquee.reverse { animation-direction: reverse; }
+  /* Generic scroll reveal (pre-GSAP state) */
+  .reveal { opacity: 0; transform: translateY(38px); }
+
+  /* Animated underline link */
+  .link-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: -2px;
+    width: 100%; height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform .5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-underline:hover::after { transform: scaleX(1); transform-origin: left; }
+
+  /* Work card */
+  .work-card { transition: transform .6s cubic-bezier(0.22,1,0.36,1); }
+  .work-media { transition: transform 1.1s cubic-bezier(0.22,1,0.36,1); }
+  .work-card:hover .work-media { transform: scale(1.05); }
+
+  /* Marquee (quiet, monochrome) */
+  .marquee { display: flex; width: max-content; animation: marquee 40s linear infinite; }
 
   /* Custom cursor (desktop) */
-  .cursor-dot, .cursor-ring {
-    position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
-    border-radius: 9999px; mix-blend-mode: difference; will-change: transform;
-  }
-  .cursor-dot  { width: 8px; height: 8px; background: #fff; transform: translate(-50%,-50%); }
   .cursor-ring {
-    width: 42px; height: 42px; border: 2px solid #fff; transform: translate(-50%,-50%);
-    transition: width .2s, height .2s, background .2s;
+    position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #16130F; transform: translate(-50%,-50%);
+    transition: width .35s cubic-bezier(0.22,1,0.36,1),
+                height .35s cubic-bezier(0.22,1,0.36,1),
+                background .35s, opacity .35s;
+    will-change: transform;
+    mix-blend-mode: difference;
   }
-  .cursor-ring.hovered { width: 66px; height: 66px; background: rgba(255,255,255,.15); }
-
-  /* Reveal defaults (before GSAP kicks in) */
-  .reveal { opacity: 0; transform: translateY(28px); }
-
-  /* Preloader */
-  #preloader {
-    position: fixed; inset: 0; z-index: 10000; background: #0A0A0A; color: #F4F1EA;
-    display: flex; align-items: flex-end; justify-content: space-between; padding: 6vw;
+  .cursor-ring.hovered {
+    width: 54px; height: 54px;
+    background: rgba(245,242,236,.9);
   }
-
-  /* Sticker rotate */
-  .rot-2 { transform: rotate(-2deg); }
-  .rot2  { transform: rotate(2deg); }
 
   a, button, .cursor-hover { cursor: pointer; }
 }
@@ -75,11 +113,12 @@
 @keyframes marquee { to { transform: translateX(-50%); } }
 
 @media (hover: none), (pointer: coarse) {
-  .cursor-dot, .cursor-ring { display: none; }
+  .cursor-ring { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .marquee { animation: none; }
   html { scroll-behavior: auto !important; }
   .reveal { opacity: 1 !important; transform: none !important; }
+  .line-inner { transform: none !important; }
 }
