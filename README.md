@@ -20,20 +20,37 @@ UX/UI · AI 그래픽 디자인 · 바이브코딩 작업물을 담은 **네오�
 
 ## 바로 보기
 
-빌드 없이 `index.html`을 브라우저에서 열면 됩니다. (Google Fonts만 온라인으로 로드)
-
-## 개발 (스타일 수정 시)
-
-Tailwind 클래스를 바꾸면 CSS를 다시 컴파일해야 합니다.
+### 방법 1 — 로컬 서버 (권장)
 
 ```bash
-npm install          # 최초 1회
-npm run build:css    # src/input.css → assets/styles.css (압축 빌드)
-npm run watch:css    # 개발 중 자동 재빌드
+npm install     # 최초 1회
+npm run dev     # → http://localhost:8000  (Tailwind watch + 정적 서버 동시 실행)
 ```
 
-> HTML의 클래스를 수정한 뒤에는 반드시 `build:css`를 다시 실행하세요.
-> 그렇지 않으면 새 유틸리티 클래스가 `assets/styles.css`에 포함되지 않습니다.
+`npm run dev`는 CSS 자동 재빌드(`watch:css`)와 정적 서버(`serve`)를 함께 띄웁니다.
+HTML의 Tailwind 클래스를 수정하면 CSS가 자동으로 다시 빌드되므로, 브라우저만
+새로고침하면 됩니다. 서버만 필요하면 `npm start`(8000 포트 서빙만)를 쓰세요.
+종료는 터미널에서 `Ctrl + C`.
+
+### 방법 2 — 서버 없이 파일로 열기
+
+빌드 없이 `index.html`을 브라우저에서 바로 열어도 됩니다. (Google Fonts만 온라인 로드)
+
+```bash
+open index.html      # macOS   (Windows: start index.html / Linux: xdg-open index.html)
+```
+
+## 스타일만 빌드
+
+`npm run dev` 없이 CSS만 컴파일하려면:
+
+```bash
+npm run build:css    # src/input.css → assets/styles.css (압축 1회 빌드)
+npm run watch:css    # 자동 재빌드만 (서버 없음)
+```
+
+> HTML의 Tailwind 클래스를 수정한 뒤에는 CSS를 다시 빌드해야 합니다.
+> `npm run dev` 또는 `watch:css`를 켜두면 자동으로 처리됩니다.
 
 ## 구조
 

@@ -4,10 +4,14 @@
   "private": true,
   "description": "Designer portfolio — UX/UI, AI graphic design, vibe coding",
   "scripts": {
+    "dev": "concurrently -k -n css,serve -c magenta,cyan \"npm:watch:css\" \"serve -l 8000 .\"",
+    "start": "serve -l 8000 .",
     "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
     "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --watch"
   },
   "devDependencies": {
+    "concurrently": "^9.1.0",
+    "serve": "^14.2.4",
     "tailwindcss": "^3.4.0"
   },
   "dependencies": {
