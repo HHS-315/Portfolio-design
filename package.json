@@ -9,7 +9,7 @@
     "dev": "concurrently -k -n css,serve -c magenta,cyan \"npm:watch:css\" \"serve -l 8000 .\"",
     "start": "serve -l 8000 .",
     "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
-    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --watch"
+    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify --watch"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
