@@ -16,8 +16,8 @@ module.exports = {
         ember:   '#E0A15A', // vibe coding planet (amber)
       },
       fontFamily: {
-        display: ['"Playfair Display"', '"Noto Serif KR"', 'Georgia', 'serif'],
-        body:    ['Inter', '"Noto Sans KR"', 'system-ui', 'sans-serif'],
+        display: ['Pretendard', 'system-ui', 'sans-serif'],
+        body:    ['Pretendard', 'system-ui', 'sans-serif'],
       },
       fontWeight: { 300: '300', 400: '400', 500: '500', 600: '600', 700: '700' },
       letterSpacing: { tightest: '-0.055em', widest2: '0.3em' },

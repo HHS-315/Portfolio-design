@@ -2,7 +2,7 @@
 
 UX/UI · AI 그래픽 디자인 · 바이브코딩을 **우주 여행** 컨셉으로 풀어낸 싱글 페이지
 포트폴리오입니다. 발사 → 세 개의 행성(분야)에 순차 도착 → 교신으로 이어지는
-여정형 구조이며, 딥스페이스 다크 무드에 절제된 럭셔리 세리프 타이포를 얹었습니다.
+여정형 구조이며, 딥스페이스 다크 무드에 Pretendard 기반의 모던·미니멀 타이포를 얹었습니다.
 
 > **일러스트는 나중에 적용합니다.** 그래픽이 들어갈 자리는 점선 테두리의
 > **플레이스홀더 슬롯(`.art-slot`)** 으로 비워두고 각 위치에 라벨을 달아놨습니다
@@ -11,7 +11,7 @@ UX/UI · AI 그래픽 디자인 · 바이브코딩을 **우주 여행** 컨셉�
 
 ## 여정 구조 (섹션)
 
-1. **발사 (Hero)** — 카운트다운 프리로더 → 히어로. 우주선 일러스트 슬롯
+1. **발사 (Hero)** — 퍼센트 카운터 프리로더(0→100%, 위로 슬라이드) → 히어로. 우주선 일러스트 슬롯
 2. **좌표 마퀴** — 여정 경유지 흐름 표시
 3. **항해 기록 (Stats)** — 미션 숫자 카운트업
 4. **세 개의 행성 (Planets)** — 분야별 "행성 도착" 섹션
@@ -30,12 +30,12 @@ UX/UI · AI 그래픽 디자인 · 바이브코딩을 **우주 여행** 컨셉�
   배경색·본문색·내비 테마가 함께 전환됩니다 (Sleep Well Creatives 감성 참고)
 - **Three.js 별/행성** — 실시간 스타필드 + 회전 와이어프레임 행성, 마우스 시차.
   여명에 가까워지면 별이 서서히 사라짐 (WebGL 미지원 시 CSS 별로 자동 폴백)
-- **딥스페이스 + 럭셔리 세리프** — 성운 글로우, 골드 악센트, 행성별 서브 컬러(틸/바이올렛/앰버)
-- **정교한 한글 타이포그래피** — 제목은 명조(Noto Serif KR), 본문은 고딕(Noto Sans KR),
-  라틴은 Playfair Display + Inter. 한글 폰트는 **로컬 self-host**로 기기 무관 동일 렌더링
+- **딥스페이스 무드** — 성운 글로우, 골드 악센트, 행성별 서브 컬러(틸/바이올렛/앰버)
+- **Pretendard 단일 서체** — 제목·본문 전부 Pretendard(가변 폰트, Latin + 한글).
+  로컬 self-host(가변 woff2 1파일)로 기기 무관 동일 렌더링, 오프라인 지원
 - **반응형** — 모바일(375px) → 태블릿 → 데스크톱(1440px+) 전 구간 대응
 - **애니메이션 (GSAP + ScrollTrigger)**
-  - 카운트다운 프리로더, 히어로 라인마스크 등장
+  - 퍼센트 카운터 프리로더(0→100%), 히어로 라인마스크 등장
   - 상단 미션 진행 바, 스크롤 리빌
   - **행성 도착 연출** — 스크롤 시 행성 슬롯 확대·페이드 + 시차(parallax)
   - 숫자 카운트업, 골드 커스텀 커서, 언더라인 호버
@@ -75,7 +75,7 @@ HTML의 Tailwind 클래스를 수정하면 CSS가 자동으로 다시 빌드되�
 ### 방법 2 — 서버 없이 파일로 열기
 
 빌드 없이 `index.html`을 브라우저에서 바로 열어도 됩니다. 한글 폰트·CSS·JS는
-모두 로컬에 포함돼 있고, Latin 폰트(Playfair/Inter)만 온라인으로 로드됩니다.
+폰트(Pretendard)까지 모두 로컬에 포함되어 온라인 연결 없이도 완전히 렌더링됩니다.
 
 ```bash
 open index.html      # macOS   (Windows: start index.html / Linux: xdg-open index.html)
@@ -101,7 +101,7 @@ src/input.css            # Tailwind 지시문 + @font-face + 커스텀 컴포넌
 assets/styles.css        # 컴파일된 스타일 (커밋됨 — 열람 시 이 파일 사용)
 assets/js/gsap.min.js
 assets/js/ScrollTrigger.min.js
-assets/fonts/            # self-host 한글 웹폰트 (Noto Serif/Sans KR, Hangul 서브셋)
+assets/fonts/            # self-host Pretendard (가변 woff2, Latin + 한글)
 tailwind.config.js       # 컬러/폰트/섀도우 토큰
 ```
 
@@ -126,4 +126,4 @@ tailwind.config.js       # 컬러/폰트/섀도우 토큰
 | Nebula — AI 행성 | `#9B8CE0` |
 | Ember — 바이브코딩 행성 | `#E0A15A` |
 
-폰트: **Playfair Display + Noto Serif KR**(디스플레이) · **Inter + Noto Sans KR**(본문)
+폰트: **Pretendard** (제목·본문 전부, 가변 폰트)
