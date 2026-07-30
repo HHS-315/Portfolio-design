@@ -4,8 +4,8 @@
   "private": true,
   "description": "Hwang Hyeseon — design voyage portfolio (UX/UI, AI graphic design, vibe coding)",
   "scripts": {
-    "sync": "git pull --ff-only origin claude/git-sync-main-9ab8dc",
-    "predev": "git pull --ff-only origin claude/git-sync-main-9ab8dc || echo [sync] 최신 받기 건너뜀 (오프라인이거나 로컬 변경 있음)",
+    "sync": "git fetch origin && git checkout claude/git-sync-main-9ab8dc && git reset --hard origin/claude/git-sync-main-9ab8dc",
+    "predev": "git fetch origin && git checkout claude/git-sync-main-9ab8dc && git reset --hard origin/claude/git-sync-main-9ab8dc || echo [sync] 최신 동기화 건너뜀 (오프라인일 수 있음 - 그대로 실행)",
     "dev": "concurrently -k -n css,serve -c magenta,cyan \"npm:watch:css\" \"serve -l 8000 .\"",
     "start": "serve -l 8000 .",
     "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
