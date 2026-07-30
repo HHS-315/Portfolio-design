@@ -88,54 +88,19 @@
 
 <main id="top">
 
-<!-- ===== HERO / 발사 ===== -->
-<section data-bg="#05070E" class="relative min-h-[100svh] flex items-center pt-28 pb-20">
-  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 w-full grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
-    <div>
-      <div class="hero-eyebrow flex items-center gap-4 mb-8">
-        <span class="eyebrow">Mission 2026</span>
-        <span class="h-px w-16 bg-white/20"></span>
-        <span class="eyebrow text-stone">Design Voyage</span>
-      </div>
+<!-- ===== HERO / 발사 (이미지) ===== -->
+<!-- 히어로 이미지: 실제 파일을 assets/img/hero.png 로 넣으면 자동 표시됩니다.
+     파일이 없으면 hero-placeholder.svg 가 대신 보입니다. -->
+<section data-bg="#FCFBF8" class="nav-light relative min-h-[100svh] overflow-hidden bg-[#FCFBF8]">
+  <img id="heroImg"
+       src="./assets/img/hero.png"
+       onerror="this.onerror=null; this.src='./assets/img/hero-placeholder.svg'"
+       alt="로켓 옆에 선 인물 — 디자인 우주 여행"
+       class="absolute inset-0 w-full h-full object-cover object-left-bottom md:object-bottom select-none pointer-events-none" />
 
-      <h1 class="font-display font-400 leading-[0.98] tracking-tightest text-[14vw] sm:text-[10vw] lg:text-[7rem]">
-        <span class="line-mask"><span class="line-inner block">디자인이라는</span></span>
-        <span class="line-mask"><span class="line-inner block"><span class="italic text-gold">우주</span>를</span></span>
-        <span class="line-mask"><span class="line-inner block">항해합니다.</span></span>
-      </h1>
-
-      <p class="hero-sub mt-9 max-w-lg text-base sm:text-lg leading-relaxed text-stone">
-        안녕하세요, 디자이너 <span class="text-star">황혜선</span>입니다.
-        UX/UI · AI 그래픽 디자인 · 바이브코딩 — 세 개의 행성을 오가며
-        아이디어를 탐사하고, 실제 제품으로 착륙시킵니다.
-      </p>
-
-      <div class="hero-sub mt-9 flex flex-wrap items-center gap-6">
-        <a href="#planets" class="group inline-flex items-center gap-3 text-sm text-space bg-gold rounded-full pl-6 pr-2 py-2 font-medium">
-          여정 시작
-          <span class="grid place-items-center w-9 h-9 rounded-full bg-space/15">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
-          </span>
-        </a>
-        <a href="#signal" class="link-underline text-sm text-stone hover:text-star transition-colors">교신하기</a>
-      </div>
-    </div>
-
-    <!-- Illustration slot: 우주선 발사 -->
-    <div class="hero-sub relative">
-      <div class="art-slot aspect-[4/5] w-full">
-        <div>
-          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 2c3 2 5 6 5 10a5 5 0 01-10 0c0-4 2-8 5-10z"/><path d="M9 16l-3 4M15 16l3 4M12 18v4"/></svg>
-          <div class="art-slot__label">일러스트 영역</div>
-          <div class="art-slot__hint">우주선 발사 / 로켓 (세로 4:5 권장)</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="hero-sub absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-stone">
-    Scroll to launch
-    <span class="h-8 w-px bg-white/20"></span>
+  <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2" style="color:#2A2E3A">
+    Scroll
+    <span class="h-8 w-px" style="background:#2A2E3A;opacity:.45"></span>
   </div>
 </section>
 
@@ -359,7 +324,7 @@
 </section>
 
 <!-- ===== 교신 / Contact (여명 · 도착) ===== -->
-<section id="signal" data-bg="#F3E4C4" class="chapter-dawn border-t hairline py-24 md:py-36 scroll-mt-24">
+<section id="signal" data-bg="#F3E4C4" class="chapter-dawn nav-light border-t hairline py-24 md:py-36 scroll-mt-24">
   <div class="mx-auto max-w-[1100px] px-5 sm:px-8 text-center">
     <!-- Illustration slot: 교신 위성 / 신호 -->
     <div class="art-slot w-24 h-24 rounded-full mx-auto mb-10" style="border-color:rgba(27,34,71,.25);color:#5B618A">
@@ -386,7 +351,7 @@
 </main>
 
 <!-- ===== Footer (여명) ===== -->
-<footer data-bg="#EFDCB8" class="chapter-dawn border-t hairline py-10">
+<footer data-bg="#EFDCB8" class="chapter-dawn nav-light border-t hairline py-10">
   <div class="mx-auto max-w-[1320px] px-5 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-dawn-muted">
     <div class="font-display text-lg text-dawn-strong">Hwang Hyeseon</div>
     <p>© 2026 황혜선. Voyage in progress.</p>
@@ -411,16 +376,13 @@ function initMotion(){
   gsap.to('#progress', { scaleX: 1, ease: 'none',
     scrollTrigger: { start: 0, end: () => document.body.scrollHeight - window.innerHeight, scrub: 0.3 } });
 
-  // Hero
+  // Hero image intro
   gsap.set('.line-inner', { yPercent: 115 });
-  gsap.set('.hero-eyebrow > *', { opacity: 0 });
-  gsap.to('.hero-eyebrow > *', { opacity: 1, duration: 1, stagger: 0.08, ease: 'power2.out', delay: 0.1 });
-  gsap.to('.line-mask .line-inner', { yPercent: 0, duration: 1.25, stagger: 0.12, ease: 'power4.out', delay: 0.2 });
-  gsap.from('.hero-sub', { opacity: 0, y: 26, duration: 1, stagger: 0.12, ease: 'power3.out', delay: 0.7 });
+  gsap.from('#heroImg', { opacity: 0, scale: 1.06, duration: 1.6, ease: 'power3.out' });
+  gsap.from('.hero-cue', { opacity: 0, duration: 1, ease: 'power2.out', delay: 0.8 });
 
-  // Non-hero line masks on scroll
+  // Line masks reveal on scroll
   gsap.utils.toArray('.line-mask').forEach(mask => {
-    if (mask.closest('.hero-eyebrow') || mask.closest('section')?.querySelector('.hero-eyebrow')) return;
     const inner = mask.querySelector('.line-inner');
     gsap.fromTo(inner, { yPercent: 115 }, { yPercent: 0, duration: 1.1, ease: 'power4.out',
       scrollTrigger: { trigger: mask, start: 'top 90%' } });
@@ -574,16 +536,17 @@ function initBackground(){
       } } } });
 }
 
-/* ============ Nav theme on dawn chapter ============ */
+/* ============ Nav theme over light sections (hero image + dawn) ============ */
 function initNavTheme(){
   if (!window.gsap) return;
   const header = document.querySelector('header');
-  const signal = document.getElementById('signal');
-  const footer = document.querySelector('footer');
-  if (!header || !signal) return;
-  ScrollTrigger.create({
-    trigger: signal, start: 'top 64px', endTrigger: footer || signal, end: 'bottom 64px',
-    onToggle: self => header.classList.toggle('is-light', self.isActive)
+  if (!header) return;
+  let active = 0;
+  document.querySelectorAll('.nav-light').forEach(sec => {
+    ScrollTrigger.create({
+      trigger: sec, start: 'top 64px', end: 'bottom 64px',
+      onToggle: self => { active += self.isActive ? 1 : -1; header.classList.toggle('is-light', active > 0); }
+    });
   });
 }
 
