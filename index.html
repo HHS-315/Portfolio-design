@@ -21,14 +21,19 @@
 <!-- Compiled styles (Tailwind + custom, self-hosted) -->
 <link rel="stylesheet" href="./assets/styles.css" />
 
+<!-- Three.js (self-hosted, global UMD) -->
+<script defer src="./assets/js/three.min.js"></script>
 <!-- GSAP (self-hosted) -->
 <script defer src="./assets/js/gsap.min.js"></script>
 <script defer src="./assets/js/ScrollTrigger.min.js"></script>
 </head>
-<body class="bg-space text-star">
+<body class="text-star">
 
-<!-- ===== Starfield background (structural — augment with real art later) ===== -->
-<div class="starfield" aria-hidden="true"></div>
+<!-- ===== Background journey layers ===== -->
+<div id="bgLayer" aria-hidden="true"></div>
+<div class="nebula" aria-hidden="true"></div>
+<canvas id="space3d" aria-hidden="true"></canvas>
+<div class="stars-fallback" id="starsFallback" aria-hidden="true"></div>
 
 <!-- ===== Mission progress bar ===== -->
 <div class="fixed top-0 inset-x-0 z-[950] h-[3px] bg-transparent">
@@ -81,7 +86,7 @@
 <main id="top">
 
 <!-- ===== HERO / 발사 ===== -->
-<section class="relative min-h-[100svh] flex items-center pt-28 pb-20">
+<section data-bg="#05070E" class="relative min-h-[100svh] flex items-center pt-28 pb-20">
   <div class="mx-auto max-w-[1320px] px-5 sm:px-8 w-full grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
     <div>
       <div class="hero-eyebrow flex items-center gap-4 mb-8">
@@ -150,7 +155,7 @@
 </div>
 
 <!-- ===== Voyage log / Stats ===== -->
-<section class="mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28">
+<section data-bg="#080E2A" class="mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28">
   <div class="eyebrow reveal mb-10">항해 기록 · Voyage Log</div>
   <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 hairline border-t border-l md:border-l-0 md:border-t-0">
     <div class="stat reveal p-6 md:p-8">
@@ -183,7 +188,7 @@
   </div>
 
   <!-- ▸ PLANET 01 — UX/UI (AURA) -->
-  <div class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+  <div data-bg="#0A1440" class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
     <!-- Illustration slot: 행성 -->
     <div class="planet-visual order-1">
       <div class="art-slot planet-slot w-[72%] mx-auto" style="border-color:rgba(111,182,176,.45)">
@@ -218,7 +223,7 @@
   </div>
 
   <!-- ▸ PLANET 02 — AI 그래픽 (NEBULA) -->
-  <div class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+  <div data-bg="#111E54" class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
     <div class="planet-copy order-2 lg:order-1">
       <div class="flex items-center gap-3 mb-5">
         <span class="eyebrow" style="color:#9B8CE0">Planet 02 · 도착</span>
@@ -253,7 +258,7 @@
   </div>
 
   <!-- ▸ PLANET 03 — 바이브코딩 (EMBER) -->
-  <div class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+  <div data-bg="#1C2E66" class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
     <!-- Illustration slot: 행성 -->
     <div class="planet-visual order-1">
       <div class="art-slot planet-slot w-[72%] mx-auto" style="border-color:rgba(224,161,90,.45)">
@@ -289,7 +294,7 @@
 </section>
 
 <!-- ===== 항해 일지 / About ===== -->
-<section id="log" class="border-t hairline py-24 md:py-32 scroll-mt-24">
+<section id="log" data-bg="#243A73" class="border-t hairline py-24 md:py-32 scroll-mt-24">
   <div class="mx-auto max-w-[1320px] px-5 sm:px-8 grid lg:grid-cols-[0.9fr_1.1fr] gap-14 lg:gap-20 items-center">
     <!-- Illustration slot: 탐험가 / 우주비행사 -->
     <div class="art-slot aspect-[4/5] w-full max-w-sm mx-auto lg:mx-0">
@@ -319,7 +324,7 @@
 </section>
 
 <!-- ===== 항로 / Process ===== -->
-<section id="route" class="mx-auto max-w-[1320px] px-5 sm:px-8 py-24 md:py-32 scroll-mt-24">
+<section id="route" data-bg="#3A5296" class="mx-auto max-w-[1320px] px-5 sm:px-8 py-24 md:py-32 scroll-mt-24">
   <div class="mb-14 md:mb-20">
     <div class="eyebrow mb-5">항로 · Flight Route</div>
     <h2 class="reveal font-display font-400 text-5xl sm:text-7xl leading-[0.95] tracking-tightest">
@@ -350,26 +355,26 @@
   </div>
 </section>
 
-<!-- ===== 교신 / Contact ===== -->
-<section id="signal" class="border-t hairline py-24 md:py-36 scroll-mt-24">
+<!-- ===== 교신 / Contact (여명 · 도착) ===== -->
+<section id="signal" data-bg="#F3E4C4" class="chapter-dawn border-t hairline py-24 md:py-36 scroll-mt-24">
   <div class="mx-auto max-w-[1100px] px-5 sm:px-8 text-center">
     <!-- Illustration slot: 교신 위성 / 신호 -->
-    <div class="art-slot w-24 h-24 rounded-full mx-auto mb-10">
+    <div class="art-slot w-24 h-24 rounded-full mx-auto mb-10" style="border-color:rgba(27,34,71,.25);color:#5B618A">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12a8 8 0 018-8M4 12a8 8 0 008 8"/><circle cx="12" cy="12" r="2.5"/><path d="M16 6l4-2M18 12h3"/></svg>
     </div>
-    <div class="eyebrow mb-8">교신 · Open a Channel</div>
-    <a href="mailto:hello@hyeseon.design" class="reveal group inline-block font-display font-400 tracking-tightest leading-[0.95] text-[13vw] md:text-[8rem]">
-      <span class="line-mask"><span class="line-inner block">다음 <span class="italic text-gold">좌표</span>에서</span></span>
+    <div class="eyebrow mb-8">교신 · 여명에 도착 · Open a Channel</div>
+    <a href="mailto:hello@hyeseon.design" class="reveal group inline-block font-display font-400 tracking-tightest leading-[0.95] text-[13vw] md:text-[8rem] text-dawn-strong">
+      <span class="line-mask"><span class="line-inner block">다음 <span class="italic text-dawn-accent">좌표</span>에서</span></span>
     </a>
-    <p class="reveal mt-8 text-base sm:text-lg text-stone max-w-md mx-auto">
+    <p class="reveal mt-8 text-base sm:text-lg text-dawn-muted max-w-md mx-auto">
       새로운 프로젝트, 협업, 혹은 가벼운 교신도 환영합니다. 24시간 안에 응답 신호를 보냅니다.
     </p>
     <div class="reveal mt-10 flex flex-col items-center gap-6">
-      <a href="mailto:hello@hyeseon.design" class="link-underline text-lg text-star">hello@hyeseon.design</a>
-      <div class="flex items-center gap-7 text-sm text-stone">
-        <a href="#" class="link-underline hover:text-star transition-colors">Behance</a>
-        <a href="#" class="link-underline hover:text-star transition-colors">Instagram</a>
-        <a href="#" class="link-underline hover:text-star transition-colors">LinkedIn</a>
+      <a href="mailto:hello@hyeseon.design" class="link-underline text-lg text-dawn-strong">hello@hyeseon.design</a>
+      <div class="flex items-center gap-7 text-sm text-dawn-muted">
+        <a href="#" class="link-underline hover:text-dawn-strong transition-colors">Behance</a>
+        <a href="#" class="link-underline hover:text-dawn-strong transition-colors">Instagram</a>
+        <a href="#" class="link-underline hover:text-dawn-strong transition-colors">LinkedIn</a>
       </div>
     </div>
   </div>
@@ -377,12 +382,12 @@
 
 </main>
 
-<!-- ===== Footer ===== -->
-<footer class="border-t hairline py-10">
-  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-stone">
-    <div class="font-display text-lg text-star">Hwang Hyeseon</div>
+<!-- ===== Footer (여명) ===== -->
+<footer data-bg="#EFDCB8" class="chapter-dawn border-t hairline py-10">
+  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-dawn-muted">
+    <div class="font-display text-lg text-dawn-strong">Hwang Hyeseon</div>
     <p>© 2026 황혜선. Voyage in progress.</p>
-    <a href="#top" class="link-underline flex items-center gap-2 hover:text-star transition-colors">
+    <a href="#top" class="link-underline flex items-center gap-2 hover:text-dawn-strong transition-colors">
       발사대로 복귀
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
     </a>
@@ -489,9 +494,108 @@ mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => 
   menuIcon.innerHTML = '<path d="M3 7h18M3 12h18M3 17h18"/>';
 }));
 
+/* ============ Three.js — stars + wireframe planet ============ */
+function showStarFallback(){ const f = document.getElementById('starsFallback'); if (f) f.classList.add('on'); }
+function initThree(){
+  const canvas = document.getElementById('space3d');
+  if (reduceMotion || !window.THREE || !canvas){ showStarFallback(); return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); }
+  catch(e){ showStarFallback(); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
+  camera.position.z = 60;
+
+  // Starfield
+  const N = 1500, pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++){
+    pos[i*3]   = (Math.random() - 0.5) * 420;
+    pos[i*3+1] = (Math.random() - 0.5) * 420;
+    pos[i*3+2] = (Math.random() - 0.5) * 420;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, sizeAttenuation: true, transparent: true, opacity: 0.9 });
+  const stars = new THREE.Points(g, starMat);
+  scene.add(stars);
+
+  // Ambient wireframe planet (decor)
+  const planetMat = new THREE.MeshBasicMaterial({ color: 0xD9B26A, wireframe: true, transparent: true, opacity: 0.4 });
+  const planet = new THREE.Mesh(new THREE.IcosahedronGeometry(11, 1), planetMat);
+  planet.position.set(26, 12, -14);
+  scene.add(planet);
+
+  let mx = 0, my = 0, tx = 0, ty = 0;
+  window.addEventListener('mousemove', e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; });
+  window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  window.__setStarOpacity = o => { starMat.opacity = 0.9 * o; planetMat.opacity = 0.4 * o; };
+
+  (function loop(){
+    tx += (mx - tx) * 0.04; ty += (my - ty) * 0.04;
+    camera.position.x = tx * 16; camera.position.y = -ty * 16; camera.lookAt(0, 0, 0);
+    stars.rotation.y += 0.0004; stars.rotation.x += 0.0001;
+    planet.rotation.y += 0.003; planet.rotation.x += 0.0012;
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* ============ Background color journey (dusk → dawn) ============ */
+function initBackground(){
+  const bg = document.getElementById('bgLayer');
+  const sections = Array.prototype.slice.call(document.querySelectorAll('[data-bg]'));
+  if (!bg || !sections.length) return;
+  bg.style.backgroundColor = sections[0].dataset.bg;
+
+  if (reduceMotion || !window.gsap){
+    // Static fallback: paint the light "dawn" sections so their dark text stays readable
+    sections.forEach(s => { if (s.classList.contains('chapter-dawn')) s.style.backgroundColor = s.dataset.bg; });
+    return;
+  }
+
+  sections.forEach(sec => {
+    gsap.to(bg, { backgroundColor: sec.dataset.bg, ease: 'none',
+      scrollTrigger: { trigger: sec, start: 'top 85%', end: 'top 35%', scrub: true } });
+  });
+
+  // Stars stay bright through the dark chapters, then fade out toward dawn
+  gsap.to({}, { ease: 'none',
+    scrollTrigger: { start: 0, end: 'max', scrub: true,
+      onUpdate: self => { if (window.__setStarOpacity){
+        const p = self.progress; window.__setStarOpacity(p < 0.78 ? 1 : Math.max(0, 1 - (p - 0.78) / 0.18));
+      } } } });
+}
+
+/* ============ Nav theme on dawn chapter ============ */
+function initNavTheme(){
+  if (!window.gsap) return;
+  const header = document.querySelector('header');
+  const signal = document.getElementById('signal');
+  const footer = document.querySelector('footer');
+  if (!header || !signal) return;
+  ScrollTrigger.create({
+    trigger: signal, start: 'top 64px', endTrigger: footer || signal, end: 'bottom 64px',
+    onToggle: self => header.classList.toggle('is-light', self.isActive)
+  });
+}
+
 /* ============ Boot ============ */
 window.addEventListener('load', () => {
-  runPreloader(() => { initMotion(); if (window.ScrollTrigger) ScrollTrigger.refresh(); });
+  initThree();
+  runPreloader(() => {
+    if (window.gsap && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+    initMotion();
+    initBackground();
+    initNavTheme();
+    if (window.ScrollTrigger) ScrollTrigger.refresh();
+  });
   initCursor();
 });
 </script>
