@@ -97,6 +97,16 @@
          class="absolute inset-0 w-full h-full object-cover object-[14%_bottom] md:object-bottom select-none pointer-events-none" />
   </picture>
 
+  <!-- 우측 여백 타이틀 -->
+  <div class="absolute inset-0 z-10 pointer-events-none">
+    <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-end">
+      <div class="hero-title text-right pt-24 md:pt-0">
+        <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-1 md:mb-2">Hwang Hyeseon</div>
+        <div class="font-hand font-700 leading-none text-star text-6xl sm:text-7xl md:text-8xl lg:text-9xl">Portfolio</div>
+      </div>
+    </div>
+  </div>
+
   <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-stone">
     Scroll
     <span class="h-8 w-px bg-white/25"></span>
@@ -378,7 +388,8 @@ function initMotion(){
   // Hero image intro
   gsap.set('.line-inner', { yPercent: 115 });
   gsap.from('#heroImg', { opacity: 0, scale: 1.06, duration: 1.6, ease: 'power3.out' });
-  gsap.from('.hero-cue', { opacity: 0, duration: 1, ease: 'power2.out', delay: 0.8 });
+  gsap.from('.hero-title', { opacity: 0, y: 30, duration: 1.2, ease: 'power3.out', delay: 0.5 });
+  gsap.from('.hero-cue', { opacity: 0, duration: 1, ease: 'power2.out', delay: 0.9 });
 
   // Line masks reveal on scroll
   gsap.utils.toArray('.line-mask').forEach(mask => {

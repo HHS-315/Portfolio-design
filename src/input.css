@@ -10,6 +10,17 @@
   font-display: swap;
   src: url('./fonts/pretendard-variable.woff2') format('woff2-variations');
 }
+/* Edu VIC WA NT Hand — handwriting accent (Latin) */
+@font-face {
+  font-family: 'Edu VIC WA NT Hand';
+  font-weight: 400; font-style: normal; font-display: swap;
+  src: url('./fonts/edu-hand-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Edu VIC WA NT Hand';
+  font-weight: 700; font-style: normal; font-display: swap;
+  src: url('./fonts/edu-hand-700.woff2') format('woff2');
+}
 
 @layer base {
   * { -webkit-tap-highlight-color: transparent; }
@@ -28,6 +39,7 @@
 
 @layer components {
   .font-display { font-family: 'Pretendard', system-ui, sans-serif; letter-spacing: -0.02em; }
+  .font-hand { font-family: 'Edu VIC WA NT Hand', 'Comic Sans MS', cursive; }
 
   .eyebrow {
     font-family: 'Pretendard', system-ui, sans-serif;
