@@ -97,11 +97,11 @@
          class="absolute inset-0 w-full h-full object-cover object-[14%_bottom] md:object-bottom select-none pointer-events-none" />
   </picture>
 
-  <!-- 우측 여백 타이틀 -->
+  <!-- 타이틀 (중앙 정렬) -->
   <div class="absolute inset-0 z-10 pointer-events-none">
-    <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-end">
-      <div class="hero-title text-right pt-24 md:pt-0">
-        <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-1 md:mb-2">Hwang Hyeseon</div>
+    <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-center">
+      <div class="hero-title text-center pt-20 md:pt-0">
+        <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-6 md:mb-8">Hwang Hyeseon</div>
         <div class="font-hand font-700 leading-none text-star text-6xl sm:text-7xl md:text-8xl lg:text-9xl">Portfolio</div>
       </div>
     </div>
@@ -495,12 +495,6 @@ function initThree(){
   const stars = new THREE.Points(g, starMat);
   scene.add(stars);
 
-  // Ambient wireframe planet (decor)
-  const planetMat = new THREE.MeshBasicMaterial({ color: 0xD9B26A, wireframe: true, transparent: true, opacity: 0.4 });
-  const planet = new THREE.Mesh(new THREE.IcosahedronGeometry(11, 1), planetMat);
-  planet.position.set(26, 12, -14);
-  scene.add(planet);
-
   let mx = 0, my = 0, tx = 0, ty = 0;
   window.addEventListener('mousemove', e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; });
   window.addEventListener('resize', () => {
@@ -508,13 +502,12 @@ function initThree(){
     renderer.setSize(innerWidth, innerHeight);
   });
 
-  window.__setStarOpacity = o => { starMat.opacity = 0.9 * o; planetMat.opacity = 0.4 * o; };
+  window.__setStarOpacity = o => { starMat.opacity = 0.9 * o; };
 
   (function loop(){
     tx += (mx - tx) * 0.04; ty += (my - ty) * 0.04;
     camera.position.x = tx * 16; camera.position.y = -ty * 16; camera.lookAt(0, 0, 0);
     stars.rotation.y += 0.0004; stars.rotation.x += 0.0001;
-    planet.rotation.y += 0.003; planet.rotation.x += 0.0012;
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   })();
