@@ -88,31 +88,30 @@
 
 <main id="top">
 
-<!-- ===== HERO / 발사 (투명 이미지 — 뒤로 별이 비침) ===== -->
-<section id="hero" data-bg="#05070E" class="relative min-h-[100svh] overflow-hidden">
-  <!-- 스크롤 시 회전하는 히어로 이미지 -->
-  <div class="hero-media absolute inset-0 will-change-transform">
-    <picture>
-      <source srcset="./assets/img/hero.webp" type="image/webp" />
-      <img id="heroImg" src="./assets/img/hero.png"
-           alt="로켓 옆에 선 인물 — 디자인 우주 여행"
-           class="absolute inset-0 w-full h-full object-cover object-[14%_bottom] md:object-bottom select-none pointer-events-none" />
-    </picture>
-  </div>
+<!-- ===== HERO / 발사 (깊이맵 시차 — 스크롤 시 씬 안으로) ===== -->
+<!-- 높이 200vh: 이 구간을 지나며 p(0→1)로 시차를 구동. stage는 sticky로 고정 -->
+<section id="hero" data-bg="#05070E" class="hero relative">
+  <div class="hero__stage">
+    <!-- 정적 폴백(LCP·JS off·WebGL 실패 시 표시). 투명 하늘로 뒤 별이 비침 -->
+    <img class="hero__fallback" src="./assets/img/hero.webp"
+         alt="로켓 옆에 선 인물 — 디자인 우주 여행" fetchpriority="high" />
+    <!-- WebGL 셰이더 캔버스: 텍스처 로드 완료 후 opacity 0→1 -->
+    <canvas class="hero__gl" id="heroGL" aria-hidden="true"></canvas>
 
-  <!-- 타이틀 (우측 배치 · 가운데 정렬) -->
-  <div class="absolute inset-0 z-10 pointer-events-none">
-    <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-end">
-      <div class="hero-title text-center pt-20 md:pt-0">
-        <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-6 md:mb-8">Hwang Hyeseon</div>
-        <div class="font-hand font-700 leading-none text-star text-6xl sm:text-7xl md:text-8xl lg:text-9xl">Portfolio</div>
+    <!-- 타이틀 (우측 배치 · 가운데 정렬 · 실제 h1) -->
+    <div class="absolute inset-0 z-10 pointer-events-none">
+      <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-end">
+        <div id="heroCopy" class="text-center pt-20 md:pt-0 will-change-transform">
+          <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-6 md:mb-8">Hwang Hyeseon</div>
+          <h1 class="font-hand font-700 leading-none text-star text-6xl sm:text-7xl md:text-8xl lg:text-9xl m-0">Portfolio</h1>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-stone">
-    Scroll
-    <span class="h-8 w-px bg-white/25"></span>
+    <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-stone">
+      Scroll
+      <span class="h-8 w-px bg-white/25"></span>
+    </div>
   </div>
 </section>
 
@@ -388,16 +387,8 @@ function initMotion(){
   gsap.to('#progress', { scaleX: 1, ease: 'none',
     scrollTrigger: { start: 0, end: () => document.body.scrollHeight - window.innerHeight, scrub: 0.3 } });
 
-  // Hero image intro + 3D depth rotation on scroll (fixed viewing angle, image turns)
+  // (Hero parallax is handled by initParallaxHero() — vanilla WebGL, not GSAP)
   gsap.set('.line-inner', { yPercent: 115 });
-  gsap.set('.hero-media', { transformPerspective: 1000, transformOrigin: '50% 50%', scale: 1.2 });
-  gsap.from('.hero-media', { opacity: 0, duration: 1.5, ease: 'power2.out' });
-  gsap.to('.hero-media', {
-    rotationY: 28, rotationX: 5, scale: 1.4, ease: 'none',
-    scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: 1 }
-  });
-  gsap.from('.hero-title', { opacity: 0, y: 30, duration: 1.2, ease: 'power3.out', delay: 0.5 });
-  gsap.from('.hero-cue', { opacity: 0, duration: 1, ease: 'power2.out', delay: 0.9 });
 
   // Line masks reveal on scroll
   gsap.utils.toArray('.line-mask').forEach(mask => {
@@ -561,9 +552,137 @@ function initNavTheme(){
   });
 }
 
+/* ============ Depth-parallax hero (vanilla WebGL, shader from depth-parallax-lab) ============ */
+function initParallaxHero(){
+  const section = document.getElementById('hero');
+  const canvas  = document.getElementById('heroGL');
+  const copy    = document.getElementById('heroCopy');
+  if (!section || !canvas) return;
+  // Reduced motion → skip shader entirely (static fallback img remains). WebGL absent → same.
+  if (reduceMotion || !window.THREE) return;
+
+  const mobile = window.matchMedia('(max-width: 767px)').matches;
+  const cfg = {
+    strength: mobile ? 0.02 : 0.035,
+    zoomMax:  mobile ? 1.06 : 1.12,
+    depthUrl: mobile ? './assets/img/hero_depth_m.png' : './assets/img/hero_depth.png',
+    dprCap:   mobile ? 1.5 : 2,
+  };
+
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true }); }
+  catch (e) { return; } // WebGL failed → fallback img stays visible
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, cfg.dprCap));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  const uniforms = {
+    uImage:{value:null}, uDepth:{value:null},
+    uOffset:{value:new THREE.Vector2(0,0)},
+    uStrength:{value:cfg.strength}, uFocus:{value:0.72}, uInvert:{value:0.0},
+    uSoften:{value:2.0}, uTexel:{value:new THREE.Vector2(1/1024,1/1024)},
+    uReady:{value:0.0}, uZoom:{value:1.0}, uAnchor:{value:new THREE.Vector2(0.27,0.62)},
+    uCoverScale:{value:new THREE.Vector2(1,1)}, uCoverOffset:{value:new THREE.Vector2(0,0)},
+  };
+
+  const material = new THREE.ShaderMaterial({
+    uniforms, transparent: true,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: [
+      'precision highp float;',
+      'varying vec2 vUv;',
+      'uniform sampler2D uImage; uniform sampler2D uDepth;',
+      'uniform vec2 uOffset; uniform float uStrength; uniform float uFocus;',
+      'uniform float uInvert; uniform float uSoften; uniform vec2 uTexel; uniform float uReady;',
+      'uniform float uZoom; uniform vec2 uAnchor; uniform vec2 uCoverScale; uniform vec2 uCoverOffset;',
+      'float depthAt(vec2 p){',
+      '  float d = 0.0;',
+      '  for(int y=-1;y<=1;y++){ for(int x=-1;x<=1;x++){',
+      '    vec2 o = vec2(float(x), float(y)) * uTexel * uSoften;',
+      '    d += texture2D(uDepth, clamp(p + o, 0.0, 1.0)).r;',
+      '  }}',
+      '  d /= 9.0; return mix(d, 1.0 - d, uInvert);',
+      '}',
+      'void main(){',
+      '  if(uReady < 0.5){ discard; }',
+      '  vec2 uv = vUv * uCoverScale + uCoverOffset;',   // object-fit: cover (left/bottom anchor)
+      '  uv = (uv - uAnchor) / uZoom + uAnchor;',          // zoom around the person
+      '  vec2 dir = uOffset * uStrength;',
+      '  vec2 p = uv;',
+      '  for(int i=0;i<12;i++){ p = uv + dir * (depthAt(p) - uFocus); }',
+      '  gl_FragColor = texture2D(uImage, clamp(p, 0.0, 1.0));',
+      '}',
+    ].join('\n'),
+  });
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+
+  let imgAspect = 2.0;
+  function updateCover(){
+    const cAsp = (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight);
+    uniforms.uCoverScale.value.set(Math.min(1, cAsp / imgAspect), Math.min(1, imgAspect / cAsp));
+    uniforms.uCoverOffset.value.set(0, 0); // left + bottom
+  }
+  function resize(){
+    renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, false);
+    updateCover();
+  }
+
+  // Texture loading — show canvas only when BOTH are ready
+  const loader = new THREE.TextureLoader();
+  let hasImg = false, hasDep = false;
+  function markReady(){ if (hasImg && hasDep){ uniforms.uReady.value = 1.0; canvas.style.opacity = '1'; } }
+  loader.load('./assets/img/hero.webp', t => {
+    t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false;
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.encoding = THREE.sRGBEncoding;
+    uniforms.uImage.value = t; imgAspect = t.image.width / t.image.height; hasImg = true; updateCover(); markReady();
+  });
+  loader.load(cfg.depthUrl, t => {
+    t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false;
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.encoding = THREE.LinearEncoding;
+    uniforms.uDepth.value = t; uniforms.uTexel.value.set(1 / t.image.width, 1 / t.image.height); hasDep = true; markReady();
+  });
+
+  window.addEventListener('resize', resize); resize();
+
+  // Scroll → target p (0..1). Render only in rAF, only while hero is on screen.
+  const easeOutQuad = x => 1 - (1 - x) * (1 - x);
+  let targetP = 0, curP = 0, running = false, rafId = 0, t0 = performance.now();
+  function computeTarget(){
+    const total = section.offsetHeight - window.innerHeight;
+    targetP = total > 0 ? Math.min(Math.max(-section.getBoundingClientRect().top, 0), total) / total : 0;
+  }
+  window.addEventListener('scroll', computeTarget, { passive: true });
+  computeTarget();
+
+  function frame(now){
+    const dt = Math.min((now - t0) / 1000, 0.1); t0 = now;
+    curP += (targetP - curP) * (1 - Math.pow(0.002, dt));
+    const p = curP;
+    uniforms.uOffset.value.set(p * 0.12, -0.25 + p * 1.0);        // x 0→0.12, y -0.25→0.75
+    uniforms.uZoom.value = 1 + easeOutQuad(p) * (cfg.zoomMax - 1); // 1→zoomMax, easeOutQuad
+    if (copy){
+      copy.style.transform = 'translateY(' + (-140 * p) + 'px)';
+      copy.style.opacity = String(p < 0.45 ? 1 : Math.max(0, 1 - (p - 0.45) / 0.55));
+    }
+    renderer.render(scene, camera);
+    rafId = requestAnimationFrame(frame);
+  }
+  function start(){ if (running) return; running = true; t0 = performance.now(); rafId = requestAnimationFrame(frame); }
+  function stop(){ running = false; cancelAnimationFrame(rafId); }
+
+  // Run the rAF loop only while the hero is in the viewport
+  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0 }).observe(section);
+
+  // WebGL context lost → revert to the static fallback image
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); uniforms.uReady.value = 0.0; canvas.style.opacity = '0'; });
+}
+
 /* ============ Boot ============ */
 window.addEventListener('load', () => {
   initThree();
+  initParallaxHero();
   runPreloader(() => {
     if (window.gsap && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
     initMotion();
