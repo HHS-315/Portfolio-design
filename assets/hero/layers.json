@@ -3,10 +3,10 @@
     3548,
     1774
   ],
-  "output_width": 1774,
-  "horizon_pct": 78.01,
+  "output_width": 3548,
+  "horizon_pct": 78.0,
   "rocket": {
-    "origin_x_pct": 15.68,
+    "origin_x_pct": 15.7,
     "origin_y_pct": 86.92
   },
   "person": {
