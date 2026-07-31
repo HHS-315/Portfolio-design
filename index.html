@@ -88,15 +88,18 @@
 
 <main id="top">
 
-<!-- ===== HERO / 발사 (깊이맵 시차 — 스크롤 시 씬 안으로) ===== -->
-<!-- 높이 200vh: 이 구간을 지나며 p(0→1)로 시차를 구동. stage는 sticky로 고정 -->
+<!-- ===== HERO / 발사 (레이어 시차 — 층별 이동/확대, 형태 왜곡 없음) ===== -->
+<!-- 높이 220vh: 이 구간을 지나며 p(0→1)로 시차를 구동. stage는 sticky로 고정 -->
 <section id="hero" data-bg="#05070E" class="hero relative">
   <div class="hero__stage">
-    <!-- 정적 폴백(LCP·JS off·WebGL 실패 시 표시). 투명 하늘로 뒤 별이 비침 -->
-    <img class="hero__fallback" src="./assets/img/hero.webp"
-         alt="로켓 옆에 선 인물 — 디자인 우주 여행" fetchpriority="high" />
-    <!-- WebGL 셰이더 캔버스: 텍스처 로드 완료 후 opacity 0→1 -->
-    <canvas class="hero__gl" id="heroGL" aria-hidden="true"></canvas>
+    <!-- 하늘 0층은 투명(페이지 배경 = 별이 비침). 지면→로켓→인물 순으로 겹침.
+         세 레이어는 3548×1774 동일 프레임 좌표계 → 겹치면 원본 복원.
+         셋 다 로드되기 전엔 .frame 숨김(부분 합성 방지). -->
+    <div class="frame" id="heroFrame">
+      <img id="lGround" class="hero-layer" src="./assets/hero/layer-1-ground.png" alt="" fetchpriority="high" decoding="async" />
+      <img id="lRocket" class="hero-layer" src="./assets/hero/layer-2-rocket.png" alt="" fetchpriority="high" decoding="async" />
+      <img id="lPerson" class="hero-layer" src="./assets/hero/layer-3-person.png" alt="로켓 옆에 선 인물 — 디자인 우주 여행" fetchpriority="high" decoding="async" />
+    </div>
 
     <!-- 타이틀 (우측 배치 · 가운데 정렬 · 실제 h1) -->
     <div class="absolute inset-0 z-10 pointer-events-none">
@@ -552,131 +555,62 @@ function initNavTheme(){
   });
 }
 
-/* ============ Depth-parallax hero (vanilla WebGL, shader from depth-parallax-lab) ============ */
+/* ============ Layer-parallax hero (CSS transform only, per assets/hero/SPEC.md) ============ */
 function initParallaxHero(){
   const section = document.getElementById('hero');
-  const canvas  = document.getElementById('heroGL');
+  const frame   = document.getElementById('heroFrame');
   const copy    = document.getElementById('heroCopy');
-  if (!section || !canvas) return;
-  // Reduced motion → skip shader entirely (static fallback img remains). WebGL absent → same.
-  if (reduceMotion || !window.THREE) return;
+  const gEl = document.getElementById('lGround');
+  const rEl = document.getElementById('lRocket');
+  const pEl = document.getElementById('lPerson');
+  if (!section || !frame || !gEl || !rEl || !pEl) return;
 
-  const mobile = window.matchMedia('(max-width: 767px)').matches;
-  const cfg = {
-    strength: mobile ? 0.02 : 0.035,
-    zoomMax:  mobile ? 1.06 : 1.12,
-    depthUrl: mobile ? './assets/img/hero_depth_m.png' : './assets/img/hero_depth.png',
-    dprCap:   mobile ? 1.5 : 2,
-  };
-
-  let renderer;
-  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true }); }
-  catch (e) { return; } // WebGL failed → fallback img stays visible
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, cfg.dprCap));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
-  const uniforms = {
-    uImage:{value:null}, uDepth:{value:null},
-    uOffset:{value:new THREE.Vector2(0,0)},
-    uStrength:{value:cfg.strength}, uFocus:{value:0.72}, uInvert:{value:0.0},
-    uSoften:{value:2.0}, uTexel:{value:new THREE.Vector2(1/1024,1/1024)},
-    uReady:{value:0.0}, uZoom:{value:1.0}, uAnchor:{value:new THREE.Vector2(0.27,0.62)},
-    uCoverScale:{value:new THREE.Vector2(1,1)}, uCoverOffset:{value:new THREE.Vector2(0,0)},
-  };
-
-  const material = new THREE.ShaderMaterial({
-    uniforms, transparent: true,
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: [
-      'precision highp float;',
-      'varying vec2 vUv;',
-      'uniform sampler2D uImage; uniform sampler2D uDepth;',
-      'uniform vec2 uOffset; uniform float uStrength; uniform float uFocus;',
-      'uniform float uInvert; uniform float uSoften; uniform vec2 uTexel; uniform float uReady;',
-      'uniform float uZoom; uniform vec2 uAnchor; uniform vec2 uCoverScale; uniform vec2 uCoverOffset;',
-      'float depthAt(vec2 p){',
-      '  float d = 0.0;',
-      '  for(int y=-1;y<=1;y++){ for(int x=-1;x<=1;x++){',
-      '    vec2 o = vec2(float(x), float(y)) * uTexel * uSoften;',
-      '    d += texture2D(uDepth, clamp(p + o, 0.0, 1.0)).r;',
-      '  }}',
-      '  d /= 9.0; return mix(d, 1.0 - d, uInvert);',
-      '}',
-      'void main(){',
-      '  if(uReady < 0.5){ discard; }',
-      '  vec2 uv = vUv * uCoverScale + uCoverOffset;',   // object-fit: cover (left/bottom anchor)
-      '  uv = (uv - uAnchor) / uZoom + uAnchor;',          // zoom around the person
-      '  vec2 dir = uOffset * uStrength;',
-      '  vec2 p = uv;',
-      '  for(int i=0;i<12;i++){ p = uv + dir * (depthAt(p) - uFocus); }',
-      '  gl_FragColor = texture2D(uImage, clamp(p, 0.0, 1.0));',
-      '}',
-    ].join('\n'),
-  });
-  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
-
-  let imgAspect = 2.0;
-  function updateCover(){
-    const cAsp = (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight);
-    uniforms.uCoverScale.value.set(Math.min(1, cAsp / imgAspect), Math.min(1, imgAspect / cAsp));
-    uniforms.uCoverOffset.value.set(0, 0); // left + bottom
-  }
-  function resize(){
-    renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, false);
-    updateCover();
-  }
-
-  // Texture loading — show canvas only when BOTH are ready
-  const loader = new THREE.TextureLoader();
-  let hasImg = false, hasDep = false;
-  function markReady(){ if (hasImg && hasDep){ uniforms.uReady.value = 1.0; canvas.style.opacity = '1'; } }
-  loader.load('./assets/img/hero.webp', t => {
-    t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false;
-    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.encoding = THREE.sRGBEncoding;
-    uniforms.uImage.value = t; imgAspect = t.image.width / t.image.height; hasImg = true; updateCover(); markReady();
-  });
-  loader.load(cfg.depthUrl, t => {
-    t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false;
-    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.encoding = THREE.LinearEncoding;
-    uniforms.uDepth.value = t; uniforms.uTexel.value.set(1 / t.image.width, 1 / t.image.height); hasDep = true; markReady();
+  // Show the frame only once all three layers have settled (load or error) — no partial composite
+  const layers = [gEl, rEl, pEl];
+  let settled = 0;
+  const onSettle = () => { if (++settled >= layers.length) frame.classList.add('ready'); };
+  layers.forEach(im => {
+    if (im.complete && im.naturalWidth) onSettle();
+    else { im.addEventListener('load', onSettle, { once: true }); im.addEventListener('error', onSettle, { once: true }); }
   });
 
-  window.addEventListener('resize', resize); resize();
+  // Reduced motion → no transforms at all (layers sit stacked = the original illustration)
+  if (reduceMotion) return;
 
-  // Scroll → target p (0..1). Render only in rAF, only while hero is on screen.
-  const easeOutQuad = x => 1 - (1 - x) * (1 - x);
-  let targetP = 0, curP = 0, running = false, rafId = 0, t0 = performance.now();
+  const smooth = x => x * x * (3 - 2 * x); // smoothstep
+  let target = 0, shown = 0, running = false, raf = 0, t0 = performance.now();
+
   function computeTarget(){
     const total = section.offsetHeight - window.innerHeight;
-    targetP = total > 0 ? Math.min(Math.max(-section.getBoundingClientRect().top, 0), total) / total : 0;
+    target = total > 0 ? Math.min(Math.max(-section.getBoundingClientRect().top, 0), total) / total : 0;
   }
   window.addEventListener('scroll', computeTarget, { passive: true });
+  window.addEventListener('resize', computeTarget);
   computeTarget();
 
-  function frame(now){
-    const dt = Math.min((now - t0) / 1000, 0.1); t0 = now;
-    curP += (targetP - curP) * (1 - Math.pow(0.002, dt));
-    const p = curP;
-    uniforms.uOffset.value.set(p * 0.12, -0.25 + p * 1.0);        // x 0→0.12, y -0.25→0.75
-    uniforms.uZoom.value = 1 + easeOutQuad(p) * (cfg.zoomMax - 1); // 1→zoomMax, easeOutQuad
+  function apply(p){
+    const s = smooth(p);
+    // 이동량은 p에 선형, 확대량은 smoothstep(p). 이동 대소: 인물 > 로켓 > 지면
+    gEl.style.transform = 'translate(' + (-1.5 * p) + '%, 0%) scale(' + (1 + 0.10 * s) + ')';
+    rEl.style.transform = 'translate(' + (-0.5 * p) + '%, ' + (1.0 * p) + '%) scale(' + (1 + 0.02 * s) + ')';
+    pEl.style.transform = 'translate(' + (-1.2 * p) + '%, ' + (2.4 * p) + '%) scale(' + (1 + 0.05 * s) + ')';
     if (copy){
       copy.style.transform = 'translateY(' + (-140 * p) + 'px)';
       copy.style.opacity = String(p < 0.45 ? 1 : Math.max(0, 1 - (p - 0.45) / 0.55));
     }
-    renderer.render(scene, camera);
-    rafId = requestAnimationFrame(frame);
   }
-  function start(){ if (running) return; running = true; t0 = performance.now(); rafId = requestAnimationFrame(frame); }
-  function stop(){ running = false; cancelAnimationFrame(rafId); }
+  function frameLoop(now){
+    const dt = Math.min((now - t0) / 1000, 0.1); t0 = now;
+    shown += (target - shown) * (1 - Math.pow(0.002, dt));
+    apply(shown);
+    raf = requestAnimationFrame(frameLoop);
+  }
+  // will-change: transform 은 히어로가 화면에 있는 동안에만 (SPEC 선명도)
+  function start(){ if (running) return; running = true; layers.forEach(im => im.style.willChange = 'transform'); t0 = performance.now(); raf = requestAnimationFrame(frameLoop); }
+  function stop(){ running = false; cancelAnimationFrame(raf); layers.forEach(im => im.style.willChange = 'auto'); }
 
-  // Run the rAF loop only while the hero is in the viewport
+  // rAF 는 히어로가 뷰포트에 있을 때만
   new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0 }).observe(section);
-
-  // WebGL context lost → revert to the static fallback image
-  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); uniforms.uReady.value = 0.0; canvas.style.opacity = '0'; });
 }
 
 /* ============ Boot ============ */

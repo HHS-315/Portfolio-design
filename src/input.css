@@ -41,25 +41,31 @@
   .font-display { font-family: 'Pretendard', system-ui, sans-serif; letter-spacing: -0.02em; }
   .font-hand { font-family: 'Edu VIC WA NT Hand', 'Comic Sans MS', cursive; }
 
-  /* ===== Depth-parallax hero ===== */
-  .hero { height: 200vh; }
-  .hero__stage {
-    position: sticky; top: 0; height: 100svh; overflow: hidden;
+  /* ===== Layer-parallax hero (CSS transform only) ===== */
+  .hero { height: 220vh; }
+  .hero__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+
+  /* 원본 비율(3548:1774) 유지. object-fit 쓰지 않음 — transform-origin %가 어긋남.
+     left:0 → 세로 화면에서 오른쪽으로 넘쳐 왼쪽(로켓·인물)이 항상 남음. */
+  .frame {
+    position: absolute; top: 50%; left: 0;
+    width: max(100%, calc(100svh * 3548 / 1774));
+    aspect-ratio: 3548 / 1774;
+    transform: translateY(-50%);
+    opacity: 0;                 /* 세 레이어 로드 완료 시 .ready 로 표시 */
+    transition: opacity .4s ease;
   }
-  .hero__fallback, .hero__gl {
+  .frame.ready { opacity: 1; }
+  .frame > .hero-layer {
     position: absolute; inset: 0; width: 100%; height: 100%;
-    pointer-events: none; user-select: none;
+    pointer-events: none; user-select: none; -webkit-user-drag: none;
+    backface-visibility: hidden;
+    /* image-rendering 은 건드리지 않음 (선명도) */
   }
-  .hero__fallback {
-    object-fit: cover;
-    object-position: left bottom; /* 인물·로켓이 있는 왼쪽을 항상 유지 */
-    -webkit-user-drag: none;
-  }
-  .hero__gl {
-    opacity: 0;                 /* 텍스처 로드 완료 시 JS가 1로 */
-    transition: opacity .3s ease;
-    will-change: opacity;
-  }
+  /* transform-origin: 지면=지평선, 로켓·인물=접지점 (layers.json 값) */
+  #lGround { transform-origin: 50% 78%; }
+  #lRocket { transform-origin: 15.7% 86.92%; }
+  #lPerson { transform-origin: 27.11% 92.67%; }
 
   .eyebrow {
     font-family: 'Pretendard', system-ui, sans-serif;
