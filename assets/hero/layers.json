@@ -1,0 +1,16 @@
+{
+  "source": [
+    3548,
+    1774
+  ],
+  "output_width": 1774,
+  "horizon_pct": 78.01,
+  "rocket": {
+    "origin_x_pct": 15.68,
+    "origin_y_pct": 86.92
+  },
+  "person": {
+    "origin_x_pct": 27.11,
+    "origin_y_pct": 92.67
+  }
+}
