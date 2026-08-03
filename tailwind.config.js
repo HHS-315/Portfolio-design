@@ -4,16 +4,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        void:    '#05070E', // deepest space
-        space:   '#080B16', // page background
-        surface: '#111726', // lifted panel
-        star:    '#ECE9E2', // primary text (warm white)
-        stone:   '#878EA6', // muted secondary text
-        gold:    '#D9B26A', // restrained luxury accent
-        // subtle per-planet tints
-        aura:    '#6FB6B0', // UX/UI planet (teal)
-        nebula:  '#9B8CE0', // AI graphic planet (violet)
-        ember:   '#E0A15A', // vibe coding planet (amber)
+        paper:  '#F4F2EC', // warm off-white page background
+        panel:  '#FBFAF6', // lifted card / surface
+        ink:    '#1A1815', // primary text (near-black)
+        muted:  '#6B655C', // secondary text
+        faint:  '#9A9488', // tertiary / captions
+        gold:   '#A9793A', // restrained accent
+        // per-discipline accents (tuned for a light background)
+        ux:     '#2F7D6B', // UX/UI (teal)
+        ai:     '#6E52C7', // AI 캐릭터 · 그래픽 (violet)
+        vibe:   '#C26A24', // 바이브코딩 (amber)
       },
       fontFamily: {
         display: ['Pretendard', 'system-ui', 'sans-serif'],

@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>HWANG HYESEON — 디자인 우주 여행 포트폴리오</title>
-<meta name="description" content="UX/UI · AI 그래픽 디자인 · 바이브코딩. 세 개의 행성을 항해하는 디자이너 황혜선의 우주 여행 포트폴리오." />
-<meta name="theme-color" content="#080B16" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B16'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23D9B26A' stroke-width='2'/%3E%3Cellipse cx='16' cy='16' rx='13' ry='4.5' fill='none' stroke='%23D9B26A' stroke-width='1.5' transform='rotate(-20 16 16)'/%3E%3C/svg%3E" />
+<title>황혜선 — UX/UI · AI 캐릭터 · 바이브코딩 포트폴리오</title>
+<meta name="description" content="UX/UI 디자인, AI 캐릭터·그래픽, 바이브코딩. 경험을 설계하고 AI로 그리고 코드로 만드는 디자이너 황혜선의 포트폴리오." />
+<meta name="theme-color" content="#F4F2EC" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231A1815'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='18' fill='%23F4F2EC' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E" />
 
 <!-- Social preview -->
-<meta property="og:title" content="HWANG HYESEON — 디자인 우주 여행 포트폴리오" />
-<meta property="og:description" content="세 개의 행성(UX/UI · AI 그래픽 · 바이브코딩)을 항해하는 디자이너 포트폴리오" />
+<meta property="og:title" content="황혜선 — UX/UI · AI 캐릭터 · 바이브코딩 포트폴리오" />
+<meta property="og:description" content="경험을 설계하고, AI로 그리고, 코드로 만듭니다." />
 <meta property="og:type" content="website" />
 
 <!-- Compiled styles (Tailwind + custom, self-hosted; Pretendard bundled locally) -->
@@ -19,345 +19,324 @@
 <!-- GSAP (self-hosted) -->
 <script defer src="./assets/js/gsap.min.js"></script>
 <script defer src="./assets/js/ScrollTrigger.min.js"></script>
-<!-- Global WebGL background shader ("Mesh drift", self-hosted) -->
-<script defer src="./assets/js/shader-bg.js"></script>
 </head>
-<body class="text-star">
-
-<!-- ===== Background journey layers ===== -->
-<div id="bgLayer" aria-hidden="true"></div>
-<canvas id="shaderBg" aria-hidden="true"></canvas>
-<div class="nebula" aria-hidden="true"></div>
-<canvas id="space3d" aria-hidden="true"></canvas>
-<div class="stars-fallback" id="starsFallback" aria-hidden="true"></div>
+<body>
 
 <!-- ===== Mission progress bar ===== -->
-<div class="fixed top-0 inset-x-0 z-[950] h-[3px] bg-transparent">
-  <div id="progress" class="h-full bg-gold origin-left" style="transform:scaleX(0)"></div>
+<div class="fixed top-0 inset-x-0 z-[950] h-[2px] bg-transparent">
+  <div id="progress" class="h-full bg-ink origin-left" style="transform:scaleX(0)"></div>
 </div>
 
 <!-- ===== Custom cursor ===== -->
 <div class="cursor-ring" id="cursorRing"></div>
 
-<!-- ===== Preloader (heleonic-style percentage counter) ===== -->
-<div id="preloader" class="fixed inset-0 z-[10000] bg-[#05070E] flex flex-col justify-between p-[7vw] md:p-[4vw]">
+<!-- ===== Preloader (percentage counter) ===== -->
+<div id="preloader" class="fixed inset-0 z-[10000] bg-paper flex flex-col justify-between p-[7vw] md:p-[4vw]">
   <div class="flex items-start justify-between">
-    <div class="eyebrow text-stone">Hwang Hyeseon</div>
-    <div class="eyebrow text-stone hidden sm:block">Design Voyage · 2026</div>
+    <div class="eyebrow text-muted">Hwang Hyeseon</div>
+    <div class="eyebrow text-muted hidden sm:block">Portfolio · 2026</div>
   </div>
   <div class="flex items-end justify-between gap-4">
-    <div class="font-display font-500 leading-[0.78] text-star text-[26vw] md:text-[17vw]">
-      <span id="preCount">0</span><span class="text-stone align-top text-[9vw] md:text-[5vw]">%</span>
+    <div class="font-display font-500 leading-[0.78] text-ink text-[26vw] md:text-[17vw]">
+      <span id="preCount">0</span><span class="text-faint align-top text-[9vw] md:text-[5vw]">%</span>
     </div>
-    <div class="eyebrow text-stone mb-3 hidden sm:block">Loading</div>
+    <div class="eyebrow text-muted mb-3 hidden sm:block">Loading</div>
   </div>
-  <div class="h-px w-full bg-white/12"><div id="preBar" class="h-full w-0 bg-gold"></div></div>
+  <div class="h-px w-full bg-ink/10"><div id="preBar" class="h-full w-0 bg-ink"></div></div>
 </div>
 
-<!-- ===== Content wrapper (above starfield) ===== -->
-<div class="relative z-10">
-
 <!-- ===== Nav ===== -->
-<header class="fixed top-0 inset-x-0 z-[900] bg-space/70 backdrop-blur-md border-b hairline">
+<header class="site-nav fixed top-0 inset-x-0 z-[900]">
   <nav class="mx-auto max-w-[1320px] px-5 sm:px-8 h-16 md:h-20 flex items-center justify-between">
-    <a href="#top" class="font-display text-xl md:text-2xl tracking-tight flex items-center gap-2">
-      <svg width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="#D9B26A" stroke-width="2"><circle cx="16" cy="16" r="7"/><ellipse cx="16" cy="16" rx="13" ry="4.5" transform="rotate(-20 16 16)" stroke-width="1.5"/></svg>
-      Hwang Hyeseon
-    </a>
-    <ul class="hidden md:flex items-center gap-9 text-sm text-stone">
-      <li><a href="#planets" class="link-underline hover:text-star transition-colors">행성</a></li>
-      <li><a href="#log"     class="link-underline hover:text-star transition-colors">항해일지</a></li>
-      <li><a href="#route"   class="link-underline hover:text-star transition-colors">항로</a></li>
-      <li><a href="#signal"  class="link-underline hover:text-star transition-colors">교신</a></li>
+    <a href="#top" class="font-display font-600 text-xl md:text-2xl tracking-tight">Hwang Hyeseon</a>
+    <ul class="hidden md:flex items-center gap-9 text-sm text-muted">
+      <li><a href="#work"    class="link-underline hover:text-ink transition-colors">작업</a></li>
+      <li><a href="#about"   class="link-underline hover:text-ink transition-colors">소개</a></li>
+      <li><a href="#process" class="link-underline hover:text-ink transition-colors">과정</a></li>
+      <li><a href="#contact" class="link-underline hover:text-ink transition-colors">연락</a></li>
     </ul>
-    <a href="#signal" class="hidden md:inline-block text-sm border hairline rounded-full px-5 py-2 hover:bg-gold hover:text-space hover:border-gold transition-colors duration-500">
-      교신하기
+    <a href="#contact" class="hidden md:inline-block text-sm rounded-full bg-ink text-paper px-5 py-2 hover:bg-ink/85 transition-colors duration-300">
+      연락하기
     </a>
     <button id="menuBtn" class="md:hidden -mr-1 p-2" aria-label="메뉴 열기" aria-expanded="false">
-      <svg id="menuIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ECE9E2" stroke-width="1.5"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+      <svg id="menuIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A1815" stroke-width="1.5"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
     </button>
   </nav>
-  <div id="mobileMenu" class="md:hidden hidden border-t hairline bg-space">
+  <div id="mobileMenu" class="md:hidden hidden border-t hairline bg-paper">
     <ul class="px-5 py-2 text-lg font-display">
-      <li><a href="#planets" class="block py-3 border-b hairline">행성</a></li>
-      <li><a href="#log"     class="block py-3 border-b hairline">항해일지</a></li>
-      <li><a href="#route"   class="block py-3 border-b hairline">항로</a></li>
-      <li><a href="#signal"  class="block py-3">교신</a></li>
+      <li><a href="#work"    class="block py-3 border-b hairline">작업</a></li>
+      <li><a href="#about"   class="block py-3 border-b hairline">소개</a></li>
+      <li><a href="#process" class="block py-3 border-b hairline">과정</a></li>
+      <li><a href="#contact" class="block py-3">연락</a></li>
     </ul>
   </div>
 </header>
 
 <main id="top">
 
-<!-- ===== HERO / 발사 (레이어 시차 — 층별 이동/확대, 형태 왜곡 없음) ===== -->
-<!-- 높이 220vh: 이 구간을 지나며 p(0→1)로 시차를 구동. stage는 sticky로 고정 -->
-<section id="hero" data-bg="#05070E" class="hero relative">
-  <div class="hero__stage">
-    <!-- 하늘 0층은 투명(페이지 배경 = 별이 비침). 지면→로켓→인물 순으로 겹침.
-         세 레이어는 3548×1774 동일 프레임 좌표계 → 겹치면 원본 복원.
-         셋 다 로드되기 전엔 .frame 숨김(부분 합성 방지). -->
-    <div class="frame" id="heroFrame">
-      <img id="lGround" class="hero-layer" src="./assets/hero/layer-1-ground.png" alt="" fetchpriority="high" decoding="async" />
-      <img id="lRocket" class="hero-layer" src="./assets/hero/layer-2-rocket.png" alt="" fetchpriority="high" decoding="async" />
-      <img id="lPerson" class="hero-layer" src="./assets/hero/layer-3-person.png" alt="로켓 옆에 선 인물 — 디자인 우주 여행" fetchpriority="high" decoding="async" />
-    </div>
-
-    <!-- 타이틀 (우측 배치 · 가운데 정렬 · 실제 h1) -->
-    <div class="absolute inset-0 z-10 pointer-events-none">
-      <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-end">
-        <div id="heroCopy" class="text-center pt-20 md:pt-0 will-change-transform">
-          <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-6 md:mb-8">Hwang Hyeseon</div>
-          <h1 class="font-hand font-700 leading-none text-star text-6xl sm:text-7xl md:text-8xl lg:text-9xl m-0">Portfolio</h1>
-        </div>
-      </div>
-    </div>
-
-    <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-stone">
-      Scroll
-      <span class="h-8 w-px bg-white/25"></span>
+<!-- ===== HERO ===== -->
+<section class="min-h-[92vh] flex items-center pt-28 pb-20">
+  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 w-full">
+    <div class="eyebrow reveal mb-8">UX·UI 디자인 · AI 캐릭터 · 바이브코딩</div>
+    <h1 class="font-display font-500 tracking-tightest text-ink text-[15vw] sm:text-[11vw] md:text-[8.5rem] leading-[0.9]">
+      <span class="line-mask"><span class="line-inner block">경험을 설계하고,</span></span>
+      <span class="line-mask"><span class="line-inner block">AI로 <span class="text-ai">그리고</span>,</span></span>
+      <span class="line-mask"><span class="line-inner block">코드로 <span class="font-700 text-vibe">만듭니다</span></span></span>
+    </h1>
+    <p class="reveal mt-9 max-w-xl text-lg md:text-xl leading-relaxed text-muted">
+      안녕하세요, 디자이너 <span class="text-ink font-500">황혜선</span>입니다.
+      사용자의 문제를 리서치하고, 생성형 AI로 시각 언어를 만들고, 직접 코드로
+      완성합니다. 아이디어와 구현 사이의 거리를 좁힙니다.
+    </p>
+    <div class="reveal mt-11 flex flex-wrap items-center gap-4">
+      <a href="#work" class="inline-flex items-center gap-2 rounded-full bg-ink text-paper px-6 py-3 text-sm font-500 hover:bg-ink/85 transition-colors">
+        작업 보기
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a href="#contact" class="inline-flex items-center gap-2 rounded-full border border-ink/25 px-6 py-3 text-sm hover:border-ink/60 transition-colors">
+        연락하기
+      </a>
     </div>
   </div>
 </section>
 
-<!-- ===== Coordinates marquee ===== -->
+<!-- ===== Marquee ===== -->
 <div class="border-y hairline py-5 overflow-hidden select-none">
-  <div class="marquee items-center font-display italic text-2xl md:text-4xl text-star/80">
+  <div class="marquee items-center font-display italic text-2xl md:text-4xl text-ink/70">
     <span class="flex items-center">
-      <span class="px-8">DEPARTURE</span><span class="text-gold not-italic">✦</span>
-      <span class="px-8">UX/UI GALAXY</span><span class="text-gold not-italic">✦</span>
-      <span class="px-8">AI NEBULA</span><span class="text-gold not-italic">✦</span>
-      <span class="px-8">VIBE CODING SYSTEM</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">UX/UI DESIGN</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">AI CHARACTER</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">VIBE CODING</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">PRODUCT DESIGN</span><span class="text-gold not-italic">✦</span>
     </span>
     <span class="flex items-center" aria-hidden="true">
-      <span class="px-8">DEPARTURE</span><span class="text-gold not-italic">✦</span>
-      <span class="px-8">UX/UI GALAXY</span><span class="text-gold not-italic">✦</span>
-      <span class="px-8">AI NEBULA</span><span class="text-gold not-italic">✦</span>
-      <span class="px-8">VIBE CODING SYSTEM</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">UX/UI DESIGN</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">AI CHARACTER</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">VIBE CODING</span><span class="text-gold not-italic">✦</span>
+      <span class="px-8">PRODUCT DESIGN</span><span class="text-gold not-italic">✦</span>
     </span>
   </div>
 </div>
 
-<!-- ===== Voyage log / Stats ===== -->
-<section data-bg="#080E2A" class="mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28">
-  <div class="eyebrow reveal mb-10">항해 기록 · Voyage Log</div>
+<!-- ===== Stats ===== -->
+<section class="mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28">
   <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 hairline border-t border-l md:border-l-0 md:border-t-0">
-    <div class="stat reveal p-6 md:p-8">
-      <div class="font-display text-5xl md:text-6xl font-400"><span data-count="60">0</span>+</div>
-      <div class="eyebrow mt-3 text-stone">탐사한 행성</div>
+    <div class="reveal p-6 md:p-8">
+      <div class="font-display text-5xl md:text-6xl font-400"><span data-count="40">0</span>+</div>
+      <div class="eyebrow mt-3 text-muted">프로젝트</div>
     </div>
-    <div class="stat reveal p-6 md:p-8">
-      <div class="font-display text-5xl md:text-6xl font-400" data-count="6">0</div>
-      <div class="eyebrow mt-3 text-stone">항해 연차</div>
+    <div class="reveal p-6 md:p-8">
+      <div class="font-display text-5xl md:text-6xl font-400"><span data-count="6">0</span></div>
+      <div class="eyebrow mt-3 text-muted">년차</div>
     </div>
-    <div class="stat reveal p-6 md:p-8">
-      <div class="font-display text-5xl md:text-6xl font-400" data-count="24">0</div>
-      <div class="eyebrow mt-3 text-stone">교신한 팀</div>
+    <div class="reveal p-6 md:p-8">
+      <div class="font-display text-5xl md:text-6xl font-400"><span data-count="24">0</span></div>
+      <div class="eyebrow mt-3 text-muted">협업 팀</div>
     </div>
-    <div class="stat reveal p-6 md:p-8">
+    <div class="reveal p-6 md:p-8">
       <div class="font-display text-5xl md:text-6xl font-400"><span data-count="3">0</span></div>
-      <div class="eyebrow mt-3 text-stone">주요 행성계</div>
+      <div class="eyebrow mt-3 text-muted">전문 분야</div>
     </div>
   </div>
 </section>
 
-<!-- ===== PLANETS (분야별 행성 도착) ===== -->
-<section id="planets" class="scroll-mt-24">
+<!-- ===== WORK (3 disciplines) ===== -->
+<section id="work" class="scroll-mt-24">
   <div class="mx-auto max-w-[1320px] px-5 sm:px-8 pt-8 pb-4">
-    <div class="eyebrow reveal mb-4">The Planets</div>
+    <div class="eyebrow reveal mb-4">Selected Work</div>
     <h2 class="reveal font-display font-400 text-5xl sm:text-7xl leading-[0.95] tracking-tightest">
-      세 개의 행성<span class="italic text-gold">.</span>
+      세 가지 전문 분야<span class="text-gold">.</span>
     </h2>
-    <p class="reveal mt-5 max-w-lg text-stone">각 행성은 하나의 전문 분야입니다. 스크롤을 따라 차례로 도착합니다.</p>
+    <p class="reveal mt-5 max-w-lg text-muted">디자인 · AI 그래픽 · 코드. 한 사람 안에서 이어지는 세 가지 작업입니다.</p>
   </div>
 
-  <!-- ▸ PLANET 01 — UX/UI (AURA) -->
-  <div data-bg="#0A1440" class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-    <!-- Illustration slot: 행성 -->
-    <div class="planet-visual order-1">
-      <div class="art-slot planet-slot w-[72%] mx-auto" style="border-color:rgba(111,182,176,.45)">
+  <!-- ▸ 01 — UX/UI -->
+  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 py-16 md:py-24 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <div class="disc-visual order-1">
+      <div class="art-slot disc-slot w-full" style="border-color:rgba(47,125,107,.45)">
         <div>
-          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6FB6B0" stroke-width="1.2"><circle cx="12" cy="12" r="7"/><ellipse cx="12" cy="12" rx="11.5" ry="4" transform="rotate(-20 12 12)"/></svg>
-          <div class="art-slot__label" style="color:#6FB6B0">Planet 01</div>
-          <div class="art-slot__hint">일러스트 · UX/UI 행성 “AURA”</div>
+          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2F7D6B" stroke-width="1.3"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 18v3M16 18v3"/></svg>
+          <div class="art-slot__label" style="color:#2F7D6B">01 · UX/UI</div>
+          <div class="art-slot__hint">이미지 영역 · UX/UI 작업 대표 이미지</div>
         </div>
       </div>
     </div>
-    <div class="planet-copy order-2">
+    <div class="order-2">
       <div class="flex items-center gap-3 mb-5">
-        <span class="eyebrow" style="color:#6FB6B0">Planet 01 · 도착</span>
-        <span class="text-xs text-stone tracking-widest">AURA-Ⅰ · UX/UI SYSTEM</span>
+        <span class="eyebrow" style="color:#2F7D6B">01</span>
+        <span class="text-xs text-muted tracking-widest">UX/UI DESIGN</span>
       </div>
-      <h3 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1] tracking-tight">설계의 행성</h3>
-      <p class="reveal mt-6 max-w-md text-stone leading-relaxed">
-        유저 리서치, 정보 구조, 인터랙션, 디자인 시스템. 사람의 흐름을 관측하고
-        가장 자연스러운 항로를 설계하는 곳입니다.
+      <h3 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1] tracking-tight">UX/UI 디자인</h3>
+      <p class="reveal mt-6 max-w-md text-muted leading-relaxed">
+        유저 리서치, 정보 구조, 인터랙션, 디자인 시스템까지. 사람의 흐름을 관찰하고
+        가장 자연스러운 화면을 설계합니다.
       </p>
       <ul class="mt-9 border-t hairline">
         <li class="work-row reveal cursor-hover flex items-baseline justify-between gap-4 py-5 border-b hairline px-2 -mx-2">
-          <div><div class="font-display text-xl md:text-2xl">뉴로 뱅킹 앱</div><div class="text-sm text-stone mt-1">Z세대 모바일 뱅킹 리디자인</div></div>
-          <span class="eyebrow text-stone shrink-0">2025</span>
+          <div><div class="font-display text-xl md:text-2xl">뉴로 뱅킹 앱</div><div class="text-sm text-muted mt-1">Z세대 모바일 뱅킹 리디자인</div></div>
+          <span class="eyebrow text-muted shrink-0">2025</span>
         </li>
         <li class="work-row reveal cursor-hover flex items-baseline justify-between gap-4 py-5 border-b hairline px-2 -mx-2">
-          <div><div class="font-display text-xl md:text-2xl">커머스 대시보드</div><div class="text-sm text-stone mt-1">셀러용 데이터 대시보드 설계</div></div>
-          <span class="eyebrow text-stone shrink-0">2024</span>
+          <div><div class="font-display text-xl md:text-2xl">커머스 대시보드</div><div class="text-sm text-muted mt-1">셀러용 데이터 대시보드 설계</div></div>
+          <span class="eyebrow text-muted shrink-0">2024</span>
         </li>
       </ul>
     </div>
   </div>
 
-  <!-- ▸ PLANET 02 — AI 그래픽 (NEBULA) -->
-  <div data-bg="#111E54" class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-    <div class="planet-copy order-2 lg:order-1">
+  <!-- ▸ 02 — AI 캐릭터 · 그래픽 -->
+  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 py-16 md:py-24 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <div class="order-2 lg:order-1">
       <div class="flex items-center gap-3 mb-5">
-        <span class="eyebrow" style="color:#9B8CE0">Planet 02 · 도착</span>
-        <span class="text-xs text-stone tracking-widest">NEBULA-Ⅱ · AI GRAPHICS</span>
+        <span class="eyebrow" style="color:#6E52C7">02</span>
+        <span class="text-xs text-muted tracking-widest">AI CHARACTER · GRAPHICS</span>
       </div>
-      <h3 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1] tracking-tight">생성의 행성</h3>
-      <p class="reveal mt-6 max-w-md text-stone leading-relaxed">
-        생성형 AI로 무드보드부터 키비주얼까지. 상상을 빠르게 물질화하고
-        방향을 정제하는, 색과 형태가 태어나는 성운입니다.
+      <h3 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1] tracking-tight">AI 캐릭터 · 그래픽</h3>
+      <p class="reveal mt-6 max-w-md text-muted leading-relaxed">
+        생성형 AI로 캐릭터와 키비주얼을 만듭니다. 콘셉트부터 스타일 시트, 브랜드
+        아트워크까지 상상을 빠르게 시각화하고 방향을 정제합니다.
       </p>
       <ul class="mt-9 border-t hairline">
         <li class="work-row reveal cursor-hover flex items-baseline justify-between gap-4 py-5 border-b hairline px-2 -mx-2">
-          <div><div class="font-display text-xl md:text-2xl">플럭스 AI 키비주얼</div><div class="text-sm text-stone mt-1">생성형 AI 캠페인 비주얼 시리즈</div></div>
-          <span class="eyebrow text-stone shrink-0">2025</span>
+          <div><div class="font-display text-xl md:text-2xl">AI 캐릭터 시리즈</div><div class="text-sm text-muted mt-1">일관된 캐릭터 셋 · 스타일 시트</div></div>
+          <span class="eyebrow text-muted shrink-0">2025</span>
         </li>
         <li class="work-row reveal cursor-hover flex items-baseline justify-between gap-4 py-5 border-b hairline px-2 -mx-2">
-          <div><div class="font-display text-xl md:text-2xl">드림스케이프</div><div class="text-sm text-stone mt-1">초현실 브랜드 아트 컬렉션</div></div>
-          <span class="eyebrow text-stone shrink-0">2024</span>
+          <div><div class="font-display text-xl md:text-2xl">브랜드 키비주얼</div><div class="text-sm text-muted mt-1">생성형 AI 캠페인 아트 컬렉션</div></div>
+          <span class="eyebrow text-muted shrink-0">2024</span>
         </li>
       </ul>
     </div>
-    <!-- Illustration slot: 행성 -->
-    <div class="planet-visual order-1 lg:order-2">
-      <div class="art-slot planet-slot w-[72%] mx-auto" style="border-color:rgba(155,140,224,.45)">
+    <div class="disc-visual order-1 lg:order-2">
+      <div class="art-slot disc-slot w-full" style="border-color:rgba(110,82,199,.45)">
         <div>
-          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9B8CE0" stroke-width="1.2"><circle cx="12" cy="12" r="7"/><path d="M5 9c3 2 11 2 14 0M5 15c3-2 11-2 14 0"/></svg>
-          <div class="art-slot__label" style="color:#9B8CE0">Planet 02</div>
-          <div class="art-slot__hint">일러스트 · AI 그래픽 행성 “NEBULA”</div>
+          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#6E52C7" stroke-width="1.3"><circle cx="12" cy="9" r="4"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+          <div class="art-slot__label" style="color:#6E52C7">02 · AI</div>
+          <div class="art-slot__hint">이미지 영역 · AI 캐릭터 대표 이미지</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ▸ PLANET 03 — 바이브코딩 (EMBER) -->
-  <div data-bg="#1C2E66" class="planet mx-auto max-w-[1320px] px-5 sm:px-8 py-20 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-    <!-- Illustration slot: 행성 -->
-    <div class="planet-visual order-1">
-      <div class="art-slot planet-slot w-[72%] mx-auto" style="border-color:rgba(224,161,90,.45)">
+  <!-- ▸ 03 — 바이브 코딩 -->
+  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 py-16 md:py-24 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <div class="disc-visual order-1">
+      <div class="art-slot disc-slot w-full" style="border-color:rgba(194,106,36,.45)">
         <div>
-          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E0A15A" stroke-width="1.2"><circle cx="12" cy="12" r="7"/><path d="M9.5 9L7 12l2.5 3M14.5 9l2.5 3-2.5 3"/></svg>
-          <div class="art-slot__label" style="color:#E0A15A">Planet 03</div>
-          <div class="art-slot__hint">일러스트 · 바이브코딩 행성 “EMBER”</div>
+          <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C26A24" stroke-width="1.3"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4M13 5l-2 14"/></svg>
+          <div class="art-slot__label" style="color:#C26A24">03 · 바이브코딩</div>
+          <div class="art-slot__hint">이미지 영역 · 구현 작업 대표 이미지</div>
         </div>
       </div>
     </div>
-    <div class="planet-copy order-2">
+    <div class="order-2">
       <div class="flex items-center gap-3 mb-5">
-        <span class="eyebrow" style="color:#E0A15A">Planet 03 · 도착</span>
-        <span class="text-xs text-stone tracking-widest">EMBER-Ⅲ · VIBE CODING</span>
+        <span class="eyebrow" style="color:#C26A24">03</span>
+        <span class="text-xs text-muted tracking-widest">VIBE CODING</span>
       </div>
-      <h3 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1] tracking-tight">구현의 행성</h3>
-      <p class="reveal mt-6 max-w-md text-stone leading-relaxed">
-        AI 페어 코딩으로 디자인을 실제 동작하는 웹으로 착륙시킵니다.
-        아이디어가 코드로 타오르는, 구현의 대지입니다.
+      <h3 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1] tracking-tight">바이브 코딩</h3>
+      <p class="reveal mt-6 max-w-md text-muted leading-relaxed">
+        AI 페어 코딩으로 디자인을 실제 동작하는 웹으로 구현합니다. 아이디어를
+        곧바로 프로토타입으로 만들어 검증하고, 픽셀 완성도까지 챙깁니다.
       </p>
       <ul class="mt-9 border-t hairline">
         <li class="work-row reveal cursor-hover flex items-baseline justify-between gap-4 py-5 border-b hairline px-2 -mx-2">
-          <div><div class="font-display text-xl md:text-2xl">모션 랩 웹사이트</div><div class="text-sm text-stone mt-1">GSAP 인터랙티브 랜딩 구현</div></div>
-          <span class="eyebrow text-stone shrink-0">2024</span>
+          <div><div class="font-display text-xl md:text-2xl">인터랙티브 랜딩</div><div class="text-sm text-muted mt-1">GSAP 스크롤 인터랙션 구현</div></div>
+          <span class="eyebrow text-muted shrink-0">2024</span>
         </li>
         <li class="work-row reveal cursor-hover flex items-baseline justify-between gap-4 py-5 border-b hairline px-2 -mx-2">
-          <div><div class="font-display text-xl md:text-2xl">포트폴리오 엔진</div><div class="text-sm text-stone mt-1">코드 기반 포트폴리오 템플릿</div></div>
-          <span class="eyebrow text-stone shrink-0">2023</span>
+          <div><div class="font-display text-xl md:text-2xl">포트폴리오 엔진</div><div class="text-sm text-muted mt-1">코드 기반 포트폴리오 템플릿</div></div>
+          <span class="eyebrow text-muted shrink-0">2023</span>
         </li>
       </ul>
     </div>
   </div>
 </section>
 
-<!-- ===== 항해 일지 / About ===== -->
-<section id="log" data-bg="#243A73" class="border-t hairline py-24 md:py-32 scroll-mt-24">
+<!-- ===== About ===== -->
+<section id="about" class="border-t hairline py-24 md:py-32 scroll-mt-24">
   <div class="mx-auto max-w-[1320px] px-5 sm:px-8 grid lg:grid-cols-[0.9fr_1.1fr] gap-14 lg:gap-20 items-center">
-    <!-- Illustration slot: 탐험가 / 우주비행사 -->
     <div class="art-slot aspect-[4/5] w-full max-w-sm mx-auto lg:mx-0">
       <div>
         <svg class="mx-auto mb-3" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="10" r="5"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-        <div class="art-slot__label">일러스트 영역</div>
-        <div class="art-slot__hint">탐험가 / 우주비행사 초상 (세로 4:5)</div>
+        <div class="art-slot__label">이미지 영역</div>
+        <div class="art-slot__hint">프로필 사진 (세로 4:5)</div>
       </div>
     </div>
     <div>
-      <div class="eyebrow mb-6">항해 일지 · Captain's Log</div>
+      <div class="eyebrow mb-6">About</div>
       <h2 class="reveal font-display font-400 text-4xl sm:text-6xl leading-[1.05] tracking-tight">
-        아이디어를 <span class="italic text-gold">발견</span>하고<br />제품으로 착륙시키는 사람.
+        아이디어를 <span class="text-gold">발견</span>하고<br />제품으로 만드는 사람.
       </h2>
-      <p class="reveal mt-8 max-w-xl text-base sm:text-lg leading-relaxed text-stone">
+      <p class="reveal mt-8 max-w-xl text-base sm:text-lg leading-relaxed text-muted">
         저는 리서치부터 픽셀, 배포까지 전 과정을 아우르는 디자이너입니다.
-        사용자의 문제를 관측하고, AI 도구로 시각 언어를 실험하며, 코드로 직접
-        프로토타입을 만들어 검증합니다. 아이디어와 구현 사이의 거리를 좁히는 것이
-        제 항법입니다.
+        사용자의 문제를 관찰하고, AI 도구로 시각 언어를 실험하며, 코드로 직접
+        프로토타입을 만들어 검증합니다. 디자인과 개발 사이의 경계를 넘나드는 것이
+        제가 일하는 방식입니다.
       </p>
+      <div class="reveal mt-9 flex flex-wrap gap-2">
+        <span class="text-sm rounded-full border hairline px-4 py-1.5 text-muted">Figma</span>
+        <span class="text-sm rounded-full border hairline px-4 py-1.5 text-muted">디자인 시스템</span>
+        <span class="text-sm rounded-full border hairline px-4 py-1.5 text-muted">생성형 AI</span>
+        <span class="text-sm rounded-full border hairline px-4 py-1.5 text-muted">HTML · CSS · JS</span>
+        <span class="text-sm rounded-full border hairline px-4 py-1.5 text-muted">프로토타이핑</span>
+      </div>
       <div class="reveal mt-10 flex flex-wrap gap-x-8 gap-y-3">
-        <a href="#signal" class="link-underline text-sm text-gold">이력서 교신 요청 →</a>
-        <a href="#planets" class="link-underline text-sm text-stone">행성 다시 보기</a>
+        <a href="#contact" class="link-underline text-sm text-gold">이력서 요청 →</a>
+        <a href="#work" class="link-underline text-sm text-muted">작업 다시 보기</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== 항로 / Process ===== -->
-<section id="route" data-bg="#3A5296" class="mx-auto max-w-[1320px] px-5 sm:px-8 py-24 md:py-32 scroll-mt-24">
+<!-- ===== Process ===== -->
+<section id="process" class="mx-auto max-w-[1320px] px-5 sm:px-8 py-24 md:py-32 scroll-mt-24">
   <div class="mb-14 md:mb-20">
-    <div class="eyebrow mb-5">항로 · Flight Route</div>
+    <div class="eyebrow mb-5">Process</div>
     <h2 class="reveal font-display font-400 text-5xl sm:text-7xl leading-[0.95] tracking-tightest">
-      항해 절차<span class="italic text-gold">.</span>
+      일하는 방식<span class="text-gold">.</span>
     </h2>
   </div>
   <div class="grid md:grid-cols-2 gap-x-16 gap-y-12">
-    <div class="proc reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
+    <div class="reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
       <span class="font-display italic text-3xl text-gold">01</span>
-      <div><h3 class="font-display text-2xl mb-2">관측 <span class="text-stone text-base not-italic">/ 발견</span></h3>
-        <p class="text-sm text-stone leading-relaxed">문제와 사용자를 관측합니다. 리서치와 인터뷰로 진짜 좌표를 찾습니다.</p></div>
+      <div><h3 class="font-display text-2xl mb-2">리서치 <span class="text-muted text-base not-italic">/ 발견</span></h3>
+        <p class="text-sm text-muted leading-relaxed">문제와 사용자를 관찰합니다. 리서치와 인터뷰로 진짜 문제를 정의합니다.</p></div>
     </div>
-    <div class="proc reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
+    <div class="reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
       <span class="font-display italic text-3xl text-gold">02</span>
-      <div><h3 class="font-display text-2xl mb-2">항법 <span class="text-stone text-base not-italic">/ 실험</span></h3>
-        <p class="text-sm text-stone leading-relaxed">AI 그래픽으로 방향을 시각화하고 여러 항로를 시험 비행합니다.</p></div>
+      <div><h3 class="font-display text-2xl mb-2">디자인 <span class="text-muted text-base not-italic">/ 실험</span></h3>
+        <p class="text-sm text-muted leading-relaxed">AI 그래픽으로 방향을 시각화하고 여러 시안을 빠르게 실험합니다.</p></div>
     </div>
-    <div class="proc reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
+    <div class="reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
       <span class="font-display italic text-3xl text-gold">03</span>
-      <div><h3 class="font-display text-2xl mb-2">착륙 <span class="text-stone text-base not-italic">/ 구현</span></h3>
-        <p class="text-sm text-stone leading-relaxed">바이브코딩으로 실제 동작하는 프로토타입에 착륙시켜 검증합니다.</p></div>
+      <div><h3 class="font-display text-2xl mb-2">개발 <span class="text-muted text-base not-italic">/ 구현</span></h3>
+        <p class="text-sm text-muted leading-relaxed">바이브코딩으로 실제 동작하는 프로토타입을 만들어 검증합니다.</p></div>
     </div>
-    <div class="proc reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
+    <div class="reveal grid grid-cols-[auto_1fr] gap-6 pt-8 border-t hairline">
       <span class="font-display italic text-3xl text-gold">04</span>
-      <div><h3 class="font-display text-2xl mb-2">교신 <span class="text-stone text-base not-italic">/ 전달</span></h3>
-        <p class="text-sm text-stone leading-relaxed">개발팀과 교신하며 픽셀 완성도까지 챙겨 제품을 세상에 송신합니다.</p></div>
+      <div><h3 class="font-display text-2xl mb-2">전달 <span class="text-muted text-base not-italic">/ 협업</span></h3>
+        <p class="text-sm text-muted leading-relaxed">개발팀과 협업하며 픽셀 완성도까지 챙겨 제품을 세상에 내보냅니다.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ===== 교신 / Contact (여명 · 도착) ===== -->
-<section id="signal" data-bg="#0A1230" class="border-t hairline py-24 md:py-36 scroll-mt-24">
+<!-- ===== Contact ===== -->
+<section id="contact" class="border-t hairline py-24 md:py-36 scroll-mt-24">
   <div class="mx-auto max-w-[1100px] px-5 sm:px-8 text-center">
-    <!-- Illustration slot: 교신 위성 / 신호 -->
-    <div class="art-slot w-24 h-24 rounded-full mx-auto mb-10" style="border-color:rgba(236,233,226,.22);color:#878EA6">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12a8 8 0 018-8M4 12a8 8 0 008 8"/><circle cx="12" cy="12" r="2.5"/><path d="M16 6l4-2M18 12h3"/></svg>
-    </div>
-    <div class="eyebrow mb-8">교신 · 좌표 교신 · Open a Channel</div>
-    <a href="mailto:hello@hyeseon.design" class="reveal group inline-block font-display font-400 tracking-tightest leading-[0.95] text-[13vw] md:text-[8rem] text-star">
-      <span class="line-mask"><span class="line-inner block">다음 <span class="italic text-gold">좌표</span>에서</span></span>
+    <div class="eyebrow mb-8">Contact</div>
+    <a href="mailto:hello@hyeseon.design" class="reveal group inline-block font-display font-400 tracking-tightest leading-[0.95] text-[13vw] md:text-[8rem] text-ink">
+      <span class="line-mask"><span class="line-inner block">함께 <span class="font-700 text-gold">만들어요</span></span></span>
     </a>
-    <p class="reveal mt-8 text-base sm:text-lg text-stone max-w-md mx-auto">
-      새로운 프로젝트, 협업, 혹은 가벼운 교신도 환영합니다. 24시간 안에 응답 신호를 보냅니다.
+    <p class="reveal mt-8 text-base sm:text-lg text-muted max-w-md mx-auto">
+      새로운 프로젝트, 협업, 혹은 가벼운 인사도 환영합니다. 24시간 안에 답장 드립니다.
     </p>
     <div class="reveal mt-10 flex flex-col items-center gap-6">
-      <a href="mailto:hello@hyeseon.design" class="link-underline text-lg text-star">hello@hyeseon.design</a>
-      <div class="flex items-center gap-7 text-sm text-stone">
-        <a href="#" class="link-underline hover:text-star transition-colors">Behance</a>
-        <a href="#" class="link-underline hover:text-star transition-colors">Instagram</a>
-        <a href="#" class="link-underline hover:text-star transition-colors">LinkedIn</a>
+      <a href="mailto:hello@hyeseon.design" class="link-underline text-lg text-ink">hello@hyeseon.design</a>
+      <div class="flex items-center gap-7 text-sm text-muted">
+        <a href="#" class="link-underline hover:text-ink transition-colors">Behance</a>
+        <a href="#" class="link-underline hover:text-ink transition-colors">Instagram</a>
+        <a href="#" class="link-underline hover:text-ink transition-colors">LinkedIn</a>
       </div>
     </div>
   </div>
@@ -365,19 +344,17 @@
 
 </main>
 
-<!-- ===== Footer (여명) ===== -->
-<footer data-bg="#070B18" class="border-t hairline py-10">
-  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-stone">
-    <div class="font-display text-lg text-star">Hwang Hyeseon</div>
-    <p>© 2026 황혜선. Voyage in progress.</p>
-    <a href="#top" class="link-underline flex items-center gap-2 hover:text-star transition-colors">
-      발사대로 복귀
+<!-- ===== Footer ===== -->
+<footer class="border-t hairline py-10">
+  <div class="mx-auto max-w-[1320px] px-5 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted">
+    <div class="font-display text-lg text-ink">Hwang Hyeseon</div>
+    <p>© 2026 황혜선. All rights reserved.</p>
+    <a href="#top" class="link-underline flex items-center gap-2 hover:text-ink transition-colors">
+      맨 위로
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
     </a>
   </div>
 </footer>
-
-</div><!-- /content wrapper -->
 
 <script>
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -387,18 +364,16 @@ function initMotion(){
   if (reduceMotion || !window.gsap) return;
   gsap.registerPlugin(ScrollTrigger);
 
-  // Mission progress bar
+  // Reading-progress bar
   gsap.to('#progress', { scaleX: 1, ease: 'none',
     scrollTrigger: { start: 0, end: () => document.body.scrollHeight - window.innerHeight, scrub: 0.3 } });
 
-  // (Hero parallax is handled by initParallaxHero() — vanilla WebGL, not GSAP)
-  gsap.set('.line-inner', { yPercent: 115 });
-
   // Line masks reveal on scroll
+  gsap.set('.line-inner', { yPercent: 115 });
   gsap.utils.toArray('.line-mask').forEach(mask => {
     const inner = mask.querySelector('.line-inner');
     gsap.fromTo(inner, { yPercent: 115 }, { yPercent: 0, duration: 1.1, ease: 'power4.out',
-      scrollTrigger: { trigger: mask, start: 'top 90%' } });
+      scrollTrigger: { trigger: mask, start: 'top 92%' } });
   });
 
   // Generic reveals
@@ -407,12 +382,12 @@ function initMotion(){
       scrollTrigger: { trigger: el, start: 'top 88%' } });
   });
 
-  // Planet arrival: scale + fade in, gentle parallax drift
-  gsap.utils.toArray('.planet-visual').forEach(v => {
+  // Discipline visuals: scale + fade, gentle parallax drift
+  gsap.utils.toArray('.disc-visual').forEach(v => {
     const slot = v.querySelector('.art-slot');
-    gsap.fromTo(slot, { scale: 0.82, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.3, ease: 'power3.out',
-      scrollTrigger: { trigger: v, start: 'top 82%' } });
-    gsap.fromTo(v, { yPercent: 8 }, { yPercent: -8, ease: 'none',
+    gsap.fromTo(slot, { scale: 0.86, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.3, ease: 'power3.out',
+      scrollTrigger: { trigger: v, start: 'top 84%' } });
+    gsap.fromTo(v, { yPercent: 6 }, { yPercent: -6, ease: 'none',
       scrollTrigger: { trigger: v, start: 'top bottom', end: 'bottom top', scrub: true } });
   });
 
@@ -470,180 +445,11 @@ mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => 
   menuIcon.innerHTML = '<path d="M3 7h18M3 12h18M3 17h18"/>';
 }));
 
-/* ============ Starfield (falling yellow circles) ============ */
-function showStarFallback(){ const f = document.getElementById('starsFallback'); if (f) f.classList.add('on'); }
-
-/* ============ Global starfall — small yellow circles descending (all sections) ============ */
-/* 전 페이지 공통 고정 배경(z-index -1): 작은 노란 원이 하늘에서 천천히 내려온다.
-   콘텐츠(z-10) 뒤에 깔려 모든 섹션에서 동일하게 보인다. */
-function initStarfall(){
-  const canvas = document.getElementById('space3d');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx){ showStarFallback(); return; }
-
-  const COLOR = '255, 224, 105';                      // 조금 더 밝은 노랑
-  let w = 0, h = 0, dpr = 1, dots = [];
-  let raf = 0, running = false, last = 0;
-
-  const resize = () => {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = window.innerWidth; h = window.innerHeight;
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-  const makeDot = fromTop => {
-    const r = 0.6 + Math.random() * 1.5;              // 0.6–2.1px (더 작게)
-    return {
-      x: Math.random() * w,
-      y: fromTop ? -r - Math.random() * h * 0.25 : Math.random() * h,
-      r,
-      vy: 10 + Math.random() * 34,                    // px/s — 잔잔히 낙하
-      sway: 4 + Math.random() * 16,                   // 좌우 흔들림
-      swaySpeed: 0.2 + Math.random() * 0.6,
-      phase: Math.random() * Math.PI * 2,
-      alpha: 0.6 + Math.random() * 0.4,
-    };
-  };
-  const seed = () => {
-    const count = Math.round(Math.min(220, Math.max(40, (w * h) / 11000)));
-    dots = []; for (let i = 0; i < count; i++) dots.push(makeDot(false));
-  };
-  const draw = dt => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.shadowColor = 'rgba(' + COLOR + ', 0.85)';     // 별이 빛나는 아웃글로우
-    for (const d of dots){
-      d.y += d.vy * dt; d.phase += d.swaySpeed * dt;
-      if (d.y - d.r > h) Object.assign(d, makeDot(true));
-      const x = d.x + Math.sin(d.phase) * d.sway;
-      ctx.beginPath();
-      ctx.shadowBlur = 2 + d.r * 2.2;                  // 아주 살짝만
-      ctx.globalAlpha = d.alpha;
-      ctx.fillStyle = 'rgb(' + COLOR + ')';
-      ctx.arc(x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-  };
-  const loop = now => {
-    const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
-    last = now; draw(dt); raf = requestAnimationFrame(loop);
-  };
-  const start = () => { if (!running){ running = true; last = 0; raf = requestAnimationFrame(loop); } };
-  const stop = () => { running = false; cancelAnimationFrame(raf); raf = 0; };
-
-  resize(); seed();
-  window.addEventListener('resize', () => { resize(); seed(); });
-  document.addEventListener('visibilitychange', () => {
-    document.visibilityState === 'visible' ? start() : stop();
-  });
-
-  if (reduceMotion){ draw(0); return; }                // 정지 프레임만
-  start();
-}
-
-/* ============ Background color journey (dusk → dawn) ============ */
-function initBackground(){
-  const bg = document.getElementById('bgLayer');
-  const sections = Array.prototype.slice.call(document.querySelectorAll('[data-bg]'));
-  if (!bg || !sections.length) return;
-  bg.style.backgroundColor = sections[0].dataset.bg;
-
-  if (reduceMotion || !window.gsap){
-    // Static fallback: paint the light "dawn" sections so their dark text stays readable
-    sections.forEach(s => { if (s.classList.contains('chapter-dawn')) s.style.backgroundColor = s.dataset.bg; });
-    return;
-  }
-
-  sections.forEach(sec => {
-    gsap.to(bg, { backgroundColor: sec.dataset.bg, ease: 'none',
-      scrollTrigger: { trigger: sec, start: 'top 85%', end: 'top 35%', scrub: true } });
-  });
-  // 낙하 별은 모든 섹션에서 동일하게 유지 (여명 구간 페이드아웃 없음)
-}
-
-/* ============ Nav theme over light sections (hero image + dawn) ============ */
-function initNavTheme(){
-  if (!window.gsap) return;
-  const header = document.querySelector('header');
-  if (!header) return;
-  let active = 0;
-  document.querySelectorAll('.nav-light').forEach(sec => {
-    ScrollTrigger.create({
-      trigger: sec, start: 'top 64px', end: 'bottom 64px',
-      onToggle: self => { active += self.isActive ? 1 : -1; header.classList.toggle('is-light', active > 0); }
-    });
-  });
-}
-
-/* ============ Layer-parallax hero (CSS transform only, per assets/hero/SPEC.md) ============ */
-function initParallaxHero(){
-  const section = document.getElementById('hero');
-  const frame   = document.getElementById('heroFrame');
-  const copy    = document.getElementById('heroCopy');
-  const gEl = document.getElementById('lGround');
-  const rEl = document.getElementById('lRocket');
-  const pEl = document.getElementById('lPerson');
-  if (!section || !frame || !gEl || !rEl || !pEl) return;
-
-  // Show the frame only once all three layers have settled (load or error) — no partial composite
-  const layers = [gEl, rEl, pEl];
-  let settled = 0;
-  const onSettle = () => { if (++settled >= layers.length) frame.classList.add('ready'); };
-  layers.forEach(im => {
-    if (im.complete && im.naturalWidth) onSettle();
-    else { im.addEventListener('load', onSettle, { once: true }); im.addEventListener('error', onSettle, { once: true }); }
-  });
-
-  // Reduced motion → no transforms at all (layers sit stacked = the original illustration)
-  if (reduceMotion) return;
-
-  const smooth = x => x * x * (3 - 2 * x); // smoothstep
-  let target = 0, shown = 0, running = false, raf = 0, t0 = performance.now();
-
-  function computeTarget(){
-    const total = section.offsetHeight - window.innerHeight;
-    target = total > 0 ? Math.min(Math.max(-section.getBoundingClientRect().top, 0), total) / total : 0;
-  }
-  window.addEventListener('scroll', computeTarget, { passive: true });
-  window.addEventListener('resize', computeTarget);
-  computeTarget();
-
-  function apply(p){
-    const s = smooth(p);
-    // 이동량은 p에 선형, 확대량은 smoothstep(p). 이동 대소: 인물 > 로켓 > 지면
-    gEl.style.transform = 'translate(' + (-1.5 * p) + '%, 0%) scale(' + (1 + 0.10 * s) + ')';
-    rEl.style.transform = 'translate(' + (-0.5 * p) + '%, ' + (1.0 * p) + '%) scale(' + (1 + 0.02 * s) + ')';
-    pEl.style.transform = 'translate(' + (-1.2 * p) + '%, ' + (2.4 * p) + '%) scale(' + (1 + 0.05 * s) + ')';
-    if (copy){
-      copy.style.transform = 'translateY(' + (-140 * p) + 'px)';
-      copy.style.opacity = String(p < 0.45 ? 1 : Math.max(0, 1 - (p - 0.45) / 0.55));
-    }
-  }
-  function frameLoop(now){
-    const dt = Math.min((now - t0) / 1000, 0.1); t0 = now;
-    shown += (target - shown) * (1 - Math.pow(0.002, dt));
-    apply(shown);
-    raf = requestAnimationFrame(frameLoop);
-  }
-  // will-change: transform 은 히어로가 화면에 있는 동안에만 (SPEC 선명도)
-  function start(){ if (running) return; running = true; layers.forEach(im => im.style.willChange = 'transform'); t0 = performance.now(); raf = requestAnimationFrame(frameLoop); }
-  function stop(){ running = false; cancelAnimationFrame(raf); layers.forEach(im => im.style.willChange = 'auto'); }
-
-  // rAF 는 히어로가 뷰포트에 있을 때만
-  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0 }).observe(section);
-}
-
 /* ============ Boot ============ */
 window.addEventListener('load', () => {
-  if (window.initShaderBackground) initShaderBackground();
-  initStarfall();
-  initParallaxHero();
   runPreloader(() => {
     if (window.gsap && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
     initMotion();
-    initBackground();
-    initNavTheme();
     if (window.ScrollTrigger) ScrollTrigger.refresh();
   });
   initCursor();
