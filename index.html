@@ -21,14 +21,11 @@
 <!-- GSAP (self-hosted) -->
 <script defer src="./assets/js/gsap.min.js"></script>
 <script defer src="./assets/js/ScrollTrigger.min.js"></script>
-<!-- Hero WebGL shader background ("Mesh drift", self-hosted) -->
-<script defer src="./assets/js/shader-bg.js"></script>
 </head>
 <body class="text-star">
 
 <!-- ===== Background journey layers ===== -->
 <div id="bgLayer" aria-hidden="true"></div>
-<canvas id="shaderBg" aria-hidden="true"></canvas>
 <div class="nebula" aria-hidden="true"></div>
 <canvas id="space3d" aria-hidden="true"></canvas>
 <div class="stars-fallback" id="starsFallback" aria-hidden="true"></div>
@@ -93,11 +90,13 @@
 
 <!-- ===== HERO / 발사 (레이어 시차 — 층별 이동/확대, 형태 왜곡 없음) ===== -->
 <!-- 높이 220vh: 이 구간을 지나며 p(0→1)로 시차를 구동. stage는 sticky로 고정 -->
-<section id="hero" data-bg="#05070E" class="hero relative">
+<section id="hero" data-bg="#f8f8f8" class="hero relative nav-light">
   <div class="hero__stage">
-    <!-- 하늘 0층은 투명(페이지 배경 = 별이 비침). 지면→로켓→인물 순으로 겹침.
+    <!-- 화이트 하늘 위로 라인아트 별이 내림(fallStars). 지면→로켓→인물 순으로 겹침.
+         하늘 0층은 투명 → 배경 흰색과 낙하 별이 비침.
          세 레이어는 3548×1774 동일 프레임 좌표계 → 겹치면 원본 복원.
          셋 다 로드되기 전엔 .frame 숨김(부분 합성 방지). -->
+    <canvas id="fallStars" aria-hidden="true"></canvas>
     <div class="frame" id="heroFrame">
       <img id="lGround" class="hero-layer" src="./assets/hero/layer-1-ground.png" alt="" fetchpriority="high" decoding="async" />
       <img id="lRocket" class="hero-layer" src="./assets/hero/layer-2-rocket.png" alt="" fetchpriority="high" decoding="async" />
@@ -108,15 +107,15 @@
     <div class="absolute inset-0 z-10 pointer-events-none">
       <div class="mx-auto max-w-[1320px] h-full px-5 sm:px-8 flex items-start md:items-center justify-end">
         <div id="heroCopy" class="text-center pt-20 md:pt-0 will-change-transform">
-          <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-star/80 mb-6 md:mb-8">Hwang Hyeseon</div>
-          <h1 class="font-hand font-700 leading-none text-star text-6xl sm:text-7xl md:text-8xl lg:text-9xl m-0">Portfolio</h1>
+          <div class="font-medium tracking-[0.35em] uppercase text-[11px] sm:text-xs text-[#1b2247]/70 mb-6 md:mb-8">Hwang Hyeseon</div>
+          <h1 class="font-hand font-700 leading-none text-[#14193a] text-6xl sm:text-7xl md:text-8xl lg:text-9xl m-0">Portfolio</h1>
         </div>
       </div>
     </div>
 
-    <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-stone">
+    <div class="hero-cue absolute bottom-7 left-1/2 -translate-x-1/2 eyebrow flex flex-col items-center gap-2 text-[#1b2247]/70">
       Scroll
-      <span class="h-8 w-px bg-white/25"></span>
+      <span class="h-8 w-px bg-[#1b2247]/30"></span>
     </div>
   </div>
 </section>
@@ -558,6 +557,90 @@ function initNavTheme(){
   });
 }
 
+/* ============ Hero falling stars (line-art sparkles on the white sky) ============ */
+function initFallingStars(){
+  const canvas = document.getElementById('fallStars');
+  const hero = document.getElementById('hero');
+  if (!canvas || !hero) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const INK = '#14181f';                 // 이미지의 얇은 검은 외곽선과 맞춘 먹색
+  let w = 0, h = 0, dpr = 1, stars = [];
+  let raf = 0, running = false, last = 0;
+
+  const resize = () => {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = Math.max(1, Math.round(w * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+
+  const makeStar = fromTop => {
+    const size = 5 + Math.random() * 15;               // 5–20px
+    return {
+      x: Math.random() * w,
+      y: fromTop ? -size - Math.random() * h * 0.5 : Math.random() * h,
+      size,
+      vy: 14 + Math.random() * 32,                     // px/s — 잔잔하게
+      sway: 6 + Math.random() * 22,                    // 좌우 흔들림 폭
+      swaySpeed: 0.25 + Math.random() * 0.6,
+      phase: Math.random() * Math.PI * 2,
+      rot: Math.random() * Math.PI,
+      vrot: (Math.random() - 0.5) * 0.5,
+      filled: Math.random() < 0.68,                    // 일부는 속 빈 라인만
+    };
+  };
+  const seed = () => {
+    const count = Math.round(Math.min(44, Math.max(16, w / 40)));
+    stars = []; for (let i = 0; i < count; i++) stars.push(makeStar(false));
+  };
+
+  // 4-point 반짝임(스파클) 경로
+  const sparkle = r => {
+    const inner = r * 0.3;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++){
+      const a = -Math.PI / 2 + i * Math.PI / 2;
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      const b = a + Math.PI / 4;
+      ctx.lineTo(Math.cos(b) * inner, Math.sin(b) * inner);
+    }
+    ctx.closePath();
+  };
+
+  const draw = dt => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = INK; ctx.lineJoin = 'round';
+    for (const s of stars){
+      s.y += s.vy * dt; s.phase += s.swaySpeed * dt; s.rot += s.vrot * dt;
+      if (s.y - s.size > h){ Object.assign(s, makeStar(true)); }
+      const x = s.x + Math.sin(s.phase) * s.sway;
+      ctx.save();
+      ctx.translate(x, s.y); ctx.rotate(s.rot);
+      ctx.lineWidth = Math.max(1, s.size * 0.13);      // 이미지처럼 얇은 검은 선
+      sparkle(s.size);
+      if (s.filled){ ctx.fillStyle = '#ffffff'; ctx.fill(); }
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  const loop = now => {
+    const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
+    last = now; draw(dt); raf = requestAnimationFrame(loop);
+  };
+  const start = () => { if (!running){ running = true; last = 0; raf = requestAnimationFrame(loop); } };
+  const stop = () => { running = false; cancelAnimationFrame(raf); raf = 0; };
+
+  resize(); seed();
+  window.addEventListener('resize', () => { resize(); seed(); });
+
+  if (reduceMotion){ draw(0); return; }                // 정지 프레임만
+  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? start() : stop()), { threshold: 0 }).observe(hero);
+}
+
 /* ============ Layer-parallax hero (CSS transform only, per assets/hero/SPEC.md) ============ */
 function initParallaxHero(){
   const section = document.getElementById('hero');
@@ -619,7 +702,7 @@ function initParallaxHero(){
 /* ============ Boot ============ */
 window.addEventListener('load', () => {
   initThree();
-  if (window.initShaderBackground) initShaderBackground();
+  initFallingStars();
   initParallaxHero();
   runPreloader(() => {
     if (window.gsap && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
