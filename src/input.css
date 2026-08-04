@@ -24,40 +24,93 @@
 
 @layer base {
   * { -webkit-tap-highlight-color: transparent; }
-  html { background: #F4F2EC; }
+  html { background: #05070E; }           /* pre-paint fallback (deepest space) */
   body {
     font-family: 'Pretendard', system-ui, sans-serif;
-    color: #1A1815;
-    background: #F4F2EC;
+    color: #ECE9E2;
+    background: transparent;               /* animated #bgLayer shows through */
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  ::selection { background: #1A1815; color: #F4F2EC; }
-  a:focus-visible, button:focus-visible { outline: 2px solid #A9793A; outline-offset: 4px; border-radius: 2px; }
+  ::selection { background: #D9B26A; color: #05070E; }
+  a:focus-visible, button:focus-visible { outline: 2px solid #D9B26A; outline-offset: 4px; border-radius: 2px; }
 }
 
 @layer components {
   .font-display { font-family: 'Pretendard', system-ui, sans-serif; letter-spacing: -0.02em; }
   .font-hand { font-family: 'Edu VIC WA NT Hand', 'Comic Sans MS', cursive; }
 
+  /* ===== Layer-parallax hero (CSS transform only) ===== */
+  .hero { height: 220vh; }
+  .hero__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+
+  /* 원본 비율(3548:1774) 유지. object-fit 쓰지 않음 — transform-origin %가 어긋남.
+     left:0 → 세로 화면에서 오른쪽으로 넘쳐 왼쪽(로켓·인물)이 항상 남음. */
+  .frame {
+    position: absolute; top: 50%; left: 0;
+    width: max(100%, calc(100svh * 3548 / 1774));
+    aspect-ratio: 3548 / 1774;
+    transform: translateY(-50%);
+    opacity: 0;                 /* 세 레이어 로드 완료 시 .ready 로 표시 */
+    transition: opacity .4s ease;
+  }
+  .frame.ready { opacity: 1; }
+  .frame > .hero-layer {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; user-select: none; -webkit-user-drag: none;
+    backface-visibility: hidden;
+    /* image-rendering 은 건드리지 않음 (선명도) */
+  }
+  /* transform-origin: 지면=지평선, 로켓·인물=접지점 (layers.json 값) */
+  #lGround { transform-origin: 50% 78%; }
+  #lRocket { transform-origin: 15.7% 86.92%; }
+  #lPerson { transform-origin: 27.11% 92.67%; }
+
   .eyebrow {
     font-family: 'Pretendard', system-ui, sans-serif;
-    text-transform: uppercase; letter-spacing: 0.3em; font-size: 0.72rem; font-weight: 500; color: #A9793A;
+    text-transform: uppercase; letter-spacing: 0.3em; font-size: 0.72rem; font-weight: 500; color: #D9B26A;
   }
 
-  .hairline { border-color: rgba(26, 24, 21, 0.14); }
+  .hairline { border-color: rgba(236, 233, 226, 0.14); }
 
-  /* ===== Illustration / image placeholder slot ===== */
+  /* ===== Background journey layers ===== */
+  #bgLayer { position: fixed; inset: 0; z-index: -3; background-color: #05070E; }
+  /* Global "Mesh drift" WebGL sky — behind the stars (-1), above #bgLayer (-3).
+     Renders across every section as the deep-space (black/dark-blue) backdrop. */
+  #shaderBg { position: fixed; inset: 0; z-index: -2; width: 100%; height: 100%; display: block; pointer-events: none; }
+  .nebula {
+    position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(1200px 800px at 78% -10%, rgba(37, 117, 246, 0.18), transparent 60%),
+      radial-gradient(1000px 700px at 8% 108%, rgba(111, 182, 176, 0.12), transparent 60%);
+  }
+  #space3d { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+  /* CSS star fallback (only shown if WebGL unavailable) */
+  .stars-fallback { position: fixed; inset: 0; z-index: -1; pointer-events: none; display: none; }
+  .stars-fallback.on { display: block; }
+  .stars-fallback::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1.4px 1.4px at 20% 30%, rgba(255,255,255,.9), transparent),
+      radial-gradient(1.4px 1.4px at 60% 70%, rgba(255,255,255,.7), transparent),
+      radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1.4px 1.4px at 90% 55%, rgba(255,255,255,.8), transparent);
+    background-repeat: repeat; background-size: 340px 340px; opacity: .5;
+  }
+
+  /* ===== Illustration placeholder slot ===== */
   .art-slot {
     position: relative; display: grid; place-items: center;
-    border: 1.5px dashed rgba(26, 24, 21, 0.22); border-radius: 1rem;
-    background: repeating-linear-gradient(45deg, rgba(26,24,21,.02) 0 12px, transparent 12px 24px);
-    color: #9A9488; text-align: center;
+    border: 1.5px dashed rgba(236, 233, 226, 0.22); border-radius: 1rem;
+    background: repeating-linear-gradient(45deg, rgba(236,233,226,.02) 0 12px, transparent 12px 24px);
+    color: #878EA6; text-align: center;
   }
   .art-slot__label { font-family: 'Pretendard', system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.22em; font-size: .68rem; font-weight: 500; }
-  .art-slot__hint { font-size: .8rem; color: #b3ada1; margin-top: .35rem; letter-spacing: normal; text-transform: none; }
-  .disc-slot { border-radius: 1.5rem; aspect-ratio: 4 / 3; }
+  .art-slot__hint { font-size: .8rem; color: #5c637a; margin-top: .35rem; letter-spacing: normal; text-transform: none; }
+  .planet-slot { border-radius: 9999px; aspect-ratio: 1 / 1; box-shadow: inset 0 0 80px rgba(255,255,255,.03); }
 
   .reveal { opacity: 0; transform: translateY(40px); }
 
@@ -72,21 +125,31 @@
   .line-inner { display: block; will-change: transform; }
 
   .work-row { transition: background-color .5s cubic-bezier(0.22,1,0.36,1); }
-  .work-row:hover { background-color: rgba(26, 24, 21, 0.04); }
+  .work-row:hover { background-color: rgba(236, 233, 226, 0.04); }
 
   .marquee { display: flex; width: max-content; animation: marquee 42s linear infinite; }
 
   .cursor-ring {
     position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
-    width: 8px; height: 8px; border-radius: 9999px; background: #1A1815; transform: translate(-50%,-50%);
+    width: 8px; height: 8px; border-radius: 9999px; background: #D9B26A; transform: translate(-50%,-50%);
     transition: width .35s cubic-bezier(0.22,1,0.36,1), height .35s cubic-bezier(0.22,1,0.36,1), background .35s; will-change: transform;
   }
-  .cursor-ring.hovered { width: 52px; height: 52px; background: rgba(26, 24, 21, .12); }
+  .cursor-ring.hovered { width: 52px; height: 52px; background: rgba(217, 178, 106, .18); }
 
   a, button, .cursor-hover { cursor: pointer; }
 
-  /* Sticky header on the paper background */
-  header.site-nav { background: rgba(244, 242, 236, 0.72); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(26,24,21,.12); }
+  /* ===== Dawn (light) chapter — Contact & Footer ===== */
+  .chapter-dawn { color: #1B2247; }
+  .chapter-dawn .eyebrow { color: #A6763A; }
+  .chapter-dawn .hairline { border-color: rgba(27, 34, 71, 0.18); }
+  .chapter-dawn .text-dawn-strong { color: #14193A; }
+  .chapter-dawn .text-dawn-muted { color: #5B618A; }
+  .chapter-dawn .text-dawn-accent { color: #A6763A; }
+
+  /* Nav adapts on the dawn chapter */
+  header.is-light { background: rgba(243, 228, 196, 0.72); border-color: rgba(27,34,71,.14); }
+  header.is-light, header.is-light a { color: #1B2247; }
+  header.is-light .eyebrow { color: #A6763A; }
 }
 
 @keyframes marquee { to { transform: translateX(-50%); } }
