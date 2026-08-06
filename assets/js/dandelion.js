@@ -23,6 +23,9 @@
   var introStarted=false;            // set on the first build(); prevents restart on resize
   var IT_TEXT=900, IT_SCAT=700, IT_FORM=1400;
   var introT0=0, scatterInit=false, formInit=false;
+  var quoteShown=false;
+  // the hero tagline appears only once the flower has finished forming
+  function showQuote(){ if(quoteShown) return; quoteShown=true; var q=document.getElementById('heroQuote'); if(q){ q.style.opacity='1'; q.style.transform='none'; } }
 
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
@@ -204,7 +207,7 @@
     var e=t-introT0, shimT=t*0.004;
     var phase = e<IT_TEXT?'text' : e<IT_TEXT+IT_SCAT?'scatter' : e<IT_TEXT+IT_SCAT+IT_FORM?'form' : 'end';
 
-    if(phase==='end'){ introDone=true; liveFrame(t,dtf); return; }   // seamless handoff
+    if(phase==='end'){ introDone=true; showQuote(); liveFrame(t,dtf); return; }   // flower formed → reveal tagline, hand off
 
     if(phase==='scatter' && !scatterInit){
       scatterInit=true;
@@ -337,6 +340,15 @@
 
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity=1;e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.12});
   [].forEach.call(document.querySelectorAll('.reveal'),function(el){el.style.opacity=0;el.style.transform='translateY(20px)';el.style.transition='opacity .9s ease,transform .9s ease';io.observe(el);});
+
+  // hide the tagline until the intro finishes forming the flower — set instantly
+  // (transition off) so it doesn't flash-then-fade at load. reduced-motion skips
+  // the intro so it stays visible; JS-off keeps the CSS default = visible.
+  (function(){ var q=document.getElementById('heroQuote'); if(q && !introDone){
+    q.style.transition='none'; q.style.opacity='0'; q.style.transform='translateY(14px)';
+    void q.offsetWidth;                                   // commit before re-enabling transition
+    q.style.transition='opacity .9s ease, transform .9s ease';
+  } })();
 
   addEventListener('resize',resize);
   resize(); requestAnimationFrame(frame);
