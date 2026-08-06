@@ -31,7 +31,7 @@
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
     FS=Math.max(6,Math.min(9,W/170));                 // smaller glyphs -> tighter grid
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    cx=W*0.5; cy=H*0.56; headR=Math.min(W,H)*0.20; baseX=W*0.5; baseY=H*0.92;   // enlarged head (was 0.135)
+    cx=W*0.5; cy=H*0.56; headR=Math.min(W,H)*0.135; baseX=W*0.5; baseY=H*0.92;
     build();
   }
 
@@ -54,7 +54,7 @@
       var t=s/steps;
       var vx=bx+Math.cos(ang)*len*t;
       var vy=by+Math.sin(ang)*len*t + Math.pow(t,1.7)*len*0.32;   // arch then droop
-      var hw=Math.sin(t*Math.PI)*headR*0.22*(0.7+Math.random()*0.3);   // width tied to headR
+      var hw=Math.sin(t*Math.PI)*headR*0.24*(0.7+Math.random()*0.3);   // width tied to headR, not FS
       var across=Math.max(1,Math.round(hw/(FS*0.82)));         // finer FS -> more across
       for(var w=-across; w<=across; w++){
         var edge=(Math.abs(w)===across);
@@ -73,16 +73,12 @@
     var big=W>=760;
 
     // ---------- FLOWER HEAD (dense, Fibonacci fill + ray petals) ----------
-    // Ncore ∝ headR² so the enlarged head keeps its density; capped for perf.
-    var Ncore=Math.round((big?0.066:0.090)*headR*headR);
-    Ncore=Math.min(Ncore, big?2600:820);
-    var GA=2.399963;
+    var Ncore=big?1000:460, GA=2.399963;
     for(var i=0;i<Ncore;i++){
       var r=headR*Math.sqrt((i+0.5)/Ncore), a=i*GA;
       petal(a, r, pick(CODE), r/headR);
     }
-    // rays ∝ circumference (∝ headR), capped
-    var rays=Math.min(Math.round((big?0.50:0.42)*headR), big?120:56);
+    var rays=big?88:40;
     for(i=0;i<rays;i++){
       var ra=(i/rays)*Math.PI*2 + (Math.random()-0.5)*0.03;
       var tip=headR*(1.14+Math.random()*0.34), inner=headR*0.72, ps=4;
@@ -102,9 +98,9 @@
       if(Math.random()<0.35) stat(bx+FS*0.42*(Math.random()<0.5?-1:1), by, Math.random()<0.3?':':'|', 0.45+Math.random()*0.2, null, true);
     }
 
-    // ---------- LEAVES (toothed rosette) — length trimmed a touch for the bigger head ----------
+    // ---------- LEAVES (toothed rosette) ----------
     var angs = big ? [-2.55,-2.0,-1.55,-1.1,-0.55] : [-2.3,-1.55,-0.8];
-    for(var li=0;li<angs.length;li++){ makeLeaf(baseX,baseY-FS*0.4, angs[li], headR*(1.2+Math.random()*0.4)); }
+    for(var li=0;li<angs.length;li++){ makeLeaf(baseX,baseY-FS*0.4, angs[li], headR*(1.35+Math.random()*0.5)); }
 
     N=pts.length;
     var tot=document.getElementById('total'); if(tot) tot.textContent=N;
