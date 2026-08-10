@@ -53,9 +53,9 @@ a{color:inherit;text-decoration:none}
 .hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center;padding-top:6.5vh;position:relative}
 /* tagline at the flower's upper-left */
 .hero__quote{position:absolute;margin:0;font-family:var(--hero-font);font-weight:700;text-transform:uppercase;font-size:clamp(30px,5vw,64px);line-height:1.08;letter-spacing:-.02em;color:var(--hi);max-width:min(48vw,600px);transition:opacity .9s ease,transform .9s ease}
-.hero__quote--tl{top:clamp(96px,15vh,150px);left:var(--gutter);text-align:left}
-.hero__quote--br{bottom:9vh;right:var(--gutter);text-align:right}
-@media(max-width:640px){.hero__quote{font-size:clamp(24px,7.2vw,38px);max-width:74vw}.hero__quote--tl{top:12vh}.hero__quote--br{bottom:8vh}}
+.hero__quote--tl{top:clamp(78px,10vh,118px);left:var(--gutter);text-align:left}
+.hero__quote--br{bottom:4.5vh;right:var(--gutter);text-align:right}
+@media(max-width:640px){.hero__quote{font-size:clamp(24px,7.2vw,38px);max-width:74vw}.hero__quote--tl{top:8vh}.hero__quote--br{bottom:4.5vh}}
 
 /* sections — full-bleed opaque panels, alternating colour only (no divider lines) */
 .sec{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(80px,14vh,160px) 0;scroll-margin-top:70px}
@@ -151,10 +151,6 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
 body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PORTFOLIO intro plays */
-#scrollHint{position:fixed;left:50%;bottom:26px;z-index:6;transform:translate(-50%,0);font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#fff;mix-blend-mode:difference;opacity:0;pointer-events:none}
-#scrollHint.show{animation:hintFade 3.4s ease forwards}
-@keyframes hintFade{0%{opacity:0;transform:translate(-50%,10px)}16%{opacity:.85;transform:translate(-50%,0)}68%{opacity:.85}100%{opacity:0;transform:translate(-50%,6px)}}
-@media(prefers-reduced-motion:reduce){#scrollHint{display:none}}
 
 @media(prefers-reduced-motion:reduce){.blink{animation:none}}
 </style>
@@ -180,7 +176,6 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
     document.removeEventListener('touchmove', block, { passive: false });
     html.classList.remove('intro-lock'); body.classList.remove('intro-lock');
     window.scrollTo(0, 0);
-    var hint = document.getElementById('scrollHint'); if (hint) hint.classList.add('show');
   }
   window.addEventListener('dandelion:introdone', unlock);
   fs = setTimeout(unlock, FAILSAFE_MS);
@@ -326,8 +321,6 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
     </div>
   </div>
 </footer>
-
-<div id="scrollHint" aria-hidden="true">Scroll ↓</div>
 
 <script src="./assets/js/shader-bg.js"></script>
 <script src="./assets/js/dandelion.js"></script>
