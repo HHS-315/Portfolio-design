@@ -21,7 +21,7 @@
   // ---- intro state ----
   var introDone = reduce;            // reduced-motion → straight to the live flower
   var introStarted=false;            // set on the first build(); prevents restart on resize
-  var IT_TEXT=1000, IT_SCAT=850, IT_FORM=1650;
+  var IT_TEXT=1750, IT_SCAT=850, IT_FORM=1650;   // longer hold on "PORTFOLIO" before it scatters
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
@@ -237,7 +237,7 @@
       if(phase==='text'){
         if(p.extra){ continue; }
         // assemble: slide in from the jittered start + fade up, then hold the word
-        var te=e/IT_TEXT, ae=easeOutCubic(te<0.66?te/0.66:1);
+        var ae=easeOutCubic(Math.min(1, e/700));   // assemble in ~700ms, then hold the word
         p.x=p.ax+(p.tx-p.ax)*ae; p.y=p.ay+(p.ty-p.ay)*ae; p.a=ae;
         vis=p.introBase*ae;
       } else if(phase==='scatter'){
