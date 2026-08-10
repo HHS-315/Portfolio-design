@@ -14,8 +14,11 @@
   리컬러했습니다. 커서 상호작용은 끄고(민들레 hover와 충돌 방지) 느리게만
   흐르며, `prefers-reduced-motion`이면 정지, WebGL이 없으면 조용히 무시됩니다.
   히어로·About처럼 배경이 비치는 섹션에서 보이고, 불투명 섹션은 이를 가립니다.
-- 이 사이트는 React/shadcn/TS가 아니라 **정적 단일 HTML**이라, 원본 shadcn용
-  `blue-noise.tsx` 컴포넌트 대신 동일 셰이더를 바닐라 JS로 이식했습니다.
+  **색은 검은 배경 + 육안으로 보이는 회색**, 커서를 올리면 필라멘트가 포인터
+  주변에서 **일렁입니다(ripple)**.
+- 이 사이트의 **배포본은 정적 단일 HTML**이라 셰이더를 바닐라 JS로 이식했지만,
+  원본 shadcn용 `blue-noise.tsx` 컴포넌트도 `components/ui/`에 그대로 두고
+  **shadcn 구조**(Vite+React+TS+Tailwind)를 함께 구성했습니다 — `SHADCN.md` 참고.
 
 ## 민들레 — DANDELION (순수 JS 캔버스)
 

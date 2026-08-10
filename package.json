@@ -9,16 +9,33 @@
     "dev": "concurrently -k -n css,serve -c magenta,cyan \"npm:watch:css\" \"serve -l 8000 .\"",
     "start": "serve -l 8000 .",
     "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
-    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify --watch"
+    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify --watch",
+    "app:dev": "vite",
+    "app:build": "vite build",
+    "app:preview": "vite preview"
   },
   "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",
+    "postcss": "^8.4.47",
     "serve": "^14.2.4",
-    "tailwindcss": "^3.4.0"
+    "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
     "gsap": "^3.12.5",
+    "lucide-react": "^0.454.0",
     "pretendard": "^1.3.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.4",
     "three": "^0.149.0"
   }
 }
