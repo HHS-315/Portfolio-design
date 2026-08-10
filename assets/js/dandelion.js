@@ -25,6 +25,10 @@
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
+  // fire once when the intro finishes forming the flower (unlocks the scroll lock)
+  var introDoneFired=false;
+  function fireIntroDone(){ if(introDoneFired) return; introDoneFired=true;
+    try{ window.dispatchEvent(new CustomEvent('dandelion:introdone')); }catch(e){} }
   // the hero tagline appears only once the flower has finished forming
   function showQuote(){ if(quoteShown) return; quoteShown=true;
     [].forEach.call(document.querySelectorAll('.hero__quote'),function(q){ q.style.opacity='1'; q.style.transform='none'; }); }
@@ -126,7 +130,7 @@
       introT0=0; scatterInit=false; formInit=false;
     } else {
       // resize mid-intro must not restart it → finish it; otherwise it's already live
-      if(introStarted && !introDone) introDone=true;
+      if(introStarted && !introDone){ introDone=true; fireIntroDone(); }
       for(i=0;i<N;i++){ p=pts[i]; p.x=p.fx; p.y=p.fy; if(p.petal) p.a=1; }
     }
 
@@ -215,7 +219,7 @@
     var T1=IT_TEXT, T2=IT_TEXT+IT_SCAT, T3=IT_TEXT+IT_SCAT+IT_FORM;
     var phase = e<T1?'text' : e<T2?'scatter' : e<T3?'form' : 'end';
 
-    if(phase==='end'){ introDone=true; showQuote(); liveFrame(t,dtf); return; }   // flower formed → reveal tagline, hand off
+    if(phase==='end'){ introDone=true; fireIntroDone(); showQuote(); liveFrame(t,dtf); return; }   // flower formed → reveal tagline, hand off
 
     if(phase==='scatter' && !scatterInit){
       scatterInit=true;

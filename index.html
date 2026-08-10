@@ -68,39 +68,28 @@ a{color:inherit;text-decoration:none}
 .h2 em{font-style:normal;color:var(--hi)}
 .lede{color:var(--dim);max-width:60ch;font-size:14.5px}
 
-/* ABOUT — big uppercase couplets flanking the centred dandelion (image layout).
-   Each line is a direct grid child so rows share a baseline across columns. */
+/* ABOUT — full-bleed uppercase couplets flanking the centred dandelion.
+   Each .about__line is an overflow-hidden mask; its <span> slides on translateY
+   for a blind-flicker reveal (see about-lines.js). The letters never change —
+   only their vertical position. Extra padding-block keeps Archivo 900 caps from
+   clipping at line-height .95; the matching negative margin cancels the layout. */
 #about{background:transparent}
-.about__grid{flex:1;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:repeat(3,auto);align-content:center;gap:clamp(4px,1vh,14px) clamp(16px,3vw,56px);padding-inline:clamp(20px,5vw,64px)}
-.about__center{grid-column:2;grid-row:1/4;width:min(30vw,400px)}   /* dandelion reserve */
+.about__grid{flex:1;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:repeat(3,auto);align-content:center;gap:clamp(4px,1.2vh,18px) clamp(14px,2.6vw,48px);padding-inline:clamp(16px,4vw,56px)}
+.about__center{grid-column:2;grid-row:1/4;width:min(22vw,300px)}   /* dandelion reserve */
 
-.about__line{margin:0;font-family:var(--grotesk);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;line-height:.95;color:var(--hi);font-size:clamp(20px,2.7vw,46px);white-space:nowrap}
-.about__line span{display:inline-block}
+.about__line{margin:0;overflow:hidden;padding-block:.18em;margin-block:-.18em;font-family:var(--grotesk);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;line-height:.95;color:var(--hi);font-size:clamp(28px,3.4vw,76px);white-space:nowrap}
+.about__line span{display:block;transform:translateY(0);will-change:transform;backface-visibility:hidden}
 .about__line--l{grid-column:1;justify-self:start;text-align:left}
 .about__line--r{grid-column:3;justify-self:end;text-align:right}
 .about__line[data-row="1"]{grid-row:1}
 .about__line[data-row="2"]{grid-row:2}
 .about__line[data-row="3"]{grid-row:3}
-
-/* secondary copy kept beneath each side (not scrambled) */
-.about__aux{grid-row:4;display:flex;flex-direction:column;gap:12px;max-width:40ch;margin-top:clamp(18px,3vh,40px)}
-.about__aux--l{grid-column:1;justify-self:start;text-align:left}
-.about__aux--r{grid-column:3;justify-self:end;text-align:right;align-items:flex-end}
-.about__lead{font-family:var(--grotesk);font-weight:700;font-size:clamp(15px,1.4vw,18px);line-height:1.3;letter-spacing:-.01em;color:var(--hi)}
-.about__lead em{font-style:normal;color:var(--dim)}
-.about__name{font-family:var(--grotesk);font-weight:700;font-size:clamp(15px,1.4vw,18px);letter-spacing:.01em;color:var(--hi)}
-.about__aux p{color:var(--dim);font-size:13.5px;line-height:1.6}
-.about__skills{list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:2px}
-.about__skills li{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;color:var(--dim)}
-.about__skills li b{color:var(--hi);font-weight:500}
 @media(max-width:820px){
   #about{background:#1b1b22}
-  .about__grid{grid-template-columns:1fr;grid-template-rows:none;justify-items:center;text-align:center;gap:10px}
+  .about__grid{grid-template-columns:1fr;grid-template-rows:none;justify-items:center;text-align:center;gap:6px}
   .about__center{display:none}
-  .about__line{white-space:normal;font-size:clamp(30px,9vw,54px)}
+  .about__line{white-space:normal;font-size:clamp(34px,10vw,64px)}
   .about__line--l,.about__line--r,.about__line[data-row]{grid-column:1;grid-row:auto;justify-self:center;text-align:center}
-  .about__aux{grid-column:1;grid-row:auto;justify-self:center;text-align:center;align-items:center;max-width:52ch;margin-top:22px}
-  .about__aux--r{align-items:center;text-align:center}
 }
 
 /* ascii box */
@@ -156,10 +145,45 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
 .foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:12px;color:var(--dim);line-height:1.9}
 .foot a{color:var(--hi)}
 .foot pre{color:var(--dimmer);font-size:11px;line-height:1.25}
+/* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
+html.intro-lock{scroll-behavior:auto}
+body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
+body.intro-lock .bar nav{pointer-events:none}
+#scrollHint{position:fixed;left:50%;bottom:26px;z-index:6;transform:translate(-50%,0);font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#fff;mix-blend-mode:difference;opacity:0;pointer-events:none}
+#scrollHint.show{animation:hintFade 3.4s ease forwards}
+@keyframes hintFade{0%{opacity:0;transform:translate(-50%,10px)}16%{opacity:.85;transform:translate(-50%,0)}68%{opacity:.85}100%{opacity:0;transform:translate(-50%,6px)}}
+@media(prefers-reduced-motion:reduce){#scrollHint{display:none}}
+
 @media(prefers-reduced-motion:reduce){.blink{animation:none}}
 </style>
 </head>
 <body>
+
+<!-- intro scroll-lock: freeze on the hero until the dandelion finishes forming.
+     Runs first so scroll position/restoration is pinned before paint. -->
+<script>
+(function(){
+  var FAILSAFE_MS = 6000;                       // never trap the user if the intro stalls
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch(e){}
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;   // intro skipped → no lock
+  var html = document.documentElement, body = document.body;
+  window.scrollTo(0, 0);
+  html.classList.add('intro-lock'); body.classList.add('intro-lock');
+  function block(e){ e.preventDefault(); }      // iOS momentum needs an explicit block
+  document.addEventListener('touchmove', block, { passive: false });
+  var unlocked = false, fs;
+  function unlock(){
+    if (unlocked) return; unlocked = true;
+    clearTimeout(fs);
+    document.removeEventListener('touchmove', block, { passive: false });
+    html.classList.remove('intro-lock'); body.classList.remove('intro-lock');
+    window.scrollTo(0, 0);
+    var hint = document.getElementById('scrollHint'); if (hint) hint.classList.add('show');
+  }
+  window.addEventListener('dandelion:introdone', unlock);
+  fs = setTimeout(unlock, FAILSAFE_MS);
+})();
+</script>
 
 <!-- animated shader background (behind the ASCII dandelion) -->
 <canvas id="shaderbg"></canvas>
@@ -183,7 +207,6 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
 
   <!-- ABOUT — big couplets flanking the centred dandelion; lines glitch on scroll -->
   <section id="about" class="sec sec--about">
-    <div class="sec__head"><b>01</b><span>About</span></div>
     <div class="about__grid">
       <p class="about__line about__line--l" data-row="1" data-side="l" aria-label="BETWEEN"><span aria-hidden="true">BETWEEN</span></p>
       <p class="about__line about__line--l" data-row="2" data-side="l" aria-label="IDEAS"><span aria-hidden="true">IDEAS</span></p>
@@ -194,23 +217,6 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
       <p class="about__line about__line--r" data-row="1" data-side="r" aria-label="I BUILD"><span aria-hidden="true">I BUILD</span></p>
       <p class="about__line about__line--r" data-row="2" data-side="r" aria-label="THINGS"><span aria-hidden="true">THINGS</span></p>
       <p class="about__line about__line--r" data-row="3" data-side="r" aria-label="THAT WORK"><span aria-hidden="true">THAT WORK</span></p>
-
-      <div class="about__aux about__aux--l">
-        <p class="about__lead">경험을 설계하고, AI로 그리고, <em>코드로 만듭니다.</em></p>
-        <p>사용자의 문제를 리서치하고, 생성형 AI로 시각 언어를 만들고,
-           직접 코드로 완성합니다. 아이디어가 씨앗에서 피어나듯 화면이 됩니다.</p>
-      </div>
-
-      <div class="about__aux about__aux--r">
-        <p class="about__name">황혜선 · Hwang Hyeseon</p>
-        <p>Product Designer. 리서치부터 픽셀, 배포까지 전 과정을 아우르며
-           아이디어와 구현 사이의 거리를 좁힙니다.</p>
-        <ul class="about__skills">
-          <li>UX/UI · <b>design system</b></li>
-          <li><b>AI character</b> · key visual</li>
-          <li>vibe coding · <b>GSAP / JS</b></li>
-        </ul>
-      </div>
     </div>
   </section>
 
@@ -318,6 +324,8 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
     </div>
   </div>
 </footer>
+
+<div id="scrollHint" aria-hidden="true">Scroll ↓</div>
 
 <script src="./assets/js/shader-bg.js"></script>
 <script src="./assets/js/dandelion.js"></script>
