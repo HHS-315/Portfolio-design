@@ -78,4 +78,7 @@ assets/fonts/            # self-host Pretendard (미사용 · 보관)
 | 라인(dimmer) | `#333` |
 
 폰트: 본문·글리프는 **JetBrains Mono**(폴백 `monospace`), 히어로 대형 문구는
-**Archivo**(빅 볼드 그로테스크, 폴백 `Helvetica Neue`/`Arial`).
+**Monument Extended UltraBold**. Monument Extended는 유료(라이선스) 폰트라
+저장소에 포함하지 않습니다 — 라이선스 보유 시 `assets/fonts/`에
+`monument-extended-ultrabold.woff2`(및 `.woff`)로 넣으면 `@font-face`가
+자동 적용되고, 없을 땐 **Archivo**(빅 볼드 그로테스크)로 폴백합니다.

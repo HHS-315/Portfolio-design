@@ -15,11 +15,25 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
 
+/* Hero display — Monument Extended UltraBold (licensed; self-host the file).
+   Drop your licensed woff2/woff into assets/fonts/ with these names and it
+   renders automatically; until then the hero falls back to Archivo. */
+@font-face{
+  font-family:'Monument Extended';
+  font-weight:800;
+  font-style:normal;
+  font-display:swap;
+  src:url('./assets/fonts/monument-extended-ultrabold.woff2') format('woff2'),
+      url('./assets/fonts/monument-extended-ultrabold.woff')  format('woff');
+}
+
 :root{
   --bg:#0a0a0a; --bone:#e9e9e6; --dim:#7a7a75; --dimmer:#333; --hi:#f2f2f0;
   --mono:'JetBrains Mono','SFMono-Regular','Cascadia Code',Menlo,Consolas,ui-monospace,monospace;
-  /* big bold grotesque — hero display (runrobrun-style) */
+  /* big bold grotesque — used by ABOUT lead/name */
   --grotesk:'Archivo','Helvetica Neue','Arial Narrow',Arial,sans-serif;
+  /* hero display — Monument Extended UltraBold, falling back to a wide bold grotesque */
+  --hero-font:'Monument Extended','Archivo','Helvetica Neue','Arial Narrow',Arial,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
@@ -47,7 +61,7 @@ a{color:inherit;text-decoration:none}
 /* hero */
 .hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center;padding-top:6.5vh;position:relative}
 /* tagline at the flower's upper-left */
-.hero__quote{position:absolute;margin:0;font-family:var(--grotesk);font-weight:800;font-size:clamp(30px,5vw,66px);line-height:1.04;letter-spacing:-.03em;color:var(--hi);max-width:min(46vw,600px);transition:opacity .9s ease,transform .9s ease}
+.hero__quote{position:absolute;margin:0;font-family:var(--hero-font);font-weight:800;font-size:clamp(26px,4.4vw,58px);line-height:1.08;letter-spacing:-.01em;color:var(--hi);max-width:min(52vw,640px);transition:opacity .9s ease,transform .9s ease}
 .hero__quote--tl{top:clamp(96px,15vh,150px);left:clamp(18px,6vw,88px);text-align:left}
 .hero__quote--br{bottom:9vh;right:clamp(18px,6vw,88px);text-align:right}
 @media(max-width:640px){.hero__quote{font-size:clamp(24px,7.2vw,38px);max-width:74vw}.hero__quote--tl{top:12vh}.hero__quote--br{bottom:8vh}}
