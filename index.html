@@ -71,20 +71,22 @@ a{color:inherit;text-decoration:none}
 .lede{color:var(--dim);max-width:60ch;font-size:14.5px}
 
 /* ABOUT — full-bleed uppercase couplets flanking the centred dandelion.
-   Each .about__line is an overflow-hidden mask; its <span> slides on translateY
-   for a blind-flicker reveal (see about-lines.js). The letters never change —
-   only their vertical position. Extra padding-block keeps Archivo 900 caps from
-   clipping at line-height .95; the matching negative margin cancels the layout. */
+   Each .about__line is an overflow-hidden mask exactly one copy tall; its
+   <span> (a two-copy track) slides on translateY, scroll-linked, for a curtain
+   roll (see about-lines.js). Mask height, copy height and the dup offset all
+   derive from --lh so nothing peeks at rest; row spacing is grid gap only. */
 #about{background:transparent}
 .about__grid{flex:1;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:repeat(3,auto);align-content:center;gap:clamp(4px,1.2vh,18px) clamp(14px,2.6vw,48px);padding-inline:var(--gutter)}
 .about__center{grid-column:2;grid-row:1/4;width:min(22vw,300px)}   /* dandelion reserve */
 
-.about__line{margin:0;overflow:hidden;position:relative;padding-block:.18em;margin-block:-.18em;font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:.95;color:var(--hi);font-size:clamp(28px,3.4vw,76px);white-space:nowrap}
+.about__line{margin:0;overflow:hidden;position:relative;--lh:1.2;font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;color:var(--hi);font-size:clamp(28px,3.4vw,76px);white-space:nowrap}
 .about__line span{display:block}
-/* curtain roll: a track holding two identical stacked copies; only translateY
-   is animated (compositor). The mask height = one copy — the second copy is
-   positioned just below so it fills the mask the instant the first rolls out. */
-.about__roll{will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+/* curtain roll: the track holds two identical copies. Mask height, copy height
+   and the dup's offset all derive from --lh, so they stay locked to one value —
+   at rest the mask shows exactly one copy (no second copy peeking), and the dup
+   sits flush below the track (position:relative on the track is the anchor). */
+.about__roll{position:relative;display:block;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.about__copy{line-height:var(--lh)}
 .about__copy--dup{position:absolute;top:100%;left:0;right:0}
 .about__line--l{grid-column:1;justify-self:start;text-align:left}
 .about__line--r{grid-column:3;justify-self:end;text-align:right}
