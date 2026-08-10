@@ -30,7 +30,8 @@ body{background:var(--bg);color:var(--bone);font-family:var(--mono);font-weight:
 a{color:inherit;text-decoration:none}
 
 /* dandelion canvas — background layer */
-#field{position:fixed;inset:0;z-index:0;display:block;cursor:crosshair}
+#shaderbg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none}
+#field{position:fixed;inset:0;z-index:1;display:block;cursor:crosshair}
 
 .shell{position:relative;z-index:2;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
@@ -147,6 +148,8 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
 </head>
 <body>
 
+<!-- animated shader background (behind the ASCII dandelion) -->
+<canvas id="shaderbg"></canvas>
 <canvas id="field"></canvas>
 
 <div class="bar">
@@ -295,6 +298,7 @@ footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
   </div>
 </footer>
 
+<script src="./assets/js/shader-bg.js"></script>
 <script src="./assets/js/dandelion.js"></script>
 </body>
 </html>

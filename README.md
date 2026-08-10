@@ -4,7 +4,20 @@
 포트폴리오입니다. 다크(#0a0a0a) + 모노스페이스(JetBrains Mono) 무드의 터미널
 에디토리얼 톤이며, 담긴 내용은 UX/UI 디자인 · AI 캐릭터·그래픽 · 바이브코딩입니다.
 
-## 배경 — DANDELION (순수 JS 캔버스)
+## 배경 레이어
+
+두 개의 고정 캔버스가 겹칩니다(뒤 → 앞): **셰이더 배경** → **민들레 글리프**.
+
+- `assets/js/shader-bg.js` — 21st.dev Shader Builder의 "Neuro Noise"(Paper
+  Shaders, Apache-2.0)를 **의존성 없는 순수 JS**로 포팅. `<canvas id="shaderbg">`
+  (`z-index:0`)에 WebGL로 그려지며, **검은 배경 + 어두운 회색** 필라멘트로
+  리컬러했습니다. 커서 상호작용은 끄고(민들레 hover와 충돌 방지) 느리게만
+  흐르며, `prefers-reduced-motion`이면 정지, WebGL이 없으면 조용히 무시됩니다.
+  히어로·About처럼 배경이 비치는 섹션에서 보이고, 불투명 섹션은 이를 가립니다.
+- 이 사이트는 React/shadcn/TS가 아니라 **정적 단일 HTML**이라, 원본 shadcn용
+  `blue-noise.tsx` 컴포넌트 대신 동일 셰이더를 바닐라 JS로 이식했습니다.
+
+## 민들레 — DANDELION (순수 JS 캔버스)
 
 - `assets/js/dandelion.js` — 의존성 없는 순수 JS. `<canvas id="field">`에 흰
   글리프로 민들레(머리·줄기·잎)를 그립니다. 깊이는 **알파(불투명도)로만** 표현.
@@ -60,7 +73,8 @@ assets/fonts/            # self-host Pretendard (미사용 · 보관)
 ```
 
 > 참고: 이전 우주 테마에서 쓰던 파일(`assets/styles.css`, `assets/js/gsap.min.js`,
-> `assets/js/shader-bg.js`, `assets/hero/*`)은 현재 페이지에서 참조하지 않습니다.
+> `assets/hero/*`)은 현재 페이지에서 참조하지 않습니다. (`shader-bg.js`는
+> 다시 사용 중 — 위 "배경 레이어" 참고.)
 
 ## 콘텐츠 교체
 
