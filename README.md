@@ -28,7 +28,8 @@
 
 - **.bar** — 상단 바(이름 + 내비 + 태그)
 - **.hero** — `PORTFOLIO` 타이틀 + 황혜선 · UX/UI · AI 캐릭터 · 바이브코딩 + 홀씨 카운터
-- **#about** — 소개, ASCII 프로필 박스, 스킬 칩
+- **#about** — 가운데 민들레를 그대로 두고(투명 패널) **좌·우 중앙에 텍스트**를
+  배치: 왼쪽은 소개 문구, 오른쪽은 이름·역할·스킬(모바일에선 중앙 정렬로 스택)
 - **#work** — 세 가지 전문 분야(01 UX/UI · 02 AI 캐릭터·그래픽 · 03 바이브 코딩) + 작업 목록
 - **#process** — 리서치 → 디자인 → 개발 → 전달 4단계 그리드
 - **#contact** — `say_hello( )` 입력 + 이메일 + 소셜
@@ -76,4 +77,5 @@ assets/fonts/            # self-host Pretendard (미사용 · 보관)
 | 보조(dim) | `#7a7a75` |
 | 라인(dimmer) | `#333` |
 
-폰트: **JetBrains Mono** (본문·글리프, 폴백 `monospace`)
+폰트: 본문·글리프는 **JetBrains Mono**(폴백 `monospace`), 히어로 대형 문구는
+**Archivo**(빅 볼드 그로테스크, 폴백 `Helvetica Neue`/`Arial`).
