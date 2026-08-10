@@ -22,7 +22,7 @@
   var introDone = reduce;            // reduced-motion → straight to the live flower
   var introStarted=false;            // set on the first build(); prevents restart on resize
   var IT_TEXT=1000, IT_SCAT=850, IT_FORM=1650;
-  var INTRO_FAM="'Montserrat','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
+  var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // the hero tagline appears only once the flower has finished forming
@@ -377,7 +377,7 @@
   var started=false;
   function start(){ if(started) return; started=true; resize(); requestAnimationFrame(frame); }
   if(!introDone && document.fonts && document.fonts.load){
-    document.fonts.load("700 200px 'Montserrat'").then(start,start);
+    document.fonts.load("700 200px 'Plus Jakarta Sans'").then(start,start);
     setTimeout(start,500);
   } else { start(); }
 })();

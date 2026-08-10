@@ -78,7 +78,7 @@ assets/fonts/            # self-host Pretendard (미사용 · 보관)
 | 라인(dimmer) | `#333` |
 
 폰트: 본문·글리프는 **JetBrains Mono**(폴백 `monospace`), 히어로 대형 문구와
-인트로 **"PORTFOLIO"** 글자꼴은 **Montserrat Bold**(Google Fonts, 폴백
-`Helvetica Neue`/`Arial`). 인트로는 오프스크린 캔버스에서 Montserrat로 글자를
+인트로 **"PORTFOLIO"** 글자꼴은 **Plus Jakarta Sans Bold**(Google Fonts, 폴백
+`Helvetica Neue`/`Arial`). 인트로는 오프스크린 캔버스에서 이 폰트로 글자를
 그린 뒤 좌표를 추출하므로, 시작 전 최대 0.5초 동안 폰트 로드를 기다립니다.
 ABOUT 리드/이름은 **Archivo**(빅 볼드 그로테스크).
