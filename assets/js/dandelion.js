@@ -21,11 +21,12 @@
   // ---- intro state ----
   var introDone = reduce;            // reduced-motion → straight to the live flower
   var introStarted=false;            // set on the first build(); prevents restart on resize
-  var IT_TEXT=900, IT_SCAT=700, IT_FORM=1400;
+  var IT_TEXT=1000, IT_SCAT=850, IT_FORM=1650;
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // the hero tagline appears only once the flower has finished forming
-  function showQuote(){ if(quoteShown) return; quoteShown=true; var q=document.getElementById('heroQuote'); if(q){ q.style.opacity='1'; q.style.transform='none'; } }
+  function showQuote(){ if(quoteShown) return; quoteShown=true;
+    [].forEach.call(document.querySelectorAll('.hero__quote'),function(q){ q.style.opacity='1'; q.style.transform='none'; }); }
 
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
@@ -164,7 +165,11 @@
     for(i=0;i<N;i++) order.push(i);
     for(i=N-1;i>0;i--){ var j=(Math.random()*(i+1))|0, tmp=order[i]; order[i]=order[j]; order[j]=tmp; }
     for(var k=0;k<N;k++){ var p=pts[order[k]];
-      if(k<M){ var idx=(M>=N)? Math.floor(k*M/N) : k; p.tx=tc[idx].x; p.ty=tc[idx].y; p.extra=false; p.x=p.tx; p.y=p.ty; p.a=0.001; }
+      if(k<M){ var idx=(M>=N)? Math.floor(k*M/N) : k; p.tx=tc[idx].x; p.ty=tc[idx].y; p.extra=false;
+        // start slightly off the letter so "PORTFOLIO" gently coalesces instead of popping in
+        var aa=Math.random()*6.28318, sp=24+Math.random()*44;
+        p.ax=p.tx+Math.cos(aa)*sp; p.ay=p.ty+Math.sin(aa)*sp;
+        p.x=p.ax; p.y=p.ay; p.a=0.001; }
       else   { p.extra=true; p.x=p.fx; p.y=p.fy; p.a=0; }
     }
   }
@@ -202,45 +207,58 @@
 
   // ---- INTRO frame (text → scatter → form) ----
   function easeOutCubic(x){ return 1-Math.pow(1-x,3); }
+  function easeInOutCubic(x){ return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
   function introFrame(t,dtf){
     if(introT0===0){ introT0=t; }
     var e=t-introT0, shimT=t*0.004;
-    var phase = e<IT_TEXT?'text' : e<IT_TEXT+IT_SCAT?'scatter' : e<IT_TEXT+IT_SCAT+IT_FORM?'form' : 'end';
+    var T1=IT_TEXT, T2=IT_TEXT+IT_SCAT, T3=IT_TEXT+IT_SCAT+IT_FORM;
+    var phase = e<T1?'text' : e<T2?'scatter' : e<T3?'form' : 'end';
 
     if(phase==='end'){ introDone=true; showQuote(); liveFrame(t,dtf); return; }   // flower formed → reveal tagline, hand off
 
     if(phase==='scatter' && !scatterInit){
       scatterInit=true;
       for(var i=0;i<N;i++){ var p=pts[i]; if(p.extra) continue;
-        var a=Math.atan2(p.y-cy, p.x-cx)+(Math.random()-0.5)*1.2, sp=4+Math.random()*7;
-        p.vx=Math.cos(a)*sp; p.vy=Math.sin(a)*sp-2; }
+        // blow outward from the word's centre, softly and with varied speed
+        var a=Math.atan2(p.y-cy, p.x-cx)+(Math.random()-0.5)*1.0, sp=3+Math.random()*6;
+        p.vx=Math.cos(a)*sp; p.vy=Math.sin(a)*sp-1.6; }
     }
     if(phase==='form' && !formInit){
       formInit=true;
-      for(var i2=0;i2<N;i2++){ var p2=pts[i2]; p2.sx0=p2.x; p2.sy0=p2.y; }
+      for(var i2=0;i2<N;i2++){ var p2=pts[i2]; p2.sx0=p2.x; p2.sy0=p2.y;
+        p2.curl=(Math.random()<0.5?-1:1)*(10+Math.random()*30); }   // arc amount for a swirling reform
     }
 
-    var fe = e-(IT_TEXT+IT_SCAT);   // elapsed inside form
+    var fe = e-T2;   // elapsed inside form
     for(var k=0;k<N;k++){ var p=pts[k];
       churn(p,t,false);
       var vis;
       if(phase==='text'){
         if(p.extra){ continue; }
-        p.x=p.tx; p.y=p.ty; vis=p.introBase;
+        // assemble: slide in from the jittered start + fade up, then hold the word
+        var te=e/IT_TEXT, ae=easeOutCubic(te<0.66?te/0.66:1);
+        p.x=p.ax+(p.tx-p.ax)*ae; p.y=p.ay+(p.ty-p.ay)*ae; p.a=ae;
+        vis=p.introBase*ae;
       } else if(phase==='scatter'){
         if(p.extra){ continue; }
-        p.vx+=Math.sin(p.y*0.01+t*0.001)*3*dtf; p.vy+=Math.cos(p.x*0.01+t*0.001)*3*dtf;
-        p.vx*=Math.pow(0.94,dtf); p.vy*=Math.pow(0.94,dtf);
+        var se=(e-T1)/IT_SCAT;
+        p.vx+=Math.sin(p.y*0.01+t*0.001)*2.4*dtf; p.vy+=Math.cos(p.x*0.01+t*0.001)*2.4*dtf;
+        p.vx*=Math.pow(0.95,dtf); p.vy*=Math.pow(0.95,dtf);
         p.x+=p.vx*dtf; p.y+=p.vy*dtf;
         var m=38;                                        // keep them on-screen (soft walls)
         if(p.x<m){p.x=m;p.vx*=-0.4;} else if(p.x>W-m){p.x=W-m;p.vx*=-0.4;}
         if(p.y<m){p.y=m;p.vy*=-0.4;} else if(p.y>H-m){p.y=H-m;p.vy*=-0.4;}
-        vis=p.introBase;
+        vis=p.introBase*lerp(1,0.5,Math.min(1,se));       // dim as the word dissolves to dust
       } else { // form
         var pr=(fe-p.fdelay)/(IT_FORM-p.fdelay); if(pr<0)pr=0; else if(pr>1)pr=1;
-        var ee=easeOutCubic(pr);
+        var ee=easeInOutCubic(pr);
         if(p.extra){ p.x=p.fx; p.y=p.fy; p.a=ee; vis=p.introBase*ee; }
-        else       { p.x=p.sx0+(p.fx-p.sx0)*ee; p.y=p.sy0+(p.fy-p.sy0)*ee; p.a=1; vis=p.introBase; }
+        else {
+          var dx=p.fx-p.sx0, dy=p.fy-p.sy0, dl=Math.sqrt(dx*dx+dy*dy)||1, mid=Math.sin(ee*Math.PI);
+          p.x=p.sx0+dx*ee + (-dy/dl)*p.curl*mid;          // arc in along a perpendicular bow
+          p.y=p.sy0+dy*ee + ( dx/dl)*p.curl*mid;
+          p.a=1; vis=p.introBase*lerp(0.5,1,ee);          // brighten back up as it settles
+        }
       }
       if(!reduce) vis += Math.sin(shimT+p.sway)*0.10;
       bucket(p.x,p.y,p.ch,vis);
@@ -344,11 +362,13 @@
   // hide the tagline until the intro finishes forming the flower — set instantly
   // (transition off) so it doesn't flash-then-fade at load. reduced-motion skips
   // the intro so it stays visible; JS-off keeps the CSS default = visible.
-  (function(){ var q=document.getElementById('heroQuote'); if(q && !introDone){
-    q.style.transition='none'; q.style.opacity='0'; q.style.transform='translateY(14px)';
-    void q.offsetWidth;                                   // commit before re-enabling transition
-    q.style.transition='opacity .9s ease, transform .9s ease';
-  } })();
+  (function(){ if(introDone) return;
+    [].forEach.call(document.querySelectorAll('.hero__quote'),function(q){
+      q.style.transition='none'; q.style.opacity='0'; q.style.transform='translateY(14px)';
+      void q.offsetWidth;                                 // commit before re-enabling transition
+      q.style.transition='opacity .9s ease, transform .9s ease';
+    });
+  })();
 
   addEventListener('resize',resize);
   resize(); requestAnimationFrame(frame);
