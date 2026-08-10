@@ -22,6 +22,7 @@
   var introDone = reduce;            // reduced-motion → straight to the live flower
   var introStarted=false;            // set on the first build(); prevents restart on resize
   var IT_TEXT=1000, IT_SCAT=850, IT_FORM=1650;
+  var INTRO_FAM="'Montserrat','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // the hero tagline appears only once the flower has finished forming
@@ -135,7 +136,7 @@
   // ---- extract "PORTFOLIO" pixel coordinates from an offscreen canvas (once) ----
   function extractText(str){
     var off=document.createElement('canvas'), o=off.getContext('2d');
-    var fam=font();
+    var fam=INTRO_FAM;                              // Montserrat Bold letterforms
     o.font='700 200px '+fam;
     var w0=o.measureText(str).width || (str.length*120);
     var fs=Math.min((W*0.76)/w0*200, H*0.42);      // fit ~76% width; cap height (mobile auto-shrinks)
@@ -371,5 +372,12 @@
   })();
 
   addEventListener('resize',resize);
-  resize(); requestAnimationFrame(frame);
+  // Wait (briefly) for Montserrat so the offscreen "PORTFOLIO" is shaped in it,
+  // then start — never block first paint for more than half a second.
+  var started=false;
+  function start(){ if(started) return; started=true; resize(); requestAnimationFrame(frame); }
+  if(!introDone && document.fonts && document.fonts.load){
+    document.fonts.load("700 200px 'Montserrat'").then(start,start);
+    setTimeout(start,500);
+  } else { start(); }
 })();

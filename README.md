@@ -77,8 +77,8 @@ assets/fonts/            # self-host Pretendard (미사용 · 보관)
 | 보조(dim) | `#7a7a75` |
 | 라인(dimmer) | `#333` |
 
-폰트: 본문·글리프는 **JetBrains Mono**(폴백 `monospace`), 히어로 대형 문구는
-**Monument Extended UltraBold**. Monument Extended는 유료(라이선스) 폰트라
-저장소에 포함하지 않습니다 — 라이선스 보유 시 `assets/fonts/`에
-`monument-extended-ultrabold.woff2`(및 `.woff`)로 넣으면 `@font-face`가
-자동 적용되고, 없을 땐 **Archivo**(빅 볼드 그로테스크)로 폴백합니다.
+폰트: 본문·글리프는 **JetBrains Mono**(폴백 `monospace`), 히어로 대형 문구와
+인트로 **"PORTFOLIO"** 글자꼴은 **Montserrat Bold**(Google Fonts, 폴백
+`Helvetica Neue`/`Arial`). 인트로는 오프스크린 캔버스에서 Montserrat로 글자를
+그린 뒤 좌표를 추출하므로, 시작 전 최대 0.5초 동안 폰트 로드를 기다립니다.
+ABOUT 리드/이름은 **Archivo**(빅 볼드 그로테스크).
