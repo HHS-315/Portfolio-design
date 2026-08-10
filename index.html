@@ -48,13 +48,12 @@ a{color:inherit;text-decoration:none}
 .hero__quote{position:absolute;bottom:9vh;left:clamp(18px,6vw,88px);margin:0;text-align:left;font-weight:700;font-size:clamp(28px,4.6vw,58px);line-height:1.12;letter-spacing:-.01em;color:var(--hi);max-width:min(52vw,600px);transition:opacity .9s ease,transform .9s ease}
 @media(max-width:640px){.hero__quote{bottom:8vh;font-size:clamp(24px,7.2vw,38px);max-width:88vw}}
 
-/* sections — full-bleed opaque panels, alternating tone (hard-edged blocks) */
-.sec{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(80px,14vh,160px) 0;scroll-margin-top:70px;border-top:1px solid rgba(255,255,255,.16)}
+/* sections — full-bleed opaque panels, alternating colour only (no divider lines) */
+.sec{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(80px,14vh,160px) 0;scroll-margin-top:70px}
 .sec:nth-of-type(odd){background:#1b1b22}
 .sec:nth-of-type(even){background:#090909}
-/* per-section divider header: number ── name, in the content flow */
-.sec__head{display:flex;align-items:center;gap:18px;margin-bottom:40px;padding-inline:clamp(20px,5vw,64px);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
-.sec__head .ln{flex:1;height:1px;background:var(--dimmer)}
+/* per-section label: number (left) · name (right), no line */
+.sec__head{display:flex;justify-content:space-between;margin-bottom:40px;padding-inline:clamp(20px,5vw,64px);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
 .sec__head b{color:var(--hi);font-weight:500}
 .tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 .tag::before{content:"// "}
@@ -111,7 +110,7 @@ a{color:inherit;text-decoration:none}
 .clinks a:hover{color:var(--hi);border-color:var(--hi)}
 
 /* footer */
-footer{position:relative;z-index:2;padding:60px 0 46px;border-top:1px solid var(--dimmer);background:rgba(10,10,10,.85)}
+footer{position:relative;z-index:2;padding:60px 0 46px;background:#1b1b22}
 .foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:12px;color:var(--dim);line-height:1.9}
 .foot a{color:var(--hi)}
 .foot pre{color:var(--dimmer);font-size:11px;line-height:1.25}
@@ -139,7 +138,7 @@ footer{position:relative;z-index:2;padding:60px 0 46px;border-top:1px solid var(
 
   <!-- ABOUT -->
   <section id="about" class="sec sec--tint">
-    <div class="sec__head"><b>01</b><span class="ln"></span><span>About</span></div>
+    <div class="sec__head"><b>01</b><span>About</span></div>
     <div class="wrap">
       <h2 class="h2 reveal">경험을 설계하고, AI로 그리고, <em>코드로 만듭니다</em>.</h2>
       <p class="lede reveal">
@@ -165,7 +164,7 @@ footer{position:relative;z-index:2;padding:60px 0 46px;border-top:1px solid var(
 
   <!-- WORK -->
   <section id="work" class="sec sec--tint">
-    <div class="sec__head"><b>02</b><span class="ln"></span><span>Selected Work</span></div>
+    <div class="sec__head"><b>02</b><span>Selected Work</span></div>
     <div class="wrap">
       <h2 class="h2 reveal">세 가지 전문 분야<em>.</em></h2>
       <p class="lede reveal">디자인 · AI 그래픽 · 코드. 한 사람 안에서 이어지는 세 가지 작업입니다.</p>
@@ -215,7 +214,7 @@ footer{position:relative;z-index:2;padding:60px 0 46px;border-top:1px solid var(
 
   <!-- PROCESS -->
   <section id="process" class="sec sec--tint">
-    <div class="sec__head"><b>03</b><span class="ln"></span><span>Process</span></div>
+    <div class="sec__head"><b>03</b><span>Process</span></div>
     <div class="wrap">
       <h2 class="h2 reveal">일하는 방식<em>.</em></h2>
       <div class="proc reveal">
@@ -229,7 +228,7 @@ footer{position:relative;z-index:2;padding:60px 0 46px;border-top:1px solid var(
 
   <!-- CONTACT -->
   <section id="contact" class="sec sec--tint">
-    <div class="sec__head"><b>04</b><span class="ln"></span><span>Contact</span></div>
+    <div class="sec__head"><b>04</b><span>Contact</span></div>
     <div class="wish">
       <div class="wish__frame reveal">
         <div class="wish__label">say_hello( )</div>
