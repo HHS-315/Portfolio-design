@@ -40,7 +40,8 @@
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
     FS=Math.max(6,Math.min(9,W/170));                 // smaller glyphs -> tighter grid
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    cx=W*0.5; cy=H*0.56; headR=Math.min(W,H)*0.135; baseX=W*0.5; baseY=H*0.92;
+    var mob=W<=640;                                    // lift the flower on mobile so text isn't covered
+    cx=W*0.5; cy=H*(mob?0.48:0.56); headR=Math.min(W,H)*0.135; baseX=W*0.5; baseY=H*(mob?0.84:0.92);
     build();
   }
 
