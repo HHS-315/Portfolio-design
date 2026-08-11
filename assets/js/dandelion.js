@@ -11,6 +11,7 @@
   var W=0,H=0,DPR=1,FS=8;
   var cx=0,cy=0,headR=0,baseX=0,baseY=0;   // cx,cy = flower-head centre
   var pts=[], N=0;
+  var fallCur=0, keeperN=0;              // fallCur: smoothed shown progress; keeperN: bottom-strip slot count
   var mouse={x:-1e5,y:-1e5,speed:0};
   var CODE=['0','1','/','\\','<','>','{','}','(',')','=','+','-','*','#','$','%','&','|',';',':','.','x','?','!','^','~'];
   var PTIP=['*','^','/','\\','x','+','\''];
@@ -26,18 +27,30 @@
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
 
   // ---- ABOUT→WORK decompose: head bursts UP, arcs over, rains into a bottom ASCII strip ----
+  var DEBUG           = false; // overlay: target vs shown progress + keeper count
   var FALL_T_END      = 0.70;  // WorkTransition progress at which the decompose completes
-  var PETAL_DELAY     = 0.24;  // petals fall within this early window (flower head bursts FIRST)
-  var GREEN_DELAY_ST  = 0.30;  // stem/leaves begin only after the petals are away…
-  var GREEN_DELAY_SP  = 0.46;  // …spread over this much progress (stem → leaves → roots last)
+  var FALL_LERP       = 0.15;  // smoothing — the SHOWN progress eases toward the scroll target (0.12–0.18)
+  // delay windows (progress units) — widened so 1000+ glyphs spread across the whole decompose
+  // instead of the head vanishing within a few px. Petals lead; the green parts start as the
+  // petals finish (slight overlap) and trail to the end.
+  var PETAL_DELAY     = 0.45;  // petals fall spread across this early window (was 0.24 → too abrupt)
+  var GREEN_DELAY_ST  = 0.38;  // stem/leaves begin here (overlaps the petal tail)…
+  var GREEN_DELAY_SP  = 0.45;  // …and trail over this much (stem → leaves → roots last)
+  var GAMMA_MIN       = 0.85;  // per-glyph flight-progress curve: <1 rushes early, >1 lingers longer
+  var GAMMA_VAR       = 1.05;  // fgamma ∈ [GAMMA_MIN, GAMMA_MIN+GAMMA_VAR] — varied yet all land at the end
   var RISE_PEAK       = 0.34;  // apex of the upward launch, as a fraction of viewport height
   var RISE_PEAK_VAR   = 0.26;  // per-glyph apex variation
   var FALL_DRIFT      = 120;   // px of horizontal sway mid-flight (fades to 0 on landing)
   var FALL_ROT        = 6.5;   // max tumble (radians) mid-flight (returns upright on landing)
   var FALL_BURST      = 240;   // px radial spread applied to the fading (non-landing) glyphs
-  var LAND_GAP        = 1.20;  // bottom-strip slot spacing = FS × this (mobile: fewer, FS smaller)
+  var LAND_GAP        = 1.10;  // strip slot spacing = (MEASURED glyph width) × this — desktop density
+  var LAND_GAP_MOB    = 1.80;  // …× this on mobile (W≤640) so the row isn't overcrowded
   var LAND_MARGIN     = 1.8;   // strip baseline sits FS × this above the bottom edge
   var LAND_DARK       = 0.90;  // landed glyphs darken toward black by this much (dark on light blocks)
+  var LAND_CHURN_MIN  = 60;    // bottom-strip character-swap period (ms) — fast flicker…
+  var LAND_CHURN_MAX  = 260;   // …random up to here (the live flower stays at its calmer 200–1200ms)
+  var LAND_SHIM_SPEED = 0.012; // bottom-strip alpha-shimmer speed (live flower uses 0.004)
+  var LAND_SHIM_AMP   = 0.26;  // bottom-strip alpha-shimmer amplitude (was 0.14 when landed)
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -148,7 +161,7 @@
       }
       p.frot=(Math.random()*2-1);
       p.fdrift=Math.random()*6.2832;
-      p.fspd=0.85+Math.random()*0.4;
+      p.fgamma=GAMMA_MIN+Math.random()*GAMMA_VAR;   // flight-progress curve — varied speed, all land at end
       p.fpeak=(RISE_PEAK+Math.random()*RISE_PEAK_VAR)*(p.petal?1.15:0.8);  // petals launch higher
       p.fscale=0.40+Math.random()*0.30;         // mid-flight shrink (recede), restored on landing
       // radial direction from the flower centre → spread for the fading (non-landing) glyphs
@@ -162,7 +175,14 @@
     // With 1000+ glyphs a full row would overlap into mush, so keep only as many as fit
     // at LAND_GAP spacing. Sort by x and sample evenly into slots → left origins map to
     // left slots (minimal crossing, no duplicates), fixed once per build (deterministic).
-    var slots=Math.max(6,Math.floor(W/(FS*LAND_GAP))); if(slots>N)slots=N;
+    // Measure the REAL glyph width (JetBrains Mono is narrower than FS) so the strip packs to
+    // near-touching instead of looking gappy. Slot count is capped by N (never exceeds the
+    // available glyphs / the 1000-ish total), and mobile uses a wider gap so it isn't overcrowded.
+    ctx.font=FS+'px '+font();
+    var charW=ctx.measureText('0').width||FS*0.6;
+    var gap=charW*(W<=640?LAND_GAP_MOB:LAND_GAP);
+    var slots=Math.max(6,Math.floor(W/gap)); if(slots>N)slots=N;
+    keeperN=slots;
     var order2=[]; for(i=0;i<N;i++) order2.push(i);
     order2.sort(function(a,b){ return (pts[a].fx-pts[b].fx)||(pts[a].fy-pts[b].fy); });
     var landY=H-FS*LAND_MARGIN, denom=(slots>1?slots-1:1);
@@ -250,10 +270,11 @@
   for(var q=0;q<NB;q++){ BX.push([]); BY.push([]); BC.push([]); }
 
   // ---- churn helper (character swap on a per-glyph timer) ----
-  function churn(p,t,near){
+  function churn(p,t,near,fast){
     if(!reduce && p.set && t>=p.swapAt){
       p.ch=pick(p.set);
-      var per=p.stab?(1500+Math.random()*2500):(200+Math.random()*1000);
+      var per = fast ? (LAND_CHURN_MIN+Math.random()*(LAND_CHURN_MAX-LAND_CHURN_MIN))   // bottom strip: quick flicker
+                     : (p.stab?(1500+Math.random()*2500):(200+Math.random()*1000));      // live flower: calmer
       if(near) per*=0.35;
       p.swapAt=t+per;
     }
@@ -401,10 +422,9 @@
   // rest launch up, arc over and fade out mid-fall (and fade back in when you scroll up).
   function fallFrame(t, fallP){
     ctx.font=FS+'px '+font();
-    var shimT=t*0.004;
     for(var i=0;i<pts.length;i++){ var p=pts[i];
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
-      lp*=p.fspd; if(lp>1)lp=1;
+      lp=Math.pow(lp,p.fgamma);                          // per-glyph speed curve (all still reach 1)
       var flowerBase=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
       var ez=lp*lp;                                       // gravity-accelerated descent baseline
       var arc=p.fpeak*H*Math.sin(Math.PI*lp);             // upward launch → apex → back down
@@ -416,11 +436,11 @@
         var x=p.fx+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*(1-lp);
         var colorT=land*LAND_DARK;                        // white in flight → dark once landed
         var v=(255*(1-colorT))|0;
-        var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(shimT+p.sway)*0.14*land;
+        var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP*land;
         if(vis<=0.03) continue; if(vis>1)vis=1;
         var ang=p.frot*FALL_ROT*lp*(1-land);              // tumble in flight, upright on landing
         var sc=1-p.fscale*Math.sin(Math.PI*lp)*(1-land);  // recede mid-flight, full size settled
-        if(!reduce && land>0.5) churn(p,t,false);         // blink the landed strip like the live flower
+        if(!reduce && land>0.5) churn(p,t,false,true);    // fast flicker on the landed strip (per-glyph phase)
         ctx.globalAlpha=vis; ctx.fillStyle='rgb('+v+','+v+','+v+')';
         ctx.save(); ctx.translate(x,y); if(ang)ctx.rotate(ang); if(sc!==1)ctx.scale(sc,sc); ctx.fillText(p.ch,0,0); ctx.restore();
       } else {
@@ -457,22 +477,38 @@
 
     if(!introDone){ introFrame(t,dtf); flush(); kick(); return; }
 
-    var fallP=fallProgress();
-    if(fallP>0.0001){
+    // SMOOTHING: the trajectory is a pure function of the SHOWN progress (fallCur), but fallCur
+    // only eases toward the scroll target — so a jumpy wheel/trackpad glides instead of snapping,
+    // while "same progress = same frame" still holds once it settles (like about-lines.js LERP).
+    var target=fallProgress();
+    if(reduce) fallCur=target;
+    else { fallCur+=(target-fallCur)*FALL_LERP; if(Math.abs(target-fallCur)<0.0008) fallCur=target; }
+    if(DEBUG) updateDbg(target);
+
+    if(fallCur>0.0001){
       if(!falling){ falling=true; resetToRest(); }
-      fallFrame(t,fallP);                        // flight + the landed strip (blinking at the bottom)
-      if(!aboutOut()) kick();                    // keep animating while ABOUT is still on screen…
-      return;                                    // …ABOUT fully gone → freeze the strip, idle the loop
+      fallFrame(t,fallCur);                      // flight + the landed strip (blinking at the bottom)
+      if(!aboutOut() || fallCur!==target) kick();// animate while ABOUT is on screen OR still easing to target
+      return;                                    // …settled AND ABOUT gone → freeze the strip, idle the loop
     }
     if(falling){ falling=false; resetToRest(); } // scrolled back up → resume the living flower
     liveFrame(t,dtf); flush(); kick();
   }
+  var _dbg=null;
+  function updateDbg(target){
+    if(!_dbg){ _dbg=document.createElement('div');
+      _dbg.style.cssText='position:fixed;left:8px;top:8px;z-index:99999;font:11px/1.5 ui-monospace,monospace;color:#7fd;background:rgba(0,0,0,.72);padding:6px 9px;white-space:pre;pointer-events:none;border:1px solid #275';
+      document.body.appendChild(_dbg); }
+    _dbg.textContent='fallP target '+target.toFixed(3)+'\n      shown  '+fallCur.toFixed(3)+'\nkeepers '+keeperN+'   N '+N;
+  }
   // Single-token scheduler: rafId is the SOLE source of truth for "a frame is queued".
   // scroll/resize can re-arm the loop freely without ever double-scheduling or leaving it
   // wedged (a boolean flag could desync from the real rAF state during rapid ABOUT↔WORK
-  // oscillation and strand the flower). The loop idles only once ABOUT is fully off-screen
-  // (so the bottom strip keeps blinking through the transition); any scroll back re-kicks it.
+  // oscillation and strand the flower). The loop idles only once the smoothing has SETTLED
+  // AND ABOUT is fully off-screen (so it always finishes easing to the target, and the bottom
+  // strip keeps blinking while ABOUT is on screen); any scroll back re-kicks it.
   function kick(){ if(rafId===0){ rafId=requestAnimationFrame(frame); } }
+  if(DEBUG) window.__fdbg=function(){ return {target:fallProgress(),cur:fallCur,keepers:keeperN}; };  // test/inspection hook
 
   var _f=null; function font(){ if(!_f)_f=getComputedStyle(document.body).fontFamily; return _f; }
 
