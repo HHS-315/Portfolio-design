@@ -35,8 +35,9 @@
   var WIND_BEND     = 1.4;    // stem bend curve: >1 keeps the root still and bends the top more
   var WIND_TILT     = 0.06;   // max head tilt (rad, ~3.4°) in phase with the shift (leans as it pushes)
   var BREATH_AMP    = 0.010;  // very faint head-radius pulsing (kept subtle; was 0.015)
-  var SWAY_FADE     = 0.10;   // decompose blend: the live wind offset fades out over fallCur 0→this,
-                              // so the burst starts from (and returns to) the actual swaying position
+  var SWAY_FADE     = 0.18;   // decompose blend, in PER-GLYPH lp units: each glyph keeps its full live
+                              // sway until it launches, then its wind melts over lp 0→this. Un-launched
+                              // glyphs (lp≈0) never freeze — they sway in place until their turn to fly.
   var WIND_W1=6.2831853/WIND_P1, WIND_W2=6.2831853/WIND_P2;   // → angular speeds
   // normalized wind ∈ ~[-1,1]; shared by liveFrame (full sway) and fallFrame (fading early sway)
   function windNow(t){ return reduce?0:(Math.sin(t*WIND_W1)+Math.sin(t*WIND_W2)*WIND_RATIO2)/(1+WIND_RATIO2); }
@@ -189,6 +190,7 @@
       var rdx=p.fx-cx, rdy=p.fy-cy, rl=Math.sqrt(rdx*rdx+rdy*rdy)||1;
       p.bx=rdx/rl; p.by=rdy/rl;
       p.fburst=0.55+Math.random()*0.85;
+      p.odx=0; p.ody=0;                         // extra (non-wind) offset captured at fall entry, e.g. hover scatter
       p.keeper=false; p.slotX=0; p.landY=0;     // set below for the bottom-strip glyphs
     }
 
@@ -434,19 +436,22 @@
     var fp=T/FALL_T_END;
     return fp<0?0:fp>1?1:fp;
   }
-  // Entering the fall: restore any hover-detached ('fly'/'gone') glyphs to a full 'on' state so the
-  // whole flower participates. We do NOT snap p.x/p.y — fallFrame ignores them and computes from fx,
-  // and the wind blend keeps the first fall frame aligned with the last live frame (no jump).
-  function enterFall(){
+  // Entering the fall: capture each glyph's displacement that ISN'T explained by the live wind — i.e.
+  // hover-detach scatter — as p.odx/ody (once, so it's deterministic). fallFrame melts it over the
+  // glyph's early lp, so a detached glyph starts exactly where it was and converges into the burst
+  // instead of snapping to fx or freezing mid-air. Then restore all glyphs to a full 'on' state.
+  function enterFall(headDisp){
     for(var i=0;i<pts.length;i++){ var p=pts[i];
+      p.odx=p.x-p.fx-windOffset(p,headDisp); p.ody=p.y-p.fy;
       p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
     }
   }
-  // Leaving the fall (recompose finished): seed p.x/p.y with the position the fall was just drawing
-  // (rest + current wind offset), so liveFrame picks up exactly there and eases on — no snap, no glide.
+  // Leaving the fall (recompose finished): seed p.x/p.y with exactly what the last fall frame drew
+  // (rest + current wind + any still-melting scatter, since lp≈0 ⇒ wf≈1), so liveFrame picks up
+  // right there and eases home — no snap. Detached glyphs glide back in via the normal lerp.
   function exitFall(headDisp){
     for(var i=0;i<pts.length;i++){ var p=pts[i];
-      p.x=p.fx+windOffset(p,headDisp); p.y=p.fy; p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
+      p.x=p.fx+windOffset(p,headDisp)+p.odx; p.y=p.fy+p.ody; p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
     }
   }
 
@@ -456,22 +461,22 @@
   // rest launch up, arc over and fade out mid-fall (and fade back in when you scroll up).
   function fallFrame(t, fallP, headDisp){
     ctx.font=FS+'px '+font();
-    // early-fall wind blend: full live sway at fallP 0 → gone by SWAY_FADE, so the burst starts
-    // from (and, in reverse, returns to) exactly where the swaying flower was drawn — no snap.
-    var windFade=1-smooth(0,SWAY_FADE,fallP);
     for(var i=0;i<pts.length;i++){ var p=pts[i];
-      var wOff=windFade>0?windOffset(p,headDisp)*windFade:0;
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
       lp=Math.pow(lp,p.fgamma);                          // per-glyph speed curve (all still reach 1)
+      // wind fades per-GLYPH as IT launches (its own lp), not globally: a glyph still waiting its
+      // turn (lp≈0) keeps its full live sway, so the base never freezes between the flying parts.
+      var wf=1-smooth(0,SWAY_FADE,lp);
+      var wOff=wf>0?windOffset(p,headDisp)*wf:0;
       var flowerBase=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
       var ez=lp*lp;                                       // gravity-accelerated descent baseline
       var arc=p.fpeak*H*Math.sin(Math.PI*lp);             // upward launch → apex → back down
 
       if(p.keeper){
         var land=smooth(0.72,1,lp);                       // 0 mid-flight → 1 fully settled
-        var y=p.fy+(p.landY-p.fy)*ez-arc;                 // parabola onto the slot baseline
+        var y=p.fy+p.ody*wf+(p.landY-p.fy)*ez-arc;        // parabola onto the slot baseline (+ captured scatter)
         var exz=1-Math.pow(1-lp,3);                       // ease toward the slot x, then settle
-        var x=p.fx+wOff+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*(1-lp);
+        var x=p.fx+wOff+p.odx*wf+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*Math.sin(Math.PI*lp);
         var colorT=land*LAND_DARK;                        // white in flight → dark once landed
         var v=(255*(1-colorT))|0;
         var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP*land;
@@ -485,8 +490,8 @@
         var fade=smooth(0.06,0.62,lp);                    // fades out over the first ~⅔ of its fall
         var vis2=flowerBase*(1-fade); if(vis2<=0.03) continue; if(vis2>1)vis2=1;
         var be=1-Math.pow(1-Math.min(1,lp/0.4),3);        // radial spread eases in early
-        var y2=p.fy+(H+FS*8-p.fy)*ez-arc;
-        var x2=p.fx+wOff+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
+        var y2=p.fy+p.ody*wf+(H+FS*8-p.fy)*ez-arc;
+        var x2=p.fx+wOff+p.odx*wf+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
         var colorT2=Math.min(1,lp*1.1)*0.82, v2=(255*(1-colorT2))|0;
         var ang2=p.frot*FALL_ROT*lp, sc2=1-p.fscale*lp;
         ctx.globalAlpha=vis2; ctx.fillStyle='rgb('+v2+','+v2+','+v2+')';
@@ -538,7 +543,7 @@
     var wind=windNow(t), headDisp=wind*headR*WIND_AMP_FRAC, tiltA=wind*WIND_TILT;
 
     if(fallCur>0.0001){
-      if(!falling){ falling=true; enterFall(); }
+      if(!falling){ falling=true; enterFall(headDisp); }
       if(fallCur>=0.9999) stripFrame(t);       // fully decomposed → draw ONLY the landed strip (cheap)
       else fallFrame(t,fallCur,headDisp);      // mid-flight → full pass (arc + fade + landing + wind blend)
       if(alive()) kick();                      // strip is always on the fixed canvas → keep blinking
