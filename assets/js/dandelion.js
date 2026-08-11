@@ -17,6 +17,7 @@
   var LEDGE=['^','v','/','\\','<','>','*','x'];
   function pick(a){ return a[(Math.random()*a.length)|0]; }
   function lerp(a,b,t){ return a+(b-a)*t; }
+  function smooth(a,b,x){ if(x<=a)return 0; if(x>=b)return 1; x=(x-a)/(b-a); return x*x*(3-2*x); }
 
   // ---- intro state ----
   var introDone = reduce;            // reduced-motion → straight to the live flower
@@ -24,13 +25,19 @@
   var IT_TEXT=1750, IT_SCAT=850, IT_FORM=1650;   // longer hold on "PORTFOLIO" before it scatters
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
 
-  // ---- ABOUT→WORK decompose (scroll-linked downward fall) ----
-  var FALL_T_END   = 0.70;   // WorkTransition progress at which the flower is fully gone
-  var FALL_DIST    = 1.45;   // × viewport height each glyph ultimately drops (harder rain)
-  var FALL_DRIFT   = 150;    // px of horizontal sway while falling (wider scatter)
-  var FALL_ROT     = 7.0;    // max tumble (radians) — glyphs spin as they fall
-  var FALL_MAXDELAY= 0.60;   // topmost glyphs start much later → a clear top-down cascade wave
-  var FALL_BURST   = 240;    // px the flower "explodes" radially outward at release
+  // ---- ABOUT→WORK decompose: head bursts UP, arcs over, rains into a bottom ASCII strip ----
+  var FALL_T_END      = 0.70;  // WorkTransition progress at which the decompose completes
+  var PETAL_DELAY     = 0.24;  // petals fall within this early window (flower head bursts FIRST)
+  var GREEN_DELAY_ST  = 0.30;  // stem/leaves begin only after the petals are away…
+  var GREEN_DELAY_SP  = 0.46;  // …spread over this much progress (stem → leaves → roots last)
+  var RISE_PEAK       = 0.34;  // apex of the upward launch, as a fraction of viewport height
+  var RISE_PEAK_VAR   = 0.26;  // per-glyph apex variation
+  var FALL_DRIFT      = 120;   // px of horizontal sway mid-flight (fades to 0 on landing)
+  var FALL_ROT        = 6.5;   // max tumble (radians) mid-flight (returns upright on landing)
+  var FALL_BURST      = 240;   // px radial spread applied to the fading (non-landing) glyphs
+  var LAND_GAP        = 1.20;  // bottom-strip slot spacing = FS × this (mobile: fewer, FS smaller)
+  var LAND_MARGIN     = 1.8;   // strip baseline sits FS × this above the bottom edge
+  var LAND_DARK       = 0.90;  // landed glyphs darken toward black by this much (dark on light blocks)
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -128,17 +135,40 @@
       if(p.petal){ p.fx=cx+Math.cos(p.ang)*p.r; p.fy=cy+Math.sin(p.ang)*p.r*0.98; p.introBase=lerp(0.42,1.0,Math.min(1,p.rn)); }
       else       { p.fx=p.hx; p.fy=p.hy; p.introBase=p.al; }
       p.fdelay=Math.random()*400;
-      // fall seeds: lower glyphs (yNorm→1) drop first; each tumbles/drifts differently
-      var yNorm=(p.fy-(cy-headR))/((baseY-(cy-headR))||1); if(yNorm<0)yNorm=0; else if(yNorm>1)yNorm=1;
-      p.fallDelay=(1-yNorm)*FALL_MAXDELAY;
+      // ---- decompose seeds (set ONCE per build → deterministic + reversible) ----
+      // fall ORDER reversed vs. before: the flower HEAD (top) goes first, then the
+      // stem, then leaves, roots last. Petals get an early window; the green parts a
+      // later one, so the head visibly bursts before the stem/leaves collapse after it.
+      if(p.petal){
+        var hn=(p.fy-(cy-headR*1.5))/(headR*2.4); if(hn<0)hn=0; else if(hn>1)hn=1;
+        p.fallDelay=hn*PETAL_DELAY;                                   // top petals lead
+      } else {
+        var gn=(p.fy-(cy-headR*0.4))/((baseY-(cy-headR*0.4))||1); if(gn<0)gn=0; else if(gn>1)gn=1;
+        p.fallDelay=GREEN_DELAY_ST+gn*GREEN_DELAY_SP;                 // stem → leaves → roots
+      }
       p.frot=(Math.random()*2-1);
       p.fdrift=Math.random()*6.2832;
-      p.fspd=0.85+Math.random()*0.5;
-      // radial direction from the flower centre → the "explode outward" burst at release
+      p.fspd=0.85+Math.random()*0.4;
+      p.fpeak=(RISE_PEAK+Math.random()*RISE_PEAK_VAR)*(p.petal?1.15:0.8);  // petals launch higher
+      p.fscale=0.40+Math.random()*0.30;         // mid-flight shrink (recede), restored on landing
+      // radial direction from the flower centre → spread for the fading (non-landing) glyphs
       var rdx=p.fx-cx, rdy=p.fy-cy, rl=Math.sqrt(rdx*rdx+rdy*rdy)||1;
       p.bx=rdx/rl; p.by=rdy/rl;
-      p.fburst=0.55+Math.random()*0.85;         // per-glyph burst strength
-      p.fscale=0.45+Math.random()*0.28;         // how much it shrinks (recedes) by the end
+      p.fburst=0.55+Math.random()*0.85;
+      p.keeper=false; p.slotX=0; p.landY=0;     // set below for the bottom-strip glyphs
+    }
+
+    // ---- choose which glyphs LAND in the bottom ASCII strip (the rest fade away) ----
+    // With 1000+ glyphs a full row would overlap into mush, so keep only as many as fit
+    // at LAND_GAP spacing. Sort by x and sample evenly into slots → left origins map to
+    // left slots (minimal crossing, no duplicates), fixed once per build (deterministic).
+    var slots=Math.max(6,Math.floor(W/(FS*LAND_GAP))); if(slots>N)slots=N;
+    var order2=[]; for(i=0;i<N;i++) order2.push(i);
+    order2.sort(function(a,b){ return (pts[a].fx-pts[b].fx)||(pts[a].fy-pts[b].fy); });
+    var landY=H-FS*LAND_MARGIN, denom=(slots>1?slots-1:1);
+    for(var s2=0;s2<slots;s2++){
+      var kp=pts[order2[Math.round(s2*(N-1)/denom)]];
+      kp.keeper=true; kp.slotX=(s2+0.5)*(W/slots); kp.landY=landY;
     }
 
     if(!introDone && !introStarted){
@@ -361,30 +391,51 @@
       p.vx=0; p.vy=0;
     }
   }
-  function fallFrame(fallP){                    // glyphs burst, drop, tumble & recede — reversible with scroll
-    ctx.font=FS+'px '+font(); ctx.fillStyle='#fff';
+  var aboutEl=document.getElementById('about');
+  // ABOUT has fully scrolled above the viewport → the transition is "done", nothing to animate
+  function aboutOut(){ return aboutEl ? aboutEl.getBoundingClientRect().bottom<=0 : false; }
+
+  // Every position/colour below is a PURE function of lp (= f(fallP, per-glyph seeds)), so the
+  // exact same progress yields the exact same frame whichever way you scrolled → fully reversible.
+  // Two fates: KEEPERS launch up, arc over and settle into the bottom strip (then blink); the
+  // rest launch up, arc over and fade out mid-fall (and fade back in when you scroll up).
+  function fallFrame(t, fallP){
+    ctx.font=FS+'px '+font();
+    var shimT=t*0.004;
     for(var i=0;i<pts.length;i++){ var p=pts[i];
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
       lp*=p.fspd; if(lp>1)lp=1;
-      // release burst: spray radially outward from the flower over the first third of
-      // the fall (easeOutCubic, then held), before gravity takes over.
-      var be=1-Math.pow(1-Math.min(1,lp/0.34),3);
-      var bmag=FALL_BURST*p.fburst*be;
-      var e=lp*lp;                              // gravity — accelerate downward
-      var y=p.fy + p.by*bmag*0.55 + e*H*FALL_DIST;   // brief radial lift/push, then hard fall
-      if(y>H+FS) continue;                      // off the bottom → skip (cost drops as it falls)
-      var x=p.fx + p.bx*bmag + Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
-      var base=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
-      // quick release flash, then brightness fades white→near-black. Pure function of
-      // lp → deterministic + reversible (same progress = same look, either direction).
-      var flash=1+0.7*(1-Math.min(1,lp/0.13));
-      var vis=base*flash*(1-0.82*lp); if(vis<=0.03) continue; if(vis>1)vis=1;
-      var ang=p.frot*lp*FALL_ROT;
-      var sc=1-p.fscale*lp;                     // shrink as it recedes into the dark
-      ctx.globalAlpha=vis;
-      ctx.save(); ctx.translate(x,y); if(ang)ctx.rotate(ang); if(sc!==1)ctx.scale(sc,sc); ctx.fillText(p.ch,0,0); ctx.restore();
+      var flowerBase=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
+      var ez=lp*lp;                                       // gravity-accelerated descent baseline
+      var arc=p.fpeak*H*Math.sin(Math.PI*lp);             // upward launch → apex → back down
+
+      if(p.keeper){
+        var land=smooth(0.72,1,lp);                       // 0 mid-flight → 1 fully settled
+        var y=p.fy+(p.landY-p.fy)*ez-arc;                 // parabola onto the slot baseline
+        var exz=1-Math.pow(1-lp,3);                       // ease toward the slot x, then settle
+        var x=p.fx+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*(1-lp);
+        var colorT=land*LAND_DARK;                        // white in flight → dark once landed
+        var v=(255*(1-colorT))|0;
+        var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(shimT+p.sway)*0.14*land;
+        if(vis<=0.03) continue; if(vis>1)vis=1;
+        var ang=p.frot*FALL_ROT*lp*(1-land);              // tumble in flight, upright on landing
+        var sc=1-p.fscale*Math.sin(Math.PI*lp)*(1-land);  // recede mid-flight, full size settled
+        if(!reduce && land>0.5) churn(p,t,false);         // blink the landed strip like the live flower
+        ctx.globalAlpha=vis; ctx.fillStyle='rgb('+v+','+v+','+v+')';
+        ctx.save(); ctx.translate(x,y); if(ang)ctx.rotate(ang); if(sc!==1)ctx.scale(sc,sc); ctx.fillText(p.ch,0,0); ctx.restore();
+      } else {
+        var fade=smooth(0.06,0.62,lp);                    // fades out over the first ~⅔ of its fall
+        var vis2=flowerBase*(1-fade); if(vis2<=0.03) continue; if(vis2>1)vis2=1;
+        var be=1-Math.pow(1-Math.min(1,lp/0.4),3);        // radial spread eases in early
+        var y2=p.fy+(H+FS*8-p.fy)*ez-arc;
+        var x2=p.fx+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
+        var colorT2=Math.min(1,lp*1.1)*0.82, v2=(255*(1-colorT2))|0;
+        var ang2=p.frot*FALL_ROT*lp, sc2=1-p.fscale*lp;
+        ctx.globalAlpha=vis2; ctx.fillStyle='rgb('+v2+','+v2+','+v2+')';
+        ctx.save(); ctx.translate(x2,y2); if(ang2)ctx.rotate(ang2); if(sc2!==1)ctx.scale(sc2,sc2); ctx.fillText(p.ch,0,0); ctx.restore();
+      }
     }
-    ctx.globalAlpha=1;
+    ctx.globalAlpha=1; ctx.fillStyle='#fff';
   }
 
   var lastT=0, rafId=0, falling=false;
@@ -409,18 +460,18 @@
     var fallP=fallProgress();
     if(fallP>0.0001){
       if(!falling){ falling=true; resetToRest(); }
-      if(fallP<1){ fallFrame(fallP); kick(); }   // mid-fall → keep the loop alive
-      // fallP>=1 → flower fully gone: leave the canvas cleared and let the loop idle
-      return;
+      fallFrame(t,fallP);                        // flight + the landed strip (blinking at the bottom)
+      if(!aboutOut()) kick();                    // keep animating while ABOUT is still on screen…
+      return;                                    // …ABOUT fully gone → freeze the strip, idle the loop
     }
     if(falling){ falling=false; resetToRest(); } // scrolled back up → resume the living flower
     liveFrame(t,dtf); flush(); kick();
   }
   // Single-token scheduler: rafId is the SOLE source of truth for "a frame is queued".
-  // scroll/resize can re-arm the loop freely without ever double-scheduling or leaving
-  // it wedged (the old boolean flag could desync from the real rAF state during rapid
-  // ABOUT↔WORK oscillation and strand the flower on a cleared canvas). The loop idles
-  // only while the flower is fully fallen (fallP>=1); any scroll back up re-kicks it.
+  // scroll/resize can re-arm the loop freely without ever double-scheduling or leaving it
+  // wedged (a boolean flag could desync from the real rAF state during rapid ABOUT↔WORK
+  // oscillation and strand the flower). The loop idles only once ABOUT is fully off-screen
+  // (so the bottom strip keeps blinking through the transition); any scroll back re-kicks it.
   function kick(){ if(rafId===0){ rafId=requestAnimationFrame(frame); } }
 
   var _f=null; function font(){ if(!_f)_f=getComputedStyle(document.body).fontFamily; return _f; }
@@ -453,9 +504,9 @@
     });
   })();
 
-  addEventListener('resize',function(){ resize(); if(introDone && fallProgress()<1) kick(); });
-  // resume the loop when scrolling back up re-forms the flower (loop idles once fallen)
-  addEventListener('scroll',function(){ if(introDone && fallProgress()<1) kick(); },{passive:true});
+  addEventListener('resize',function(){ resize(); if(introDone && !aboutOut()) kick(); });
+  // resume the loop whenever ABOUT is on screen (reassembly on the way up, blink while landed)
+  addEventListener('scroll',function(){ if(introDone && !aboutOut()) kick(); },{passive:true});
   // Wait (briefly) for Montserrat so the offscreen "PORTFOLIO" is shaped in it,
   // then start — never block first paint for more than half a second.
   var started=false;
