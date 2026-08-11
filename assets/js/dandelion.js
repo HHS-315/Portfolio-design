@@ -27,6 +27,16 @@
   var IT_TEXT=1750, IT_SCAT=850, IT_FORM=1650;   // longer hold on "PORTFOLIO" before it scatters
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
 
+  // ---- LIVE sway (living flower only): a bent stem drifting in the wind, head riding on top ----
+  var WIND_P1       = 7000;   // primary sway period (ms) — one full left↔right
+  var WIND_P2       = 11000;  // secondary period, composited in so it never looks mechanical
+  var WIND_RATIO2   = 0.35;   // secondary wave amplitude relative to the primary
+  var WIND_AMP_FRAC = 0.15;   // max lateral shift of the flower HEAD = headR × this (~12–18%)
+  var WIND_BEND     = 1.4;    // stem bend curve: >1 keeps the root still and bends the top more
+  var WIND_TILT     = 0.06;   // max head tilt (rad, ~3.4°) in phase with the shift (leans as it pushes)
+  var BREATH_AMP    = 0.010;  // very faint head-radius pulsing (kept subtle; was 0.015)
+  var WIND_W1=6.2831853/WIND_P1, WIND_W2=6.2831853/WIND_P2;   // → angular speeds
+
   // ---- ABOUT→WORK decompose: head bursts UP, arcs over, rains into a bottom ASCII strip ----
   var DEBUG           = false; // overlay: target vs shown progress + keeper count
   var FALL_T_END      = 0.70;  // WorkTransition progress at which the decompose completes
@@ -345,7 +355,13 @@
 
   // ---- LIVE frame (original behaviour: hover-detach, shimmer, churn, regrow) ----
   function liveFrame(t,dtf){
-    var spin=reduce?0:Math.sin(t*0.00022)*0.03, breath=reduce?1:(1+Math.sin(t*0.0007)*0.015);
+    // WIND: two out-of-phase sines → a slow, irregular breeze. `wind`∈~[-1,1] drives both the
+    // lateral head shift and an in-phase tilt, so the flower leans the way it's pushed.
+    var wind=reduce?0:(Math.sin(t*WIND_W1)+Math.sin(t*WIND_W2)*WIND_RATIO2)/(1+WIND_RATIO2);
+    var headDisp=wind*headR*WIND_AMP_FRAC;      // px the flower head (and stem top) slides sideways
+    var tiltA=wind*WIND_TILT;                    // head tilt, synced with the shift (replaces old spin)
+    var stemTopY=cy+headR*0.62;                  // where the stem meets the head → sway = full headDisp
+    var breath=reduce?1:(1+Math.sin(t*0.0007)*BREATH_AMP);
     var DET=headR*1.3, DET2=DET*DET, RW=headR*0.9, RW2=RW*RW;
     var breeze=26+Math.sin(t*0.0004)*14, on=0, shimT=t*0.004;
 
@@ -356,13 +372,19 @@
       var base;
 
       if(p.stem){
-        var hx=p.hx+Math.sin(p.hy*0.012+t*0.0004+p.sway)*1.4;
+        // stem/leaves bend in the wind: 0 at the root (baseY), full headDisp at the stem top,
+        // WIND_BEND(>1) keeping the base still and concentrating the bend up high.
+        var hn=(baseY-p.hy)/((baseY-stemTopY)||1); if(hn<0)hn=0; else if(hn>1)hn=1;
+        var w=Math.pow(hn,WIND_BEND);
+        var hx=p.hx+headDisp*w+(reduce?0:Math.sin(t*0.0006+p.sway)*0.8*w);   // + faint organic flutter
         p.x+=(hx-p.x)*Math.min(1,0.2*dtf);
         base=p.al;
       }
       else if(p.state==='on'){
-        var aa=p.ang+spin, r=p.r*breath;
-        var hxp=cx+Math.cos(aa)*r+(reduce?0:Math.sin(t*0.001+p.sway)*0.4);
+        // flower head rides the stem top as ONE block: whole head shifts by headDisp and tilts by
+        // tiltA (rotate every petal about the head centre), so petals move together, not each on its own.
+        var aa=p.ang+tiltA, r=p.r*breath;
+        var hxp=cx+headDisp+Math.cos(aa)*r+(reduce?0:Math.sin(t*0.001+p.sway)*0.4);
         var hyp=cy+Math.sin(aa)*r*0.98+(reduce?0:Math.cos(t*0.0012+p.sway)*0.4);
         p.x+=(hxp-p.x)*Math.min(1,0.22*dtf);
         p.y+=(hyp-p.y)*Math.min(1,0.22*dtf);
