@@ -31,7 +31,7 @@
     try{ window.dispatchEvent(new CustomEvent('dandelion:introdone')); }catch(e){} }
   // the hero tagline appears only once the flower has finished forming
   function showQuote(){ if(quoteShown) return; quoteShown=true;
-    [].forEach.call(document.querySelectorAll('.hero__quote'),function(q){ q.style.opacity='1'; q.style.transform='none'; }); }
+    [].forEach.call(document.querySelectorAll('.hero__quote, .hero__intro'),function(q){ q.style.opacity='1'; q.style.transform='none'; }); }
 
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
@@ -368,7 +368,7 @@
   // (transition off) so it doesn't flash-then-fade at load. reduced-motion skips
   // the intro so it stays visible; JS-off keeps the CSS default = visible.
   (function(){ if(introDone) return;
-    [].forEach.call(document.querySelectorAll('.hero__quote'),function(q){
+    [].forEach.call(document.querySelectorAll('.hero__quote, .hero__intro'),function(q){
       q.style.transition='none'; q.style.opacity='0'; q.style.transform='translateY(14px)';
       void q.offsetWidth;                                 // commit before re-enabling transition
       q.style.transition='opacity .9s ease, transform .9s ease';

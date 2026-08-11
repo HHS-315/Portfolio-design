@@ -14,6 +14,8 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
+/* Pretendard (self-hosted variable) — Korean body/paragraph text */
+@font-face{font-family:'Pretendard';font-weight:100 900;font-style:normal;font-display:swap;src:url('./assets/fonts/pretendard-variable.woff2') format('woff2-variations')}
 
 :root{
   --bg:#0a0a0a; --bone:#e9e9e6; --dim:#7a7a75; --dimmer:#333; --hi:#f2f2f0;
@@ -55,7 +57,9 @@ a{color:inherit;text-decoration:none}
 .hero__quote{position:absolute;margin:0;font-family:var(--hero-font);font-weight:700;text-transform:uppercase;font-size:clamp(30px,5vw,64px);line-height:1.08;letter-spacing:-.02em;color:var(--hi);max-width:min(48vw,600px);transition:opacity .9s ease,transform .9s ease}
 .hero__quote--tl{top:clamp(78px,10vh,118px);left:var(--gutter);text-align:left}
 .hero__quote--br{bottom:4.5vh;right:var(--gutter);text-align:right}
-@media(max-width:640px){.hero__quote{font-size:clamp(24px,7.2vw,38px);max-width:74vw}.hero__quote--tl{top:8vh}.hero__quote--br{bottom:4.5vh}}
+/* small Pretendard intro paragraph, hero bottom-left (revealed with the taglines) */
+.hero__intro{position:absolute;bottom:4.5vh;left:var(--gutter);margin:0;text-align:left;font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:14px;line-height:1.85;letter-spacing:.005em;color:rgba(233,233,230,.74);max-width:min(42vw,420px);transition:opacity .9s ease,transform .9s ease}
+@media(max-width:640px){.hero__quote{font-size:clamp(24px,7.2vw,38px);max-width:74vw}.hero__quote--tl{top:8vh}.hero__quote--br{bottom:4.5vh}.hero__intro{bottom:17vh;right:var(--gutter);max-width:none;font-size:12.5px;line-height:1.8}}
 
 /* sections — full-bleed opaque panels, alternating colour only (no divider lines) */
 .sec{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(80px,14vh,160px) 0;scroll-margin-top:70px}
@@ -209,6 +213,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <header class="hero">
     <p class="hero__quote hero__quote--tl" id="heroQuote">Every great idea</p>
     <p class="hero__quote hero__quote--br" id="heroQuote2">starts as a seed.</p>
+    <p class="hero__intro">작은 아이디어에서 시작해<br>사용자의 경험을 고민하고 설계합니다.<br>AI를 새로운 디자인 도구로 활용하며,<br>생각을 실제 경험으로 구현합니다.</p>
   </header>
 
   <!-- ABOUT — big couplets flanking the centred dandelion; lines glitch on scroll -->
