@@ -11,7 +11,8 @@
   var W=0,H=0,DPR=1,FS=8;
   var cx=0,cy=0,headR=0,baseX=0,baseY=0;   // cx,cy = flower-head centre
   var pts=[], N=0;
-  var fallCur=0, keeperN=0;              // fallCur: smoothed shown progress; keeperN: bottom-strip slot count
+  var fallCur=0, keeperN=0, keeperList=[];  // fallCur: smoothed shown progress; keeperList: bottom-strip glyphs
+  var canvasOn=true;                        // #field intersects the viewport (IntersectionObserver)
   var mouse={x:-1e5,y:-1e5,speed:0};
   var CODE=['0','1','/','\\','<','>','{','}','(',')','=','+','-','*','#','$','%','&','|',';',':','.','x','?','!','^','~'];
   var PTIP=['*','^','/','\\','x','+','\''];
@@ -182,13 +183,14 @@
     var charW=ctx.measureText('0').width||FS*0.6;
     var gap=charW*(W<=640?LAND_GAP_MOB:LAND_GAP);
     var slots=Math.max(6,Math.floor(W/gap)); if(slots>N)slots=N;
-    keeperN=slots;
+    keeperN=slots; keeperList=[];
     var order2=[]; for(i=0;i<N;i++) order2.push(i);
     order2.sort(function(a,b){ return (pts[a].fx-pts[b].fx)||(pts[a].fy-pts[b].fy); });
     var landY=H-FS*LAND_MARGIN, denom=(slots>1?slots-1:1);
     for(var s2=0;s2<slots;s2++){
       var kp=pts[order2[Math.round(s2*(N-1)/denom)]];
       kp.keeper=true; kp.slotX=(s2+0.5)*(W/slots); kp.landY=landY;
+      keeperList.push(kp);                    // lightweight strip pass iterates only these
     }
 
     if(!introDone && !introStarted){
@@ -412,9 +414,6 @@
       p.vx=0; p.vy=0;
     }
   }
-  var aboutEl=document.getElementById('about');
-  // ABOUT has fully scrolled above the viewport → the transition is "done", nothing to animate
-  function aboutOut(){ return aboutEl ? aboutEl.getBoundingClientRect().bottom<=0 : false; }
 
   // Every position/colour below is a PURE function of lp (= f(fallP, per-glyph seeds)), so the
   // exact same progress yields the exact same frame whichever way you scrolled → fully reversible.
@@ -468,9 +467,19 @@
       for(var k=0;k<xs.length;k++) ctx.fillText(cs[k],xs[k],ys[k]);
     }
   }
+  // whether the loop should keep spinning: the page is visible and #field is on screen.
+  // (The strip lives on a position:fixed canvas, so once decomposed there is ALWAYS something
+  //  blinking on screen — the loop must not stop just because ABOUT scrolled away.)
+  function alive(){ return canvasOn && document.visibilityState==='visible'; }
+  // Loop resumed after a pause (tab return, etc.): if a long gap elapsed, scatter every glyph's
+  // churn deadline so they don't all swap on the same frame (avoids one synchronized flicker burst).
+  function reseedChurn(t){ for(var i=0;i<pts.length;i++) pts[i].swapAt = t + Math.random()*600; }
+
   function frame(t){
     rafId=0;                                   // this frame is now running → slot is free
-    var dt=(t-lastT)||16; lastT=t; var dtf=Math.max(0.5,Math.min(2,dt/16.67));
+    var dt=(t-lastT)||16; lastT=t;
+    if(dt>500) reseedChurn(t);                 // paused & resumed → desync the swap phases
+    var dtf=Math.max(0.5,Math.min(2,dt/16.67));
     mouse.speed*=Math.pow(0.85,dtf);
     ctx.clearRect(0,0,W,H);
     for(var q=0;q<NB;q++){ BX[q].length=0; BY[q].length=0; BC[q].length=0; }
@@ -487,12 +496,30 @@
 
     if(fallCur>0.0001){
       if(!falling){ falling=true; resetToRest(); }
-      fallFrame(t,fallCur);                      // flight + the landed strip (blinking at the bottom)
-      if(!aboutOut() || fallCur!==target) kick();// animate while ABOUT is on screen OR still easing to target
-      return;                                    // …settled AND ABOUT gone → freeze the strip, idle the loop
+      if(fallCur>=0.9999) stripFrame(t);       // fully decomposed → draw ONLY the landed strip (cheap)
+      else fallFrame(t,fallCur);               // mid-flight → full pass (arc + fade + landing)
+      if(alive()) kick();                      // strip is always on the fixed canvas → keep blinking
+      return;
     }
     if(falling){ falling=false; resetToRest(); } // scrolled back up → resume the living flower
-    liveFrame(t,dtf); flush(); kick();
+    liveFrame(t,dtf); flush();
+    if(alive()) kick();
+  }
+
+  // Lightweight bottom-strip pass: at full decompose every keeper is landed (upright, full size,
+  // dark) so we skip the flight math and the 1000-glyph sweep — iterate keepers only and blink.
+  function stripFrame(t){
+    ctx.font=FS+'px '+font();
+    var v=(255*(1-LAND_DARK))|0;
+    ctx.fillStyle='rgb('+v+','+v+','+v+')';    // constant across keepers → set once, not per glyph
+    for(var i=0;i<keeperList.length;i++){ var p=keeperList[i];
+      var vis=0.94; if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP;
+      if(vis<=0.03) continue; if(vis>1)vis=1;
+      if(!reduce) churn(p,t,false,true);
+      ctx.globalAlpha=vis;
+      ctx.fillText(p.ch, p.slotX, p.landY);
+    }
+    ctx.globalAlpha=1; ctx.fillStyle='#fff';
   }
   var _dbg=null;
   function updateDbg(target){
@@ -540,9 +567,16 @@
     });
   })();
 
-  addEventListener('resize',function(){ resize(); if(introDone && !aboutOut()) kick(); });
-  // resume the loop whenever ABOUT is on screen (reassembly on the way up, blink while landed)
-  addEventListener('scroll',function(){ if(introDone && !aboutOut()) kick(); },{passive:true});
+  // Resume paths — the loop stops only when the tab is hidden or #field leaves the viewport, so
+  // it must be re-armed on any of these. kick() de-dupes, so extra calls are harmless.
+  function resume(){ if(introDone && alive()) kick(); }
+  addEventListener('resize',function(){ resize(); resume(); });
+  addEventListener('scroll',resume,{passive:true});
+  document.addEventListener('visibilitychange',resume);   // tab back → restart the blink
+  // stop when #field scrolls out of view (it's position:fixed full-viewport, so effectively never,
+  // but this is the safety valve the stop condition relies on); restart when it returns.
+  try{ new IntersectionObserver(function(es){ canvasOn=es[es.length-1].isIntersecting; if(canvasOn) resume(); }).observe(cv); }
+  catch(e){ canvasOn=true; }
   // Wait (briefly) for Montserrat so the offscreen "PORTFOLIO" is shaped in it,
   // then start — never block first paint for more than half a second.
   var started=false;
