@@ -35,7 +35,17 @@
   var WIND_BEND     = 1.4;    // stem bend curve: >1 keeps the root still and bends the top more
   var WIND_TILT     = 0.06;   // max head tilt (rad, ~3.4°) in phase with the shift (leans as it pushes)
   var BREATH_AMP    = 0.010;  // very faint head-radius pulsing (kept subtle; was 0.015)
+  var SWAY_FADE     = 0.10;   // decompose blend: the live wind offset fades out over fallCur 0→this,
+                              // so the burst starts from (and returns to) the actual swaying position
   var WIND_W1=6.2831853/WIND_P1, WIND_W2=6.2831853/WIND_P2;   // → angular speeds
+  // normalized wind ∈ ~[-1,1]; shared by liveFrame (full sway) and fallFrame (fading early sway)
+  function windNow(t){ return reduce?0:(Math.sin(t*WIND_W1)+Math.sin(t*WIND_W2)*WIND_RATIO2)/(1+WIND_RATIO2); }
+  // per-glyph lateral wind offset in px: head moves as a block, stem/leaves bend from the root up
+  function windOffset(p,headDisp){
+    if(p.petal) return headDisp;
+    var hn=(baseY-p.fy)/((baseY-(cy+headR*0.62))||1); if(hn<0)hn=0; else if(hn>1)hn=1;
+    return headDisp*Math.pow(hn,WIND_BEND);
+  }
 
   // ---- ABOUT→WORK decompose: head bursts UP, arcs over, rains into a bottom ASCII strip ----
   var DEBUG           = false; // overlay: target vs shown progress + keeper count
@@ -302,7 +312,7 @@
     var T1=IT_TEXT, T2=IT_TEXT+IT_SCAT, T3=IT_TEXT+IT_SCAT+IT_FORM;
     var phase = e<T1?'text' : e<T2?'scatter' : e<T3?'form' : 'end';
 
-    if(phase==='end'){ introDone=true; fireIntroDone(); showQuote(); liveFrame(t,dtf); return; }   // flower formed → reveal tagline, hand off
+    if(phase==='end'){ introDone=true; fireIntroDone(); showQuote(); liveFrame(t,dtf,windNow(t)*headR*WIND_AMP_FRAC,windNow(t)*WIND_TILT); return; }   // flower formed → reveal tagline, hand off
 
     if(phase==='scatter' && !scatterInit){
       scatterInit=true;
@@ -354,13 +364,8 @@
   }
 
   // ---- LIVE frame (original behaviour: hover-detach, shimmer, churn, regrow) ----
-  function liveFrame(t,dtf){
-    // WIND: two out-of-phase sines → a slow, irregular breeze. `wind`∈~[-1,1] drives both the
-    // lateral head shift and an in-phase tilt, so the flower leans the way it's pushed.
-    var wind=reduce?0:(Math.sin(t*WIND_W1)+Math.sin(t*WIND_W2)*WIND_RATIO2)/(1+WIND_RATIO2);
-    var headDisp=wind*headR*WIND_AMP_FRAC;      // px the flower head (and stem top) slides sideways
-    var tiltA=wind*WIND_TILT;                    // head tilt, synced with the shift (replaces old spin)
-    var stemTopY=cy+headR*0.62;                  // where the stem meets the head → sway = full headDisp
+  // headDisp/tiltA are computed once per frame in frame() (shared with the fall blend) and passed in.
+  function liveFrame(t,dtf,headDisp,tiltA){
     var breath=reduce?1:(1+Math.sin(t*0.0007)*BREATH_AMP);
     var DET=headR*1.3, DET2=DET*DET, RW=headR*0.9, RW2=RW*RW;
     var breeze=26+Math.sin(t*0.0004)*14, on=0, shimT=t*0.004;
@@ -372,11 +377,10 @@
       var base;
 
       if(p.stem){
-        // stem/leaves bend in the wind: 0 at the root (baseY), full headDisp at the stem top,
-        // WIND_BEND(>1) keeping the base still and concentrating the bend up high.
-        var hn=(baseY-p.hy)/((baseY-stemTopY)||1); if(hn<0)hn=0; else if(hn>1)hn=1;
-        var w=Math.pow(hn,WIND_BEND);
-        var hx=p.hx+headDisp*w+(reduce?0:Math.sin(t*0.0006+p.sway)*0.8*w);   // + faint organic flutter
+        // stem/leaves bend in the wind (shared windOffset → matches the fall blend exactly):
+        // 0 at the root, full headDisp at the stem top, plus a faint organic flutter up high.
+        var wo=windOffset(p,headDisp);
+        var hx=p.hx+wo+(reduce?0:Math.sin(t*0.0006+p.sway)*0.8*(wo/(headDisp||1)));
         p.x+=(hx-p.x)*Math.min(1,0.2*dtf);
         base=p.al;
       }
@@ -430,10 +434,19 @@
     var fp=T/FALL_T_END;
     return fp<0?0:fp>1?1:fp;
   }
-  function resetToRest(){                       // snap the flower back to its formed shape
+  // Entering the fall: restore any hover-detached ('fly'/'gone') glyphs to a full 'on' state so the
+  // whole flower participates. We do NOT snap p.x/p.y — fallFrame ignores them and computes from fx,
+  // and the wind blend keeps the first fall frame aligned with the last live frame (no jump).
+  function enterFall(){
     for(var i=0;i<pts.length;i++){ var p=pts[i];
-      p.x=p.fx; p.y=p.fy; p.a=1; if(p.petal) p.state='on';
-      p.vx=0; p.vy=0;
+      p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
+    }
+  }
+  // Leaving the fall (recompose finished): seed p.x/p.y with the position the fall was just drawing
+  // (rest + current wind offset), so liveFrame picks up exactly there and eases on — no snap, no glide.
+  function exitFall(headDisp){
+    for(var i=0;i<pts.length;i++){ var p=pts[i];
+      p.x=p.fx+windOffset(p,headDisp); p.y=p.fy; p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
     }
   }
 
@@ -441,9 +454,13 @@
   // exact same progress yields the exact same frame whichever way you scrolled → fully reversible.
   // Two fates: KEEPERS launch up, arc over and settle into the bottom strip (then blink); the
   // rest launch up, arc over and fade out mid-fall (and fade back in when you scroll up).
-  function fallFrame(t, fallP){
+  function fallFrame(t, fallP, headDisp){
     ctx.font=FS+'px '+font();
+    // early-fall wind blend: full live sway at fallP 0 → gone by SWAY_FADE, so the burst starts
+    // from (and, in reverse, returns to) exactly where the swaying flower was drawn — no snap.
+    var windFade=1-smooth(0,SWAY_FADE,fallP);
     for(var i=0;i<pts.length;i++){ var p=pts[i];
+      var wOff=windFade>0?windOffset(p,headDisp)*windFade:0;
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
       lp=Math.pow(lp,p.fgamma);                          // per-glyph speed curve (all still reach 1)
       var flowerBase=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
@@ -454,7 +471,7 @@
         var land=smooth(0.72,1,lp);                       // 0 mid-flight → 1 fully settled
         var y=p.fy+(p.landY-p.fy)*ez-arc;                 // parabola onto the slot baseline
         var exz=1-Math.pow(1-lp,3);                       // ease toward the slot x, then settle
-        var x=p.fx+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*(1-lp);
+        var x=p.fx+wOff+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*(1-lp);
         var colorT=land*LAND_DARK;                        // white in flight → dark once landed
         var v=(255*(1-colorT))|0;
         var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP*land;
@@ -469,7 +486,7 @@
         var vis2=flowerBase*(1-fade); if(vis2<=0.03) continue; if(vis2>1)vis2=1;
         var be=1-Math.pow(1-Math.min(1,lp/0.4),3);        // radial spread eases in early
         var y2=p.fy+(H+FS*8-p.fy)*ez-arc;
-        var x2=p.fx+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
+        var x2=p.fx+wOff+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
         var colorT2=Math.min(1,lp*1.1)*0.82, v2=(255*(1-colorT2))|0;
         var ang2=p.frot*FALL_ROT*lp, sc2=1-p.fscale*lp;
         ctx.globalAlpha=vis2; ctx.fillStyle='rgb('+v2+','+v2+','+v2+')';
@@ -516,15 +533,19 @@
     else { fallCur+=(target-fallCur)*FALL_LERP; if(Math.abs(target-fallCur)<0.0008) fallCur=target; }
     if(DEBUG) updateDbg(target);
 
+    // wind computed once per frame → shared by liveFrame (full sway) and fallFrame (early-fall blend),
+    // so the sway is continuous across the live↔decompose boundary in both directions.
+    var wind=windNow(t), headDisp=wind*headR*WIND_AMP_FRAC, tiltA=wind*WIND_TILT;
+
     if(fallCur>0.0001){
-      if(!falling){ falling=true; resetToRest(); }
+      if(!falling){ falling=true; enterFall(); }
       if(fallCur>=0.9999) stripFrame(t);       // fully decomposed → draw ONLY the landed strip (cheap)
-      else fallFrame(t,fallCur);               // mid-flight → full pass (arc + fade + landing)
+      else fallFrame(t,fallCur,headDisp);      // mid-flight → full pass (arc + fade + landing + wind blend)
       if(alive()) kick();                      // strip is always on the fixed canvas → keep blinking
       return;
     }
-    if(falling){ falling=false; resetToRest(); } // scrolled back up → resume the living flower
-    liveFrame(t,dtf); flush();
+    if(falling){ falling=false; exitFall(headDisp); } // scrolled back up → hand off to the living flower
+    liveFrame(t,dtf,headDisp,tiltA); flush();
     if(alive()) kick();
   }
 
