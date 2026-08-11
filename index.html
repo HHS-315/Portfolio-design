@@ -36,6 +36,9 @@ a{color:inherit;text-decoration:none}
 /* dandelion canvas — background layer */
 #shaderbg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none}
 #field{position:fixed;inset:0;z-index:1;display:block;cursor:crosshair}
+/* rising WORK blocks — above the dandelion(#field,z1), below section text(.shell,z2).
+   Same z-index as #field but later in the DOM, so it paints on top of the flower. */
+#blocks{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block;pointer-events:none}
 
 .shell{position:relative;z-index:2;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
@@ -208,6 +211,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <!-- animated shader background (behind the ASCII dandelion) -->
 <canvas id="shaderbg"></canvas>
 <canvas id="field"></canvas>
+<canvas id="blocks"></canvas>
 
 <div class="bar">
   <b>HWANG HYESEON<span style="color:var(--hi)">*</span></b>
