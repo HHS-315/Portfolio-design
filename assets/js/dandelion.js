@@ -23,6 +23,13 @@
   var introStarted=false;            // set on the first build(); prevents restart on resize
   var IT_TEXT=1750, IT_SCAT=850, IT_FORM=1650;   // longer hold on "PORTFOLIO" before it scatters
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
+
+  // ---- ABOUT→WORK decompose (scroll-linked downward fall) ----
+  var FALL_T_END   = 0.70;   // WorkTransition progress at which the flower is fully gone
+  var FALL_DIST    = 1.15;   // × viewport height each glyph ultimately drops
+  var FALL_DRIFT   = 90;     // px of horizontal sway while falling
+  var FALL_ROT     = 3.4;    // max tumble (radians)
+  var FALL_MAXDELAY= 0.45;   // topmost glyphs start falling this much later than the lowest
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -120,6 +127,12 @@
       if(p.petal){ p.fx=cx+Math.cos(p.ang)*p.r; p.fy=cy+Math.sin(p.ang)*p.r*0.98; p.introBase=lerp(0.42,1.0,Math.min(1,p.rn)); }
       else       { p.fx=p.hx; p.fy=p.hy; p.introBase=p.al; }
       p.fdelay=Math.random()*400;
+      // fall seeds: lower glyphs (yNorm→1) drop first; each tumbles/drifts differently
+      var yNorm=(p.fy-(cy-headR))/((baseY-(cy-headR))||1); if(yNorm<0)yNorm=0; else if(yNorm>1)yNorm=1;
+      p.fallDelay=(1-yNorm)*FALL_MAXDELAY;
+      p.frot=(Math.random()*2-1);
+      p.fdrift=Math.random()*6.2832;
+      p.fspd=0.85+Math.random()*0.5;
     }
 
     if(!introDone && !introStarted){
@@ -327,23 +340,67 @@
     var cel=document.getElementById('count'); if(cel) cel.textContent=on;
   }
 
-  var lastT=0;
+  // ---- scroll-linked downward decompose (ABOUT→WORK) ----
+  function fallProgress(){
+    if(!introDone) return 0;
+    var WT=window.WorkTransition; if(!WT) return 0;
+    var T=WT.progress();
+    if(reduce) return T>=0.5?1:0;             // reduced motion → instant switch, no fall animation
+    var fp=T/FALL_T_END;
+    return fp<0?0:fp>1?1:fp;
+  }
+  function resetToRest(){                       // snap the flower back to its formed shape
+    for(var i=0;i<pts.length;i++){ var p=pts[i];
+      p.x=p.fx; p.y=p.fy; p.a=1; if(p.petal) p.state='on';
+      p.vx=0; p.vy=0;
+    }
+  }
+  function fallFrame(fallP){                    // glyphs drop, drift and tumble — reversible with scroll
+    ctx.font=FS+'px '+font(); ctx.fillStyle='#fff';
+    for(var i=0;i<pts.length;i++){ var p=pts[i];
+      var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
+      lp*=p.fspd; if(lp>1)lp=1;
+      var e=lp*lp;                              // gravity — accelerate downward
+      var y=p.fy + e*H*FALL_DIST;
+      if(y>H+FS) continue;                      // off the bottom → skip (cost drops as it falls)
+      var x=p.fx + Math.sin(p.fdrift+fallP*3)*FALL_DRIFT*lp;
+      var base=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
+      var vis=base*(1-0.30*lp); if(vis<=0.03) continue; if(vis>1)vis=1;
+      var ang=p.frot*lp*FALL_ROT;
+      ctx.globalAlpha=vis;
+      if(ang){ ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.fillText(p.ch,0,0); ctx.restore(); }
+      else ctx.fillText(p.ch,x,y);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  var lastT=0, running=false, falling=false;
+  function flush(){
+    ctx.font=FS+'px '+font();
+    for(var q=1;q<NB;q++){
+      var xs=BX[q]; if(!xs.length) continue;
+      ctx.fillStyle='rgba(255,255,255,'+(q/9).toFixed(3)+')';
+      var ys=BY[q], cs=BC[q];
+      for(var k=0;k<xs.length;k++) ctx.fillText(cs[k],xs[k],ys[k]);
+    }
+  }
   function frame(t){
     var dt=(t-lastT)||16; lastT=t; var dtf=Math.max(0.5,Math.min(2,dt/16.67));
     mouse.speed*=Math.pow(0.85,dtf);
     ctx.clearRect(0,0,W,H);
     for(var q=0;q<NB;q++){ BX[q].length=0; BY[q].length=0; BC[q].length=0; }
 
-    if(introDone) liveFrame(t,dtf); else introFrame(t,dtf);
+    if(!introDone){ introFrame(t,dtf); flush(); requestAnimationFrame(frame); return; }
 
-    ctx.font=FS+'px '+font();
-    for(q=1;q<NB;q++){
-      var xs=BX[q]; if(!xs.length) continue;
-      ctx.fillStyle='rgba(255,255,255,'+(q/9).toFixed(3)+')';
-      var ys=BY[q], cs=BC[q];
-      for(var k=0;k<xs.length;k++) ctx.fillText(cs[k],xs[k],ys[k]);
+    var fallP=fallProgress();
+    if(fallP>0.0001){
+      if(!falling){ falling=true; resetToRest(); }
+      if(fallP<1){ fallFrame(fallP); requestAnimationFrame(frame); }
+      else { running=false; }                  // fully gone → canvas cleared, stop the loop
+      return;
     }
-    requestAnimationFrame(frame);
+    if(falling){ falling=false; resetToRest(); } // scrolled back up → resume the living flower
+    liveFrame(t,dtf); flush(); requestAnimationFrame(frame);
   }
 
   var _f=null; function font(){ if(!_f)_f=getComputedStyle(document.body).fontFamily; return _f; }
@@ -377,10 +434,12 @@
   })();
 
   addEventListener('resize',resize);
+  // resume the loop when scrolling back up re-forms the flower (loop self-stops once fallen)
+  addEventListener('scroll',function(){ if(!running && introDone && fallProgress()<1){ running=true; requestAnimationFrame(frame); } },{passive:true});
   // Wait (briefly) for Montserrat so the offscreen "PORTFOLIO" is shaped in it,
   // then start — never block first paint for more than half a second.
   var started=false;
-  function start(){ if(started) return; started=true; resize(); requestAnimationFrame(frame); }
+  function start(){ if(started) return; started=true; running=true; resize(); requestAnimationFrame(frame); }
   if(!introDone && document.fonts && document.fonts.load){
     document.fonts.load("700 200px 'Plus Jakarta Sans'").then(start,start);
     setTimeout(start,500);

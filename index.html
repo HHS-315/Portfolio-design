@@ -77,6 +77,8 @@ a{color:inherit;text-decoration:none}
    shows through — a soft scrim keeps content legible over it */
 .sec{background:transparent}
 .sec--tint::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 90% at 50% 50%,rgba(10,10,10,.55),rgba(10,10,10,.28) 55%,transparent 100%)}
+#work::before{display:none}   /* WORK backdrop comes from the rising blocks, not the scrim */
+#work{text-shadow:0 2px 12px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.7)}   /* keep text legible over the blocks */
 /* per-section label: number (left) · name (right), no line */
 .sec__head{display:flex;justify-content:space-between;margin-bottom:40px;padding-inline:var(--gutter);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
 .sec__head b{color:var(--hi);font-weight:500}
@@ -351,6 +353,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 </footer>
 
 <script src="./assets/js/shader-bg.js"></script>
+<script src="./assets/js/work-transition.js"></script>
 <script src="./assets/js/dandelion.js"></script>
 <script src="./assets/js/about-lines.js"></script>
 </body>
