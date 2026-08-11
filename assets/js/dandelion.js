@@ -365,7 +365,9 @@
       if(y>H+FS) continue;                      // off the bottom → skip (cost drops as it falls)
       var x=p.fx + Math.sin(p.fdrift+fallP*3)*FALL_DRIFT*lp;
       var base=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
-      var vis=base*(1-0.30*lp); if(vis<=0.03) continue; if(vis>1)vis=1;
+      // brightness is a pure function of lp → deterministic + reversible: the glyph
+      // fades white→near-black on the way down and back to white when scrolled up.
+      var vis=base*(1-0.82*lp); if(vis<=0.03) continue; if(vis>1)vis=1;
       var ang=p.frot*lp*FALL_ROT;
       ctx.globalAlpha=vis;
       if(ang){ ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.fillText(p.ch,0,0); ctx.restore(); }
@@ -374,7 +376,7 @@
     ctx.globalAlpha=1;
   }
 
-  var lastT=0, running=false, falling=false;
+  var lastT=0, rafId=0, falling=false;
   function flush(){
     ctx.font=FS+'px '+font();
     for(var q=1;q<NB;q++){
@@ -385,23 +387,30 @@
     }
   }
   function frame(t){
+    rafId=0;                                   // this frame is now running → slot is free
     var dt=(t-lastT)||16; lastT=t; var dtf=Math.max(0.5,Math.min(2,dt/16.67));
     mouse.speed*=Math.pow(0.85,dtf);
     ctx.clearRect(0,0,W,H);
     for(var q=0;q<NB;q++){ BX[q].length=0; BY[q].length=0; BC[q].length=0; }
 
-    if(!introDone){ introFrame(t,dtf); flush(); requestAnimationFrame(frame); return; }
+    if(!introDone){ introFrame(t,dtf); flush(); kick(); return; }
 
     var fallP=fallProgress();
     if(fallP>0.0001){
       if(!falling){ falling=true; resetToRest(); }
-      if(fallP<1){ fallFrame(fallP); requestAnimationFrame(frame); }
-      else { running=false; }                  // fully gone → canvas cleared, stop the loop
+      if(fallP<1){ fallFrame(fallP); kick(); }   // mid-fall → keep the loop alive
+      // fallP>=1 → flower fully gone: leave the canvas cleared and let the loop idle
       return;
     }
     if(falling){ falling=false; resetToRest(); } // scrolled back up → resume the living flower
-    liveFrame(t,dtf); flush(); requestAnimationFrame(frame);
+    liveFrame(t,dtf); flush(); kick();
   }
+  // Single-token scheduler: rafId is the SOLE source of truth for "a frame is queued".
+  // scroll/resize can re-arm the loop freely without ever double-scheduling or leaving
+  // it wedged (the old boolean flag could desync from the real rAF state during rapid
+  // ABOUT↔WORK oscillation and strand the flower on a cleared canvas). The loop idles
+  // only while the flower is fully fallen (fallP>=1); any scroll back up re-kicks it.
+  function kick(){ if(rafId===0){ rafId=requestAnimationFrame(frame); } }
 
   var _f=null; function font(){ if(!_f)_f=getComputedStyle(document.body).fontFamily; return _f; }
 
@@ -433,13 +442,13 @@
     });
   })();
 
-  addEventListener('resize',resize);
-  // resume the loop when scrolling back up re-forms the flower (loop self-stops once fallen)
-  addEventListener('scroll',function(){ if(!running && introDone && fallProgress()<1){ running=true; requestAnimationFrame(frame); } },{passive:true});
+  addEventListener('resize',function(){ resize(); if(introDone && fallProgress()<1) kick(); });
+  // resume the loop when scrolling back up re-forms the flower (loop idles once fallen)
+  addEventListener('scroll',function(){ if(introDone && fallProgress()<1) kick(); },{passive:true});
   // Wait (briefly) for Montserrat so the offscreen "PORTFOLIO" is shaped in it,
   // then start — never block first paint for more than half a second.
   var started=false;
-  function start(){ if(started) return; started=true; running=true; resize(); requestAnimationFrame(frame); }
+  function start(){ if(started) return; started=true; resize(); kick(); }
   if(!introDone && document.fonts && document.fonts.load){
     document.fonts.load("700 200px 'Plus Jakarta Sans'").then(start,start);
     setTimeout(start,500);
