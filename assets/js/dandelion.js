@@ -26,10 +26,11 @@
 
   // ---- ABOUT→WORK decompose (scroll-linked downward fall) ----
   var FALL_T_END   = 0.70;   // WorkTransition progress at which the flower is fully gone
-  var FALL_DIST    = 1.15;   // × viewport height each glyph ultimately drops
-  var FALL_DRIFT   = 90;     // px of horizontal sway while falling
-  var FALL_ROT     = 3.4;    // max tumble (radians)
-  var FALL_MAXDELAY= 0.45;   // topmost glyphs start falling this much later than the lowest
+  var FALL_DIST    = 1.45;   // × viewport height each glyph ultimately drops (harder rain)
+  var FALL_DRIFT   = 150;    // px of horizontal sway while falling (wider scatter)
+  var FALL_ROT     = 7.0;    // max tumble (radians) — glyphs spin as they fall
+  var FALL_MAXDELAY= 0.60;   // topmost glyphs start much later → a clear top-down cascade wave
+  var FALL_BURST   = 240;    // px the flower "explodes" radially outward at release
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -133,6 +134,11 @@
       p.frot=(Math.random()*2-1);
       p.fdrift=Math.random()*6.2832;
       p.fspd=0.85+Math.random()*0.5;
+      // radial direction from the flower centre → the "explode outward" burst at release
+      var rdx=p.fx-cx, rdy=p.fy-cy, rl=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+      p.bx=rdx/rl; p.by=rdy/rl;
+      p.fburst=0.55+Math.random()*0.85;         // per-glyph burst strength
+      p.fscale=0.45+Math.random()*0.28;         // how much it shrinks (recedes) by the end
     }
 
     if(!introDone && !introStarted){
@@ -355,23 +361,28 @@
       p.vx=0; p.vy=0;
     }
   }
-  function fallFrame(fallP){                    // glyphs drop, drift and tumble — reversible with scroll
+  function fallFrame(fallP){                    // glyphs burst, drop, tumble & recede — reversible with scroll
     ctx.font=FS+'px '+font(); ctx.fillStyle='#fff';
     for(var i=0;i<pts.length;i++){ var p=pts[i];
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
       lp*=p.fspd; if(lp>1)lp=1;
+      // release burst: spray radially outward from the flower over the first third of
+      // the fall (easeOutCubic, then held), before gravity takes over.
+      var be=1-Math.pow(1-Math.min(1,lp/0.34),3);
+      var bmag=FALL_BURST*p.fburst*be;
       var e=lp*lp;                              // gravity — accelerate downward
-      var y=p.fy + e*H*FALL_DIST;
+      var y=p.fy + p.by*bmag*0.55 + e*H*FALL_DIST;   // brief radial lift/push, then hard fall
       if(y>H+FS) continue;                      // off the bottom → skip (cost drops as it falls)
-      var x=p.fx + Math.sin(p.fdrift+fallP*3)*FALL_DRIFT*lp;
+      var x=p.fx + p.bx*bmag + Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
       var base=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
-      // brightness is a pure function of lp → deterministic + reversible: the glyph
-      // fades white→near-black on the way down and back to white when scrolled up.
-      var vis=base*(1-0.82*lp); if(vis<=0.03) continue; if(vis>1)vis=1;
+      // quick release flash, then brightness fades white→near-black. Pure function of
+      // lp → deterministic + reversible (same progress = same look, either direction).
+      var flash=1+0.7*(1-Math.min(1,lp/0.13));
+      var vis=base*flash*(1-0.82*lp); if(vis<=0.03) continue; if(vis>1)vis=1;
       var ang=p.frot*lp*FALL_ROT;
+      var sc=1-p.fscale*lp;                     // shrink as it recedes into the dark
       ctx.globalAlpha=vis;
-      if(ang){ ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.fillText(p.ch,0,0); ctx.restore(); }
-      else ctx.fillText(p.ch,x,y);
+      ctx.save(); ctx.translate(x,y); if(ang)ctx.rotate(ang); if(sc!==1)ctx.scale(sc,sc); ctx.fillText(p.ch,0,0); ctx.restore();
     }
     ctx.globalAlpha=1;
   }
