@@ -91,6 +91,13 @@
   var LAND_SHIM_AMP   = 0.26;  // bottom-strip alpha-shimmer amplitude (was 0.14 when landed)
   var LAND_FRONT      = 0.6;   // a keeper past this `land` value draws on the FRONT #strip canvas (over the
                                // blocks); below it, it's still falling → drawn on #field (behind the blocks)
+  var STRIP_BOLD      = 0.55;  // synthetic-bold stroke width (screen px) on the LANDED dark strip glyphs — a
+                               // touch heavier so the black ASCII reads more solidly on the light blocks. Faded
+                               // in with `land` (0 in flight → full when settled) so nothing pops.
+  var STRIP_SCALE_MOB = 1.22;  // on mobile (W≤640) the landed strip glyphs render this × larger — FS is clamped
+                               // tiny there so the strip barely showed. Desktop keeps 1× (LAND_GAP_MOB spacing
+                               // leaves room for the bump, so slots never collide).
+  var stripScale      = 1;     // set in resize(): STRIP_SCALE_MOB on mobile, 1 on desktop
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -112,6 +119,8 @@
       scv.width=cv.width; scv.height=cv.height; sctx.setTransform(DPR,0,0,DPR,0,0);
       sctx.textAlign='center'; sctx.textBaseline='middle'; }
     var mob=W<=640;                                    // lift the flower on mobile so text isn't covered
+    stripScale=mob?STRIP_SCALE_MOB:1;                  // landed strip glyphs get a small size bump on mobile
+    ctx.lineJoin='round'; if(sctx) sctx.lineJoin='round';   // round the faux-bold stroke so glyphs don't grow spikes
     cx=W*0.5; cy=H*(mob?0.48:0.56); headR=Math.min(W,H)*0.135; baseX=W*0.5; baseY=H*(mob?0.84:0.92);
     build();
   }
@@ -542,13 +551,19 @@
         var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP*land;
         if(vis<=0.03) continue; if(vis>1)vis=1;
         var ang=p.frot*FALL_ROT*lp*(1-land);              // tumble in flight, upright on landing
-        var sc=1-p.fscale*Math.sin(Math.PI*lp)*(1-land);  // recede mid-flight, full size settled
+        // recede mid-flight, then grow to the LANDED strip size (×stripScale — a mobile-only bump, 1 on desktop)
+        var sc=(1-p.fscale*Math.sin(Math.PI*lp)*(1-land))*(1+land*(stripScale-1));
         if(!reduce && land>0.5) churn(p,t,false,true);    // fast flicker on the landed strip (per-glyph phase)
         // landed keepers (land>LAND_FRONT) draw on the FRONT #strip canvas (over the blocks); still-falling
         // ones stay on #field (behind the blocks). Same progress → same choice, so it's reversible.
         var g=(land>LAND_FRONT && sctx)?sctx:ctx;
         g.globalAlpha=vis; g.fillStyle='rgb('+v+','+v+','+v+')';
-        g.save(); g.translate(x,y); if(ang)g.rotate(ang); if(sc!==1)g.scale(sc,sc); g.fillText(p.ch,0,0); g.restore();
+        g.save(); g.translate(x,y); if(ang)g.rotate(ang); if(sc!==1)g.scale(sc,sc);
+        g.fillText(p.ch,0,0);
+        // faux-bold: overstroke in the same ink, fading in with `land`. lineWidth is divided by sc so the
+        // ON-SCREEN weight stays STRIP_BOLD regardless of the scale transform around the glyph.
+        if(land>0.02){ g.strokeStyle=g.fillStyle; g.lineWidth=STRIP_BOLD*land/(sc||1); g.strokeText(p.ch,0,0); }
+        g.restore();
       } else {
         var fade=smooth(0.06,0.62,lp);                    // fades out over the first ~⅔ of its fall
         var vis2=flowerBase*(1-fade); if(vis2<=0.03) continue; if(vis2>1)vis2=1;
@@ -630,15 +645,17 @@
   // dark) so we skip the flight math and the 1000-glyph sweep — iterate keepers only and blink.
   function stripFrame(t){
     var g=sctx||ctx;                           // fully decomposed → the whole strip is in FRONT of the blocks
-    g.font=FS+'px '+font();
+    g.font=(FS*stripScale)+'px '+font();       // landed size (mobile gets the STRIP_SCALE_MOB bump)
     var v=(255*(1-LAND_DARK))|0;
     g.fillStyle='rgb('+v+','+v+','+v+')';      // constant across keepers → set once, not per glyph
+    g.strokeStyle=g.fillStyle; g.lineWidth=STRIP_BOLD;   // faux-bold overstroke, same ink (set once)
     for(var i=0;i<keeperList.length;i++){ var p=keeperList[i];
       var vis=0.94; if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP;
       if(vis<=0.03) continue; if(vis>1)vis=1;
       if(!reduce) churn(p,t,false,true);
       g.globalAlpha=vis;
       g.fillText(p.ch, p.slotX, p.landY);
+      g.strokeText(p.ch, p.slotX, p.landY);
     }
     g.globalAlpha=1; g.fillStyle='#fff';
   }
