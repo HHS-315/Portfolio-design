@@ -8,6 +8,9 @@
   "use strict";
   var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
   var cv=document.getElementById('field'), ctx=cv.getContext('2d');
+  // second canvas for the LANDED bottom strip only — it sits IN FRONT of the #blocks skyline, while
+  // #field (flower + falling glyphs) sits behind it. Both are drawn here so the strip keeps its churn.
+  var scv=document.getElementById('strip'), sctx=scv?scv.getContext('2d'):null;
   var W=0,H=0,DPR=1,FS=8;
   var cx=0,cy=0,headR=0,baseX=0,baseY=0;   // cx,cy = flower-head centre
   var pts=[], N=0;
@@ -86,6 +89,8 @@
   var LAND_CHURN_MAX  = 260;   // …random up to here (the live flower stays at its calmer 200–1200ms)
   var LAND_SHIM_SPEED = 0.012; // bottom-strip alpha-shimmer speed (live flower uses 0.004)
   var LAND_SHIM_AMP   = 0.26;  // bottom-strip alpha-shimmer amplitude (was 0.14 when landed)
+  var LAND_FRONT      = 0.6;   // a keeper past this `land` value draws on the FRONT #strip canvas (over the
+                               // blocks); below it, it's still falling → drawn on #field (behind the blocks)
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -103,6 +108,9 @@
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
     FS=Math.max(6,Math.min(9,W/170));                 // smaller glyphs -> tighter grid
     ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(sctx){ scv.style.width=W+'px'; scv.style.height=H+'px';         // mirror the strip canvas
+      scv.width=cv.width; scv.height=cv.height; sctx.setTransform(DPR,0,0,DPR,0,0);
+      sctx.textAlign='center'; sctx.textBaseline='middle'; }
     var mob=W<=640;                                    // lift the flower on mobile so text isn't covered
     cx=W*0.5; cy=H*(mob?0.48:0.56); headR=Math.min(W,H)*0.135; baseX=W*0.5; baseY=H*(mob?0.84:0.92);
     build();
@@ -507,7 +515,7 @@
   // Two fates: KEEPERS launch up, arc over and settle into the bottom strip (then blink); the
   // rest launch up, arc over and fade out mid-fall (and fade back in when you scroll up).
   function fallFrame(t, fallP, headDisp){
-    ctx.font=FS+'px '+font();
+    var fnt=FS+'px '+font(); ctx.font=fnt; if(sctx) sctx.font=fnt;
     for(var i=0;i<pts.length;i++){ var p=pts[i];
       if(!p.fell) continue;                              // glyph was already flung away before this decompose → skip
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
@@ -536,8 +544,11 @@
         var ang=p.frot*FALL_ROT*lp*(1-land);              // tumble in flight, upright on landing
         var sc=1-p.fscale*Math.sin(Math.PI*lp)*(1-land);  // recede mid-flight, full size settled
         if(!reduce && land>0.5) churn(p,t,false,true);    // fast flicker on the landed strip (per-glyph phase)
-        ctx.globalAlpha=vis; ctx.fillStyle='rgb('+v+','+v+','+v+')';
-        ctx.save(); ctx.translate(x,y); if(ang)ctx.rotate(ang); if(sc!==1)ctx.scale(sc,sc); ctx.fillText(p.ch,0,0); ctx.restore();
+        // landed keepers (land>LAND_FRONT) draw on the FRONT #strip canvas (over the blocks); still-falling
+        // ones stay on #field (behind the blocks). Same progress → same choice, so it's reversible.
+        var g=(land>LAND_FRONT && sctx)?sctx:ctx;
+        g.globalAlpha=vis; g.fillStyle='rgb('+v+','+v+','+v+')';
+        g.save(); g.translate(x,y); if(ang)g.rotate(ang); if(sc!==1)g.scale(sc,sc); g.fillText(p.ch,0,0); g.restore();
       } else {
         var fade=smooth(0.06,0.62,lp);                    // fades out over the first ~⅔ of its fall
         var vis2=flowerBase*(1-fade); if(vis2<=0.03) continue; if(vis2>1)vis2=1;
@@ -551,6 +562,7 @@
       }
     }
     ctx.globalAlpha=1; ctx.fillStyle='#fff';
+    if(sctx){ sctx.globalAlpha=1; sctx.fillStyle='#fff'; }
   }
 
   var lastT=0, rafId=0, falling=false;
@@ -585,6 +597,7 @@
     var dtf=Math.max(0.5,Math.min(2,dt/16.67));
     mouse.speed*=Math.pow(0.85,dtf);
     ctx.clearRect(0,0,W,H);
+    if(sctx) sctx.clearRect(0,0,W,H);          // front strip canvas — cleared every frame too
     for(var q=0;q<NB;q++){ BX[q].length=0; BY[q].length=0; BC[q].length=0; }
 
     if(!introDone){ introFrame(t,dtf); flush(); kick(); return; }
@@ -616,17 +629,18 @@
   // Lightweight bottom-strip pass: at full decompose every keeper is landed (upright, full size,
   // dark) so we skip the flight math and the 1000-glyph sweep — iterate keepers only and blink.
   function stripFrame(t){
-    ctx.font=FS+'px '+font();
+    var g=sctx||ctx;                           // fully decomposed → the whole strip is in FRONT of the blocks
+    g.font=FS+'px '+font();
     var v=(255*(1-LAND_DARK))|0;
-    ctx.fillStyle='rgb('+v+','+v+','+v+')';    // constant across keepers → set once, not per glyph
+    g.fillStyle='rgb('+v+','+v+','+v+')';      // constant across keepers → set once, not per glyph
     for(var i=0;i<keeperList.length;i++){ var p=keeperList[i];
       var vis=0.94; if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP;
       if(vis<=0.03) continue; if(vis>1)vis=1;
       if(!reduce) churn(p,t,false,true);
-      ctx.globalAlpha=vis;
-      ctx.fillText(p.ch, p.slotX, p.landY);
+      g.globalAlpha=vis;
+      g.fillText(p.ch, p.slotX, p.landY);
     }
-    ctx.globalAlpha=1; ctx.fillStyle='#fff';
+    g.globalAlpha=1; g.fillStyle='#fff';
   }
   var _dbg=null;
   function updateDbg(target){

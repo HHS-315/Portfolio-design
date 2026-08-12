@@ -35,14 +35,18 @@ body{background:var(--bg);color:var(--bone);font-family:var(--mono);font-weight:
 ::selection{background:#fff;color:#0a0a0a}
 a{color:inherit;text-decoration:none}
 
-/* dandelion canvas — background layer */
+/* Layered canvases (back → front):
+   shaderbg(0) < field(1) < blocks(2) < strip(3).
+   The dandelion draws the flower + the FALLING glyphs on #field (BEHIND the blocks, so the rising
+   city hides them), and the LANDED bottom ASCII strip on #strip (IN FRONT of the blocks, dark on
+   the light cells). Two canvases because one z-index can't put part of a canvas behind and part in
+   front of the same blocks layer. */
 #shaderbg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none}
-#field{position:fixed;inset:0;z-index:2;display:block;cursor:crosshair}
-/* rising WORK blocks — BEHIND the dandelion(#field,z2) so the flower's landed dark
-   ASCII strip reads on top of the light block skyline; still above the shader bg(z0). */
-#blocks{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block;pointer-events:none}
+#field{position:fixed;inset:0;z-index:1;display:block;cursor:crosshair}
+#blocks{position:fixed;inset:0;width:100%;height:100%;z-index:2;display:block;pointer-events:none}
+#strip{position:fixed;inset:0;width:100%;height:100%;z-index:3;display:block;pointer-events:none}
 
-.shell{position:relative;z-index:3;pointer-events:none}
+.shell{position:relative;z-index:4;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
 .wrap{width:100%;margin-inline:auto;padding-inline:var(--gutter)}
 
@@ -175,7 +179,7 @@ a{color:inherit;text-decoration:none}
 .clinks a:hover{color:var(--hi);border-color:var(--hi)}
 
 /* footer */
-footer{position:relative;z-index:3;padding:60px 0 46px;background:transparent}
+footer{position:relative;z-index:4;padding:60px 0 46px;background:transparent}
 footer::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(10,10,10,.72),rgba(10,10,10,.5))}
 .foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:12px;color:var(--dim);line-height:1.9}
 .foot a{color:var(--hi)}
@@ -219,6 +223,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <canvas id="shaderbg"></canvas>
 <canvas id="field"></canvas>
 <canvas id="blocks"></canvas>
+<canvas id="strip"></canvas>
 
 <div class="bar">
   <b>HWANG HYESEON<span style="color:var(--hi)">*</span></b>

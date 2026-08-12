@@ -27,11 +27,10 @@
   // Result: cells pop in scattered across the grid instead of columns rising as one bar.
   var JIT_ROWS = 1.6;                      // per-cell appearance scatter, in rows (±)
   var TH_TOP = 0.94;                        // the last cell appears by this bp → whole screen full by bp=1
-  var CELL_RISE = 0.045;                    // bp span over which one cell lands (grows 0→full)
-  var ALPHA_START = 0.5;                    // a landing cell appears at this opacity, then rises to 1
-  var ALPHA_P = 0.5;                        // …reaching full opacity at this FRACTION of CELL_RISE (before
-                                            // it finishes growing) so the semi-transparent window is short.
-                                            // A settled cell (past CELL_RISE) is ALWAYS fully opaque.
+  var CELL_RISE = 0.045;                    // bp span over which a landing cell fades in
+  var ALPHA_START = 0.3;                    // a landing cell appears at this opacity, then fades to 1.
+                                            // Size stays a FULL SQUARE the whole time — only alpha animates —
+                                            // so a translucent cell is never a flat rectangle. Settled = opaque.
   // WORK text ink interpolates light→dark as the light cells fill behind it (replaces the old dark scrim)
   var INK_LIGHT = [233, 233, 230], INK_DARK = [20, 20, 20];
   var INK_START = 0.30, INK_FULL = 0.72;   // bp range over which the ink darkens
@@ -110,16 +109,14 @@
       for (var r = 0; r < rows; r++) {
         var th = thresh[base + r];
         if (bp <= th) break;                 // thresholds rise up the column → this & everything above aren't up yet
-        var p = clamp01((bp - th) / CELL_RISE);
-        // alpha ALPHA_START→1 (reaches 1 at ALPHA_P of the rise, before the height finishes) and
-        // height 0→cell over the whole rise. A settled cell (p=1) is alpha 1, full size.
-        var a = ALPHA_START + (1 - ALPHA_START) * ease(clamp01(p / ALPHA_P));
-        var h = ease(p) * colW;
-        // overlap the +1 seam-filler ONLY once the cell is opaque — a translucent cell drawn +1 over
-        // its neighbour would double up and read as a grid line. Opaque overlap is invisible (same colour).
+        // ALPHA ONLY — the cell is a full square from the start; it just fades ALPHA_START→1 as it lands.
+        // (Fading a full square avoids the flat-rectangle look a growing height gave at low opacity.)
+        var a = ALPHA_START + (1 - ALPHA_START) * ease(clamp01((bp - th) / CELL_RISE));
+        // overlap the +1 seam-filler ONLY once the cell is opaque — a translucent cell drawn +1 over its
+        // neighbour would double up and read as a grid line. Opaque overlap is invisible (same colour).
         var o = a >= 0.999 ? 1 : 0;
         if (a < 1) ctx.globalAlpha = a;
-        ctx.fillRect(x, H - r * colW - h, colW + o, h + o);
+        ctx.fillRect(x, H - (r + 1) * colW, colW + o, colW + o);
         if (a < 1) ctx.globalAlpha = 1;
       }
     }
