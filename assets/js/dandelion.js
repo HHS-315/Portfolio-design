@@ -35,6 +35,10 @@
   var WIND_BEND     = 1.4;    // stem bend curve: >1 keeps the root still and bends the top more
   var WIND_TILT     = 0.06;   // max head tilt (rad, ~3.4°) in phase with the shift (leans as it pushes)
   var BREATH_AMP    = 0.010;  // very faint head-radius pulsing (kept subtle; was 0.015)
+  var BREEZE_AMP    = 24;     // fly-away wind — now oscillates ± so hover-detached glyphs scatter BOTH ways
+  var REGROW_SPREAD = 2600;   // on loop resume, 'gone' glyphs regrow scattered over this window (ms)
+  var REGROW_CAP    = 6;      // max glyphs revived per frame → a trickle, never a synchronized burst
+  var OCURL_MAX     = 0.45;   // per-glyph curved-return bow, as a fraction of the scatter distance
   var SWAY_FADE     = 0.18;   // decompose blend, in PER-GLYPH lp units: each glyph keeps its full live
                               // sway until it launches, then its wind melts over lp 0→this. Un-launched
                               // glyphs (lp≈0) never freeze — they sway in place until their turn to fly.
@@ -191,6 +195,7 @@
       p.bx=rdx/rl; p.by=rdy/rl;
       p.fburst=0.55+Math.random()*0.85;
       p.odx=0; p.ody=0;                         // extra (non-wind) offset captured at fall entry, e.g. hover scatter
+      p.ocurl=(Math.random()*2-1)*OCURL_MAX;    // seeded bow so scattered glyphs curve back on their own path
       p.keeper=false; p.slotX=0; p.landY=0;     // set below for the bottom-strip glyphs
     }
 
@@ -278,8 +283,8 @@
     p.state='fly';
     var ang=Math.atan2(p.y-mouse.y, p.x-mouse.x);
     var sp=5+Math.random()*8;
-    p.vx=Math.cos(ang)*sp + 3 + (ex?ex.x:0);
-    p.vy=Math.sin(ang)*sp - 5 + (ex?ex.y:0);
+    p.vx=Math.cos(ang)*sp + (ex?ex.x:0);           // radial from the cursor (no rightward bias)
+    p.vy=Math.sin(ang)*sp - 5 + (ex?ex.y:0);       // slight upward lift
     p.spin=Math.random()*6.28;
   }
   function shockwave(power){
@@ -370,7 +375,8 @@
   function liveFrame(t,dtf,headDisp,tiltA){
     var breath=reduce?1:(1+Math.sin(t*0.0007)*BREATH_AMP);
     var DET=headR*1.3, DET2=DET*DET, RW=headR*0.9, RW2=RW*RW;
-    var breeze=26+Math.sin(t*0.0004)*14, on=0, shimT=t*0.004;
+    // breeze oscillates around 0 (was 26±14, always right) → detached glyphs blow both ways, no clump
+    var breeze=Math.sin(t*0.0004)*BREEZE_AMP+Math.sin(t*0.00019)*BREEZE_AMP*0.5, on=0, shimT=t*0.004, regrew=0;
 
     for(var i=0;i<pts.length;i++){
       var p=pts[i];
@@ -413,7 +419,10 @@
         base=lerp(0.42,1.0,Math.min(1,p.rn))*p.a;
       }
       else {
-        if(t>=p.regrow){ p.state='on'; p.ch=(p.rn>1?pick(PTIP):pick(CODE)); p.x=cx+(Math.random()-0.5)*12; p.y=cy+(Math.random()-0.5)*12; p.a=0; }
+        if(t>=p.regrow){
+          if(regrew<REGROW_CAP){ regrew++; p.state='on'; p.ch=(p.rn>1?pick(PTIP):pick(CODE)); p.x=cx+(Math.random()-0.5)*12; p.y=cy+(Math.random()-0.5)*12; p.a=0; }
+          else p.regrow=t+40+Math.random()*160;   // over the per-frame cap → defer to a later frame
+        }
         continue;
       }
 
@@ -441,8 +450,14 @@
   // glyph's early lp, so a detached glyph starts exactly where it was and converges into the burst
   // instead of snapping to fx or freezing mid-air. Then restore all glyphs to a full 'on' state.
   function enterFall(headDisp){
+    var mx=headR*2.4;                            // clamp scatter so nothing streaks across the whole screen
     for(var i=0;i<pts.length;i++){ var p=pts[i];
-      p.odx=p.x-p.fx-windOffset(p,headDisp); p.ody=p.y-p.fy;
+      // 'gone' glyphs are invisible and parked OFF-SCREEN — snap them home first so they don't carry a
+      // giant odx that streaks in on recompose. Visible 'fly' glyphs keep their (on-screen, now
+      // balanced) scatter so the burst still starts seamlessly from where they actually are.
+      if(p.state==='gone'){ p.x=p.fx; p.y=p.fy; }
+      var ox=p.x-p.fx-windOffset(p,headDisp), oy=p.y-p.fy;
+      p.odx=ox<-mx?-mx:ox>mx?mx:ox; p.ody=oy<-mx?-mx:oy>mx?mx:oy;
       p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
     }
   }
@@ -468,15 +483,19 @@
       // turn (lp≈0) keeps its full live sway, so the base never freezes between the flying parts.
       var wf=1-smooth(0,SWAY_FADE,lp);
       var wOff=wf>0?windOffset(p,headDisp)*wf:0;
+      // captured hover-scatter melts in along a seeded perpendicular BOW (curved, not a straight line),
+      // and because wf follows each glyph's own lp the cluster returns staggered, not as one blob.
+      var oxb=0,oyb=0;
+      if(wf>0 && (p.odx||p.ody)){ var bow=wf*(1-wf)*4; oxb=p.odx*wf-p.ody*p.ocurl*bow; oyb=p.ody*wf+p.odx*p.ocurl*bow; }
       var flowerBase=p.petal?lerp(0.42,1,Math.min(1,p.rn)):(p.al||0.6);
       var ez=lp*lp;                                       // gravity-accelerated descent baseline
       var arc=p.fpeak*H*Math.sin(Math.PI*lp);             // upward launch → apex → back down
 
       if(p.keeper){
         var land=smooth(0.72,1,lp);                       // 0 mid-flight → 1 fully settled
-        var y=p.fy+p.ody*wf+(p.landY-p.fy)*ez-arc;        // parabola onto the slot baseline (+ captured scatter)
+        var y=p.fy+oyb+(p.landY-p.fy)*ez-arc;             // parabola onto the slot baseline (+ curved scatter)
         var exz=1-Math.pow(1-lp,3);                       // ease toward the slot x, then settle
-        var x=p.fx+wOff+p.odx*wf+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*Math.sin(Math.PI*lp);
+        var x=p.fx+wOff+oxb+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*Math.sin(Math.PI*lp);
         var colorT=land*LAND_DARK;                        // white in flight → dark once landed
         var v=(255*(1-colorT))|0;
         var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP*land;
@@ -490,8 +509,8 @@
         var fade=smooth(0.06,0.62,lp);                    // fades out over the first ~⅔ of its fall
         var vis2=flowerBase*(1-fade); if(vis2<=0.03) continue; if(vis2>1)vis2=1;
         var be=1-Math.pow(1-Math.min(1,lp/0.4),3);        // radial spread eases in early
-        var y2=p.fy+p.ody*wf+(H+FS*8-p.fy)*ez-arc;
-        var x2=p.fx+wOff+p.odx*wf+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
+        var y2=p.fy+oyb+(H+FS*8-p.fy)*ez-arc;
+        var x2=p.fx+wOff+oxb+p.bx*FALL_BURST*p.fburst*be+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*lp;
         var colorT2=Math.min(1,lp*1.1)*0.82, v2=(255*(1-colorT2))|0;
         var ang2=p.frot*FALL_ROT*lp, sc2=1-p.fscale*lp;
         ctx.globalAlpha=vis2; ctx.fillStyle='rgb('+v2+','+v2+','+v2+')';
@@ -515,14 +534,21 @@
   // (The strip lives on a position:fixed canvas, so once decomposed there is ALWAYS something
   //  blinking on screen — the loop must not stop just because ABOUT scrolled away.)
   function alive(){ return canvasOn && document.visibilityState==='visible'; }
-  // Loop resumed after a pause (tab return, etc.): if a long gap elapsed, scatter every glyph's
-  // churn deadline so they don't all swap on the same frame (avoids one synchronized flicker burst).
-  function reseedChurn(t){ for(var i=0;i<pts.length;i++) pts[i].swapAt = t + Math.random()*600; }
+  // Loop resumed after a pause (tab return, decompose, etc.): if a long gap elapsed, scatter every
+  // glyph's churn deadline AND every 'gone' glyph's regrow deadline over a fresh window — otherwise
+  // all the deadlines that expired during the pause fire on the first frame back (one flicker burst /
+  // a pile of glyphs pouring out of the centre at once).
+  function reseedOnResume(t){
+    for(var i=0;i<pts.length;i++){ var p=pts[i];
+      p.swapAt = t + Math.random()*600;
+      if(p.state==='gone') p.regrow = t + Math.random()*REGROW_SPREAD;
+    }
+  }
 
   function frame(t){
     rafId=0;                                   // this frame is now running → slot is free
     var dt=(t-lastT)||16; lastT=t;
-    if(dt>500) reseedChurn(t);                 // paused & resumed → desync the swap phases
+    if(dt>500) reseedOnResume(t);              // paused & resumed → desync churn + stagger regrows
     var dtf=Math.max(0.5,Math.min(2,dt/16.67));
     mouse.speed*=Math.pow(0.85,dtf);
     ctx.clearRect(0,0,W,H);
