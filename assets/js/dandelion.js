@@ -83,7 +83,9 @@
   var FALL_BURST      = 240;   // px radial spread applied to the fading (non-landing) glyphs
   var LAND_GAP        = 1.10;  // strip slot spacing = (MEASURED glyph width) × this — desktop density
   var LAND_GAP_MOB    = 1.80;  // …× this on mobile (W≤640) so the row isn't overcrowded
-  var LAND_MARGIN     = 1.8;   // strip baseline sits FS × this above the bottom edge
+  var LAND_MARGIN     = 0.5;   // strip glyph CENTER sits (FS × stripScale) × this above the bottom edge — small,
+                               // so the row hugs the very bottom of the viewport (was 1.8 → floated above it).
+                               // ×stripScale so the larger mobile glyphs clear the edge by the same margin.
   var LAND_DARK       = 0.90;  // landed glyphs darken toward black by this much (dark on light blocks)
   var LAND_CHURN_MIN  = 60;    // bottom-strip character-swap period (ms) — fast flicker…
   var LAND_CHURN_MAX  = 260;   // …random up to here (the live flower stays at its calmer 200–1200ms)
@@ -91,7 +93,7 @@
   var LAND_SHIM_AMP   = 0.26;  // bottom-strip alpha-shimmer amplitude (was 0.14 when landed)
   var LAND_FRONT      = 0.6;   // a keeper past this `land` value draws on the FRONT #strip canvas (over the
                                // blocks); below it, it's still falling → drawn on #field (behind the blocks)
-  var STRIP_BOLD      = 0.55;  // synthetic-bold stroke width (screen px) on the LANDED dark strip glyphs — a
+  var STRIP_BOLD      = 0.3;   // synthetic-bold stroke width (screen px) on the LANDED dark strip glyphs — a
                                // touch heavier so the black ASCII reads more solidly on the light blocks. Faded
                                // in with `land` (0 in flight → full when settled) so nothing pops.
   var STRIP_SCALE_MOB = 1.22;  // on mobile (W≤640) the landed strip glyphs render this × larger — FS is clamped
@@ -172,7 +174,7 @@
     var M=pool.length, slots=Math.max(1,Math.min(Math.floor(W/gap),M));
     keeperN=slots; keeperList=[];
     var sorted=pool.slice().sort(function(a,b){ return (pts[a].fx-pts[b].fx)||(pts[a].fy-pts[b].fy); });
-    var landY=H-FS*LAND_MARGIN, denom=(slots>1?slots-1:1);
+    var landY=H-FS*stripScale*LAND_MARGIN, denom=(slots>1?slots-1:1);
     for(var s2=0;s2<slots;s2++){
       var kp=pts[sorted[Math.round(s2*(M-1)/denom)]];
       kp.keeper=true; kp.slotX=(s2+0.5)*(W/slots); kp.landY=landY;
