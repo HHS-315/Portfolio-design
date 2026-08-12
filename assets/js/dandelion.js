@@ -132,6 +132,28 @@
     }
   }
 
+  // Assign the bottom-strip keepers over a POOL of glyph indices. Called at build over all glyphs,
+  // and again at each decompose entry over only the LIVING (non-'gone') ones — so hover-flung petals
+  // don't leave holes in the strip. With 1000+ glyphs a full row would mush, so keep only as many as
+  // fit at LAND_GAP spacing; sort by x and sample evenly (left origins → left slots, no duplicates).
+  // If the living pool is smaller than the slot count, we use fewer slots spread across the full
+  // width → the row stays evenly spaced (just sparser), never gappy. Deterministic given the pool.
+  function assignKeepers(pool){
+    for(var i=0;i<N;i++) pts[i].keeper=false;
+    ctx.font=FS+'px '+font();
+    var charW=ctx.measureText('0').width||FS*0.6;
+    var gap=charW*(W<=640?LAND_GAP_MOB:LAND_GAP);
+    var M=pool.length, slots=Math.max(1,Math.min(Math.floor(W/gap),M));
+    keeperN=slots; keeperList=[];
+    var sorted=pool.slice().sort(function(a,b){ return (pts[a].fx-pts[b].fx)||(pts[a].fy-pts[b].fy); });
+    var landY=H-FS*LAND_MARGIN, denom=(slots>1?slots-1:1);
+    for(var s2=0;s2<slots;s2++){
+      var kp=pts[sorted[Math.round(s2*(M-1)/denom)]];
+      kp.keeper=true; kp.slotX=(s2+0.5)*(W/slots); kp.landY=landY;
+      keeperList.push(kp);
+    }
+  }
+
   function build(){
     pts.length=0;
     var big=W>=760;
@@ -196,29 +218,14 @@
       p.fburst=0.55+Math.random()*0.85;
       p.odx=0; p.ody=0;                         // extra (non-wind) offset captured at fall entry, e.g. hover scatter
       p.ocurl=(Math.random()*2-1)*OCURL_MAX;    // seeded bow so scattered glyphs curve back on their own path
+      p.fell=true;                              // does this glyph take part in the CURRENT decompose? ('gone' → false)
       p.keeper=false; p.slotX=0; p.landY=0;     // set below for the bottom-strip glyphs
     }
 
-    // ---- choose which glyphs LAND in the bottom ASCII strip (the rest fade away) ----
-    // With 1000+ glyphs a full row would overlap into mush, so keep only as many as fit
-    // at LAND_GAP spacing. Sort by x and sample evenly into slots → left origins map to
-    // left slots (minimal crossing, no duplicates), fixed once per build (deterministic).
-    // Measure the REAL glyph width (JetBrains Mono is narrower than FS) so the strip packs to
-    // near-touching instead of looking gappy. Slot count is capped by N (never exceeds the
-    // available glyphs / the 1000-ish total), and mobile uses a wider gap so it isn't overcrowded.
-    ctx.font=FS+'px '+font();
-    var charW=ctx.measureText('0').width||FS*0.6;
-    var gap=charW*(W<=640?LAND_GAP_MOB:LAND_GAP);
-    var slots=Math.max(6,Math.floor(W/gap)); if(slots>N)slots=N;
-    keeperN=slots; keeperList=[];
-    var order2=[]; for(i=0;i<N;i++) order2.push(i);
-    order2.sort(function(a,b){ return (pts[a].fx-pts[b].fx)||(pts[a].fy-pts[b].fy); });
-    var landY=H-FS*LAND_MARGIN, denom=(slots>1?slots-1:1);
-    for(var s2=0;s2<slots;s2++){
-      var kp=pts[order2[Math.round(s2*(N-1)/denom)]];
-      kp.keeper=true; kp.slotX=(s2+0.5)*(W/slots); kp.landY=landY;
-      keeperList.push(kp);                    // lightweight strip pass iterates only these
-    }
+    // choose the bottom-strip keepers over ALL glyphs initially (recomputed per decompose entry
+    // over only the living ones — see assignKeepers).
+    var pool0=[]; for(i=0;i<N;i++) pool0.push(i);
+    assignKeepers(pool0);
 
     if(!introDone && !introStarted){
       // FIRST build only → arm the intro
@@ -450,22 +457,27 @@
   // glyph's early lp, so a detached glyph starts exactly where it was and converges into the burst
   // instead of snapping to fx or freezing mid-air. Then restore all glyphs to a full 'on' state.
   function enterFall(headDisp){
-    var mx=headR*2.4;                            // clamp scatter so nothing streaks across the whole screen
+    var mx=headR*2.4, living=[];                 // clamp scatter so nothing streaks across the whole screen
     for(var i=0;i<pts.length;i++){ var p=pts[i];
-      // 'gone' glyphs are invisible and parked OFF-SCREEN — snap them home first so they don't carry a
-      // giant odx that streaks in on recompose. Visible 'fly' glyphs keep their (on-screen, now
-      // balanced) scatter so the burst still starts seamlessly from where they actually are.
-      if(p.state==='gone'){ p.x=p.fx; p.y=p.fy; }
+      // The flower keeps its CURRENT state through the decompose: glyphs already flung away ('gone',
+      // invisible) sit it out — only what's still on screen bursts. 'gone' glyphs keep their fx/fy and
+      // seeds and drift back later via their own regrow timers (no sudden full-flower restore).
+      p.fell = p.state!=='gone';
+      if(!p.fell){ p.odx=0; p.ody=0; continue; }
+      living.push(i);
+      // Visible glyphs (incl. mid-air 'fly') burst from where they are: capture the non-wind scatter.
       var ox=p.x-p.fx-windOffset(p,headDisp), oy=p.y-p.fy;
       p.odx=ox<-mx?-mx:ox>mx?mx:ox; p.ody=oy<-mx?-mx:oy>mx?mx:oy;
       p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
     }
+    assignKeepers(living);                        // recompute the strip over LIVING glyphs → no holes
   }
   // Leaving the fall (recompose finished): seed p.x/p.y with exactly what the last fall frame drew
   // (rest + current wind + any still-melting scatter, since lp≈0 ⇒ wf≈1), so liveFrame picks up
   // right there and eases home — no snap. Detached glyphs glide back in via the normal lerp.
-  function exitFall(headDisp){
+  function exitFall(headDisp,t){
     for(var i=0;i<pts.length;i++){ var p=pts[i];
+      if(p.state==='gone'){ p.regrow=t+Math.random()*REGROW_SPREAD; continue; }  // stay gone → drift back gradually (staggered, capped)
       p.x=p.fx+windOffset(p,headDisp)+p.odx; p.y=p.fy+p.ody; p.a=1; if(p.petal) p.state='on'; p.vx=0; p.vy=0;
     }
   }
@@ -477,6 +489,7 @@
   function fallFrame(t, fallP, headDisp){
     ctx.font=FS+'px '+font();
     for(var i=0;i<pts.length;i++){ var p=pts[i];
+      if(!p.fell) continue;                              // glyph was already flung away before this decompose → skip
       var lp=(fallP-p.fallDelay)/(1-p.fallDelay); if(lp<0)lp=0; else if(lp>1)lp=1;
       lp=Math.pow(lp,p.fgamma);                          // per-glyph speed curve (all still reach 1)
       // wind fades per-GLYPH as IT launches (its own lp), not globally: a glyph still waiting its
@@ -575,7 +588,7 @@
       if(alive()) kick();                      // strip is always on the fixed canvas → keep blinking
       return;
     }
-    if(falling){ falling=false; exitFall(headDisp); } // scrolled back up → hand off to the living flower
+    if(falling){ falling=false; exitFall(headDisp,t); } // scrolled back up → hand off to the living flower
     liveFrame(t,dtf,headDisp,tiltA); flush();
     if(alive()) kick();
   }
