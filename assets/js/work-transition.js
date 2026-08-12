@@ -22,7 +22,8 @@
                                            // by bp=1 (full screen); the stepped silhouette comes from the
                                            // different fill SPEEDS, not from a height cap.
   var BLOCK_COLOR = "#cecec8";             // single opaque grey-white — same for every cell, no borders/gaps
-  var LAND_SLIDE = 0.55;                   // the newly-landing top cell rises from this fraction of a cell below
+  // (the landing cell GROWS up in place — height 0→cell, fully opaque — so there's no alpha fade
+  //  and never a translucent cell letting the shader through.)
   // WORK text ink interpolates light→dark as the light cells fill behind it (replaces the old dark scrim)
   var INK_LIGHT = [233, 233, 230], INK_DARK = [20, 20, 20];
   var INK_START = 0.30, INK_FULL = 0.72;   // bp range over which the ink darkens
@@ -79,14 +80,13 @@
       var full = Math.floor(stacked);        // DISCRETE filled cells — stacked bottom → up
       var x = c * colW;
       for (var r = 0; r < full; r++) ctx.fillRect(x, H - (r + 1) * colW, cw, cw);
-      // the next cell "lands": rises from LAND_SLIDE·cell below and fades in over its partial progress,
-      // so the discrete stacking reads smooth (and stays reversible — this is a pure function of bp).
+      // the next cell "lands" by GROWING up in place: height 0 → cell, anchored at its slot's bottom
+      // (which is the top of the stack). Fully opaque — no alpha, so nothing ever goes translucent —
+      // and it abuts the cell below (+1 overlap) so there's no seam. Pure function of bp → reversible.
       var frac = stacked - full;
       if (full < rows && frac > 0.002) {
-        var e = ease(frac);
-        ctx.globalAlpha = e;
-        ctx.fillRect(x, H - (full + 1) * colW + (1 - e) * colW * LAND_SLIDE, cw, cw);
-        ctx.globalAlpha = 1;
+        var h = ease(frac) * colW;
+        ctx.fillRect(x, H - full * colW - h, cw, h + 1);
       }
     }
     updateDbg(bp);
