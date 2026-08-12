@@ -24,8 +24,17 @@
   // ---- intro state ----
   var introDone = reduce;            // reduced-motion → straight to the live flower
   var introStarted=false;            // set on the first build(); prevents restart on resize
-  var IT_TEXT=1750, IT_SCAT=850, IT_FORM=1650;   // longer hold on "PORTFOLIO" before it scatters
+  var IT_TEXT=1750, IT_SCAT=780, IT_FORM=1700;   // hold "PORTFOLIO" → scatter → form (tuned for the spring)
   var INTRO_FAM="'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif";  // shape of the "PORTFOLIO" letters
+  // ---- intro scatter → form dynamics (momentum carries across the boundary; no snap) ----
+  var SCAT_CENTER     = 0.0022; // gentle pull toward centre during scatter → glyphs float mid-screen, no edge pile-up
+  var SCAT_WALL       = 0.7;    // soft-wall restitution (was 0.4 → glyphs stuck in a band at the edges)
+  var SCAT_DIM        = 0.78;   // dimmest the glyphs get mid-scatter (was 0.5 → looked like they vanished)
+  var FORM_K          = 0.030;  // form spring stiffness — pull toward the flower target
+  var FORM_DAMP       = 0.86;   // form spring damping per 60fps frame — carries scatter momentum, then settles
+  var FORM_VMAX       = 15;     // cap the velocity carried into the form so nothing overshoots wildly
+  var FORM_DELAY_SPAN = 600;    // bottom-up build: top glyphs start forming this much later (ms)
+  var FORM_DELAY_JIT  = 220;    // random jitter on the form delay so the order isn't mechanical
 
   // ---- LIVE sway (living flower only): a bent stem drifting in the wind, head riding on top ----
   var WIND_P1       = 7000;   // primary sway period (ms) — one full left↔right
@@ -195,7 +204,10 @@
     for(i=0;i<N;i++){ var p=pts[i];
       if(p.petal){ p.fx=cx+Math.cos(p.ang)*p.r; p.fy=cy+Math.sin(p.ang)*p.r*0.98; p.introBase=lerp(0.42,1.0,Math.min(1,p.rn)); }
       else       { p.fx=p.hx; p.fy=p.hy; p.introBase=p.al; }
-      p.fdelay=Math.random()*400;
+      // intro FORM order: bottom-up — roots/leaves (high fy) first, flower head (low fy) last,
+      // matching the scroll-reassembly direction. Small jitter so it isn't perfectly mechanical.
+      var yFN=(p.fy-(cy-headR*1.5))/((baseY-(cy-headR*1.5))||1); if(yFN<0)yFN=0; else if(yFN>1)yFN=1;
+      p.fdelay=(1-yFN)*FORM_DELAY_SPAN+Math.random()*FORM_DELAY_JIT;
       // ---- decompose seeds (set ONCE per build → deterministic + reversible) ----
       // fall ORDER reversed vs. before: the flower HEAD (top) goes first, then the
       // stem, then leaves, roots last. Petals get an early window; the green parts a
@@ -319,7 +331,6 @@
 
   // ---- INTRO frame (text → scatter → form) ----
   function easeOutCubic(x){ return 1-Math.pow(1-x,3); }
-  function easeInOutCubic(x){ return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
   function introFrame(t,dtf){
     if(introT0===0){ introT0=t; }
     var e=t-introT0, shimT=t*0.004;
@@ -337,8 +348,11 @@
     }
     if(phase==='form' && !formInit){
       formInit=true;
-      for(var i2=0;i2<N;i2++){ var p2=pts[i2]; p2.sx0=p2.x; p2.sy0=p2.y;
-        p2.curl=(Math.random()<0.5?-1:1)*(10+Math.random()*30); }   // arc amount for a swirling reform
+      for(var i2=0;i2<N;i2++){ var p2=pts[i2];
+        // carry the scatter momentum INTO the form (capped) instead of zeroing it → no snap/freeze
+        var vm=Math.sqrt(p2.vx*p2.vx+p2.vy*p2.vy);
+        if(vm>FORM_VMAX){ p2.vx*=FORM_VMAX/vm; p2.vy*=FORM_VMAX/vm; }
+      }
     }
 
     var fe = e-T2;   // elapsed inside form
@@ -355,21 +369,27 @@
         if(p.extra){ continue; }
         var se=(e-T1)/IT_SCAT;
         p.vx+=Math.sin(p.y*0.01+t*0.001)*2.4*dtf; p.vy+=Math.cos(p.x*0.01+t*0.001)*2.4*dtf;
+        p.vx+=(cx-p.x)*SCAT_CENTER*dtf; p.vy+=(cy-p.y)*SCAT_CENTER*dtf;   // gentle centring → float mid-screen, no edge band
         p.vx*=Math.pow(0.95,dtf); p.vy*=Math.pow(0.95,dtf);
         p.x+=p.vx*dtf; p.y+=p.vy*dtf;
-        var m=38;                                        // keep them on-screen (soft walls)
-        if(p.x<m){p.x=m;p.vx*=-0.4;} else if(p.x>W-m){p.x=W-m;p.vx*=-0.4;}
-        if(p.y<m){p.y=m;p.vy*=-0.4;} else if(p.y>H-m){p.y=H-m;p.vy*=-0.4;}
-        vis=p.introBase*lerp(1,0.5,Math.min(1,se));       // dim as the word dissolves to dust
-      } else { // form
+        var m=38;                                        // soft walls, backstop only (stronger bounce now)
+        if(p.x<m){p.x=m;p.vx*=-SCAT_WALL;} else if(p.x>W-m){p.x=W-m;p.vx*=-SCAT_WALL;}
+        if(p.y<m){p.y=m;p.vy*=-SCAT_WALL;} else if(p.y>H-m){p.y=H-m;p.vy*=-SCAT_WALL;}
+        vis=p.introBase*lerp(1,SCAT_DIM,Math.min(1,se));  // dim only to SCAT_DIM (stays visible, not "gone")
+      } else { // form — spring toward the flower target, carrying the scatter momentum (bottom-up via fdelay)
         var pr=(fe-p.fdelay)/(IT_FORM-p.fdelay); if(pr<0)pr=0; else if(pr>1)pr=1;
-        var ee=easeInOutCubic(pr);
-        if(p.extra){ p.x=p.fx; p.y=p.fy; p.a=ee; vis=p.introBase*ee; }
-        else {
-          var dx=p.fx-p.sx0, dy=p.fy-p.sy0, dl=Math.sqrt(dx*dx+dy*dy)||1, mid=Math.sin(ee*Math.PI);
-          p.x=p.sx0+dx*ee + (-dy/dl)*p.curl*mid;          // arc in along a perpendicular bow
-          p.y=p.sy0+dy*ee + ( dx/dl)*p.curl*mid;
-          p.a=1; vis=p.introBase*lerp(0.5,1,ee);          // brighten back up as it settles
+        if(p.extra){ p.x=p.fx; p.y=p.fy; p.a=pr; vis=p.introBase*pr; }   // leftover glyphs just fade in at rest
+        else if(fe<p.fdelay){
+          // not this glyph's turn yet → keep coasting on its remaining momentum (never freezes)
+          p.vx*=Math.pow(0.95,dtf); p.vy*=Math.pow(0.95,dtf); p.x+=p.vx*dtf; p.y+=p.vy*dtf;
+          vis=p.introBase*SCAT_DIM;
+        } else {
+          // spring: accelerate toward the target and damp → momentum eases the glyph into place,
+          // giving a velocity-aligned curved path with no explicit arc, and no boundary stall.
+          p.vx=(p.vx+(p.fx-p.x)*FORM_K*dtf)*Math.pow(FORM_DAMP,dtf);
+          p.vy=(p.vy+(p.fy-p.y)*FORM_K*dtf)*Math.pow(FORM_DAMP,dtf);
+          p.x+=p.vx*dtf; p.y+=p.vy*dtf;
+          p.a=1; vis=p.introBase*lerp(SCAT_DIM,1,pr);     // brighten to full as it settles
         }
       }
       if(!reduce) vis += Math.sin(shimT+p.sway)*0.10;
