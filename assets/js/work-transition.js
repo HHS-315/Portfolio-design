@@ -27,7 +27,11 @@
   // Result: cells pop in scattered across the grid instead of columns rising as one bar.
   var JIT_ROWS = 1.6;                      // per-cell appearance scatter, in rows (±)
   var TH_TOP = 0.94;                        // the last cell appears by this bp → whole screen full by bp=1
-  var CELL_RISE = 0.035;                    // bp span over which one cell grows from 0 → full (its landing)
+  var CELL_RISE = 0.045;                    // bp span over which one cell lands (grows 0→full)
+  var ALPHA_START = 0.5;                    // a landing cell appears at this opacity, then rises to 1
+  var ALPHA_P = 0.5;                        // …reaching full opacity at this FRACTION of CELL_RISE (before
+                                            // it finishes growing) so the semi-transparent window is short.
+                                            // A settled cell (past CELL_RISE) is ALWAYS fully opaque.
   // WORK text ink interpolates light→dark as the light cells fill behind it (replaces the old dark scrim)
   var INK_LIGHT = [233, 233, 230], INK_DARK = [20, 20, 20];
   var INK_START = 0.30, INK_FULL = 0.72;   // bp range over which the ink darkens
@@ -75,6 +79,16 @@
     }
     var k = TH_TOP / (maxTh || 1);          // normalize row-units → bp thresholds in [0, TH_TOP]
     for (var i = 0; i < thresh.length; i++) thresh[i] *= k;
+    // guarantee ≥ CELL_RISE between a cell and the one below it, so the lower cell fully LANDS
+    // (turns opaque) before the upper one starts rising — never two translucent cells stacked,
+    // and never a translucent strip floating over a gap. (Plenty of headroom below bp=1.)
+    for (var c2 = 0; c2 < cols; c2++) {
+      var b = c2 * rows;
+      for (var r2 = 1; r2 < rows; r2++) {
+        var mn = thresh[b + r2 - 1] + CELL_RISE * 1.05;
+        if (thresh[b + r2] < mn) thresh[b + r2] = mn;
+      }
+    }
   }
 
   function resize() {
@@ -91,16 +105,22 @@
     updateInk(bp);                          // keep the text ink in step even before/after the stack
     if (bp <= 0.0001) { updateDbg(bp); return; }
     ctx.fillStyle = BLOCK_COLOR;
-    var cw = colW + 1;                       // +1 so neighbouring cells overlap → seamless, no grid lines
     for (var c = 0; c < cols; c++) {
       var x = c * colW, base = c * rows;
       for (var r = 0; r < rows; r++) {
         var th = thresh[base + r];
-        if (bp <= th) break;                 // thresholds rise up the column → this and everything above are not up yet
-        // cell has appeared: grow it in place, height 0→cell over CELL_RISE. Fully opaque (no alpha),
-        // abuts the cell below with +1 overlap → seamless.
-        var h = ease(clamp01((bp - th) / CELL_RISE)) * colW;
-        ctx.fillRect(x, H - r * colW - h, cw, h + 1);
+        if (bp <= th) break;                 // thresholds rise up the column → this & everything above aren't up yet
+        var p = clamp01((bp - th) / CELL_RISE);
+        // alpha ALPHA_START→1 (reaches 1 at ALPHA_P of the rise, before the height finishes) and
+        // height 0→cell over the whole rise. A settled cell (p=1) is alpha 1, full size.
+        var a = ALPHA_START + (1 - ALPHA_START) * ease(clamp01(p / ALPHA_P));
+        var h = ease(p) * colW;
+        // overlap the +1 seam-filler ONLY once the cell is opaque — a translucent cell drawn +1 over
+        // its neighbour would double up and read as a grid line. Opaque overlap is invisible (same colour).
+        var o = a >= 0.999 ? 1 : 0;
+        if (a < 1) ctx.globalAlpha = a;
+        ctx.fillRect(x, H - r * colW - h, colW + o, h + o);
+        if (a < 1) ctx.globalAlpha = 1;
       }
     }
     updateDbg(bp);
