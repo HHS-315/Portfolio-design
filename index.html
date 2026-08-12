@@ -89,13 +89,19 @@ a{color:inherit;text-decoration:none}
    pointer-events:none so it never intercepts clicks. Positioned to sit below the head on all sizes
    (head centre ≈ 56svh desktop / 48svh mobile, radius ≈ 13.5vmin). */
 .flower-tip{position:fixed;left:50%;top:calc(57svh + 17vmin);transform:translate(-50%,7px);z-index:4;pointer-events:none;
-  display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;white-space:nowrap;
+  display:inline-flex;align-items:center;padding:8px 14px;border-radius:13px;white-space:nowrap;
   font-family:'Pretendard',system-ui,sans-serif;font-weight:500;font-size:12.5px;letter-spacing:.01em;line-height:1;
   color:rgba(242,242,240,.92);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
   -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
   box-shadow:0 6px 26px rgba(0,0,0,.30);
   opacity:0;visibility:hidden;transition:opacity .55s ease,transform .55s ease}
-.flower-tip::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(242,242,240,.85);box-shadow:0 0 9px rgba(242,242,240,.6)}
+/* speech-bubble tail — a small frosted square rotated 45°, poking up out of the top edge toward the
+   flower. Only its two upper edges get the border (top+left after rotation) so it reads as a pointer,
+   and it shares the bubble's backdrop-filter so the glass look continues into the tail. */
+.flower-tip::after{content:"";position:absolute;left:50%;top:0;width:11px;height:11px;
+  transform:translate(-50%,-50%) rotate(45deg);
+  background:rgba(255,255,255,.07);border-top:1px solid rgba(255,255,255,.16);border-left:1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(-50%,0)}
 @media(max-width:640px){.flower-tip{top:calc(48svh + 15vmin);font-size:12px}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
@@ -395,8 +401,14 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   var touch=matchMedia('(hover:none),(pointer:coarse)').matches;
   var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   tip.textContent=touch?'탭해보세요':'마우스를 올려보세요';
-  var shown=false, over=false, falling=false;
-  function update(){ tip.classList.toggle('is-visible', shown && !over && !falling); }
+  var shown=false, over=false, falling=false, seen=false, done=false;
+  // Show ONCE: reveal after the intro, then the first time it hides (cursor over the flower or the
+  // flower starts decomposing) retire it for good — it never re-appears for the rest of the visit.
+  function update(){
+    if(done) return;
+    if(shown && !over && !falling){ seen=true; tip.classList.add('is-visible'); }
+    else if(seen){ tip.classList.remove('is-visible'); done=true; }
+  }
   window.addEventListener('dandelion:introdone', function(){ shown=true; update(); });
   window.addEventListener('dandelion:flowerhover', function(e){ over=!!(e.detail&&e.detail.over); update(); });
   window.addEventListener('dandelion:falling', function(e){ falling=!!(e.detail&&e.detail.active); update(); });
