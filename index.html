@@ -26,6 +26,8 @@
   --hero-font:'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif;
   /* page gutter — matches the top-bar inset so section text lines up with the nav */
   --gutter:clamp(16px,4vw,42px);
+  /* WORK text ink — work-transition.js interpolates it light→dark as the light cells stack behind it */
+  --work-ink:#e9e9e6;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
@@ -77,8 +79,11 @@ a{color:inherit;text-decoration:none}
    shows through — a soft scrim keeps content legible over it */
 .sec{background:transparent}
 .sec--tint::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 90% at 50% 50%,rgba(10,10,10,.55),rgba(10,10,10,.28) 55%,transparent 100%)}
-#work::before{display:none}   /* WORK backdrop comes from the rising blocks, not the scrim */
-#work{text-shadow:0 2px 12px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.7)}   /* keep text legible over the blocks */
+#work::before{display:none}   /* WORK backdrop comes from the stacking cells, not a scrim */
+/* WORK text darkens with the cells behind it (var set by work-transition.js) instead of a scrim */
+#work,#work .sec__head,#work .sec__head b,#work .h2,#work .h2 em,#work .lede,
+#work .work__no,#work .work__ti,#work .work__cat,#work .work__desc,
+#work .work__item,#work .work__item .y{color:var(--work-ink)}
 /* per-section label: number (left) · name (right), no line */
 .sec__head{display:flex;justify-content:space-between;margin-bottom:40px;padding-inline:var(--gutter);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
 .sec__head b{color:var(--hi);font-weight:500}
