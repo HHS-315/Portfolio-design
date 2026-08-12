@@ -45,6 +45,13 @@ a{color:inherit;text-decoration:none}
 #field{position:fixed;inset:0;z-index:1;display:block;cursor:crosshair}
 #blocks{position:fixed;inset:0;width:100%;height:100%;z-index:2;display:block;pointer-events:none}
 #strip{position:fixed;inset:0;width:100%;height:100%;z-index:3;display:block;pointer-events:none}
+/* hero tagline refraction overlay (hero-refract.js) — draws the two taglines as a
+   cursor-following glass lens. Transparent elsewhere; pointer-events:none so the
+   flower's window-level hover is untouched. The <p>s become transparent only while
+   the effect is live (.refract-active), so no-WebGL / touch / reduced-motion keeps
+   the normal DOM text. */
+#refract{position:fixed;inset:0;width:100%;height:100%;z-index:4;display:block;pointer-events:none}
+.hero__quote.refract-active{color:transparent}
 
 .shell{position:relative;z-index:4;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
@@ -224,6 +231,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <canvas id="field"></canvas>
 <canvas id="blocks"></canvas>
 <canvas id="strip"></canvas>
+<canvas id="refract"></canvas>
 
 <div class="bar">
   <b>HWANG HYESEON<span style="color:var(--hi)">*</span></b>
@@ -365,6 +373,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/shader-bg.js"></script>
 <script src="./assets/js/work-transition.js"></script>
 <script src="./assets/js/dandelion.js"></script>
+<script src="./assets/js/hero-refract.js"></script>
 <script src="./assets/js/about-lines.js"></script>
 </body>
 </html>
