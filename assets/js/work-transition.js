@@ -15,15 +15,19 @@
   // ---- knobs --------------------------------------------------------------
   var DEBUG = false;                       // overlay: T / blockP / cells
   var T_START = 0.95, T_END = 0.15;        // work.top/vh from START→END maps master T 0→1
-  var BLOCK_T_START = 0.30;                // cells begin stacking at this T (after the flower starts falling)
-  var COLS_DESKTOP = 10, COLS_MID = 8, COLS_MOBILE = 5;   // square cells → cell size = W / cols
+  var BLOCK_T_START = 0.12;                // cells begin appearing at this T. Lowered from 0.30 so the fill
+                                           // spreads over more scroll (~25% slower / more gradual). Only
+                                           // affects the blocks — the flower reads progress() directly.
+  var COLS_DESKTOP = 16, COLS_MID = 12, COLS_MOBILE = 7;  // square cells → cell size = W / cols (smaller cells)
   var COL_BP = 1000, COL_MID_BP = 640;
-  var COL_DELAY_MAX = 0.42;                // per-column fill-START stagger. Every column still reaches the top
-                                           // by bp=1 (full screen); the stepped silhouette comes from the
-                                           // different fill SPEEDS, not from a height cap.
   var BLOCK_COLOR = "#cecec8";             // single opaque grey-white — same for every cell, no borders/gaps
-  // (the landing cell GROWS up in place — height 0→cell, fully opaque — so there's no alpha fade
-  //  and never a translucent cell letting the shader through.)
+  // Per-CELL appearance order (not per-column): each cell gets a threshold = its row height + a random
+  // jitter of ±JIT_ROWS rows, kept monotonic up each column (so a cell never appears before the one below
+  // it — no floating cells). bp crossing a cell's threshold makes it grow in (height 0→cell, fully opaque).
+  // Result: cells pop in scattered across the grid instead of columns rising as one bar.
+  var JIT_ROWS = 1.6;                      // per-cell appearance scatter, in rows (±)
+  var TH_TOP = 0.94;                        // the last cell appears by this bp → whole screen full by bp=1
+  var CELL_RISE = 0.035;                    // bp span over which one cell grows from 0 → full (its landing)
   // WORK text ink interpolates light→dark as the light cells fill behind it (replaces the old dark scrim)
   var INK_LIGHT = [233, 233, 230], INK_DARK = [20, 20, 20];
   var INK_START = 0.30, INK_FULL = 0.72;   // bp range over which the ink darkens
@@ -35,7 +39,7 @@
   var work = document.getElementById("work"); if (!work) return;
   var root = document.documentElement;
 
-  var W = 0, H = 0, DPR = 1, cols = 0, colW = 0, rows = 0, columns = [];
+  var W = 0, H = 0, DPR = 1, cols = 0, colW = 0, rows = 0, thresh = [];   // thresh[c*rows+r] = bp at which the cell appears
   function ease(x) { return 1 - Math.pow(1 - x, 3); }
   function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
 
@@ -55,8 +59,22 @@
     cols = W >= COL_BP ? COLS_DESKTOP : W >= COL_MID_BP ? COLS_MID : COLS_MOBILE;
     colW = W / cols;                        // square cell edge
     rows = Math.ceil(H / colW);             // cells needed to fill the viewport vertically
-    columns = [];
-    for (var c = 0; c < cols; c++) columns.push({ delay: Math.random() * COL_DELAY_MAX });
+    // per-cell appearance thresholds (seeded ONCE here → deterministic + reversible). Base = row height,
+    // + a ±JIT_ROWS jitter to scatter the order, made monotonic up each column so nothing floats.
+    thresh = new Array(cols * rows);
+    var maxTh = 0;
+    for (var c = 0; c < cols; c++) {
+      var prev = -1;
+      for (var r = 0; r < rows; r++) {
+        var th = r + (Math.random() * 2 - 1) * JIT_ROWS;
+        if (th <= prev) th = prev + 0.06;   // keep bottom→up within the column (a cell never precedes the one below)
+        prev = th;
+        thresh[c * rows + r] = th;
+        if (th > maxTh) maxTh = th;
+      }
+    }
+    var k = TH_TOP / (maxTh || 1);          // normalize row-units → bp thresholds in [0, TH_TOP]
+    for (var i = 0; i < thresh.length; i++) thresh[i] *= k;
   }
 
   function resize() {
@@ -75,18 +93,14 @@
     ctx.fillStyle = BLOCK_COLOR;
     var cw = colW + 1;                       // +1 so neighbouring cells overlap → seamless, no grid lines
     for (var c = 0; c < cols; c++) {
-      var lp = clamp01((bp - columns[c].delay) / (1 - columns[c].delay));
-      var stacked = lp * rows;               // continuous cell count for this column
-      var full = Math.floor(stacked);        // DISCRETE filled cells — stacked bottom → up
-      var x = c * colW;
-      for (var r = 0; r < full; r++) ctx.fillRect(x, H - (r + 1) * colW, cw, cw);
-      // the next cell "lands" by GROWING up in place: height 0 → cell, anchored at its slot's bottom
-      // (which is the top of the stack). Fully opaque — no alpha, so nothing ever goes translucent —
-      // and it abuts the cell below (+1 overlap) so there's no seam. Pure function of bp → reversible.
-      var frac = stacked - full;
-      if (full < rows && frac > 0.002) {
-        var h = ease(frac) * colW;
-        ctx.fillRect(x, H - full * colW - h, cw, h + 1);
+      var x = c * colW, base = c * rows;
+      for (var r = 0; r < rows; r++) {
+        var th = thresh[base + r];
+        if (bp <= th) break;                 // thresholds rise up the column → this and everything above are not up yet
+        // cell has appeared: grow it in place, height 0→cell over CELL_RISE. Fully opaque (no alpha),
+        // abuts the cell below with +1 overlap → seamless.
+        var h = ease(clamp01((bp - th) / CELL_RISE)) * colW;
+        ctx.fillRect(x, H - r * colW - h, cw, h + 1);
       }
     }
     updateDbg(bp);
