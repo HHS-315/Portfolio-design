@@ -31,12 +31,19 @@
   var REFRACT_RADIUS   = 160;    // px — lens radius in screen space
   var REFRACT_STRENGTH = 0.34;   // max UV pull, as a fraction of the radius (bulge amount)
   var REFRACT_DECAY    = 1.7;    // falloff exponent: higher = distortion hugs the centre tighter
-  var CHROMA           = 0.16;   // chromatic split (0 = none) — R/G/B sampled at scaled offsets
+  // Refraction is ACHROMATIC now (no R/G/B split). Instead the lensed area gets a soft white
+  // outglow + a light haze, so the edges bloom rather than fringe with colour.
+  var GLOW_STRENGTH    = 0.55;   // how much the blurred-alpha halo is added around the text (0 = off)
+  var GLOW_RADIUS      = 7;      // px — spread of the outglow blur taps
+  var HAZE_AMOUNT      = 0.22;   // how much the core text alpha dims where refraction is strong (0 = crisp)
   var FOLLOW_LERP      = 14;     // cursor-follow speed (exp/sec) — higher = snappier
   var PRESENCE_FADE    = 9;      // fade-in/out speed of the effect when the cursor enters/leaves (exp/sec)
   var HOVER_MARGIN     = 0.4;    // activate when the cursor is within (radius × this extra) of the box
+  var TEX_PAD_MULT     = 1.5;    // texture padding = (radius × strength) × this, so the lens never samples
+                                 // past the texture edge (CLAMP_TO_EDGE stretch = the square-clip artifact)
   var SETTLE_EPS       = 0.0015; // below this, motion is "settled" → stop the rAF loop
   // -------------------------------------------------------------------------
+  var TEX_PAD = REFRACT_RADIUS * REFRACT_STRENGTH * TEX_PAD_MULT;   // px of transparent margin on every side
 
   var mqReduce = matchMedia("(prefers-reduced-motion:reduce)");
   var mqTouch  = matchMedia("(hover:none),(pointer:coarse)");
@@ -62,12 +69,14 @@
     "precision mediump float;" +
     "varying vec2 v_uv;" +
     "uniform sampler2D u_tex;" +
-    "uniform vec2 u_rectSize;" +         // box size in px
-    "uniform vec2 u_cursor;" +           // cursor in box-local px, y-UP
+    "uniform vec2 u_rectSize;" +         // PADDED box size in px
+    "uniform vec2 u_cursor;" +           // cursor in padded-box-local px, y-UP
     "uniform float u_radius;" +
     "uniform float u_strength;" +
     "uniform float u_decay;" +
-    "uniform float u_chroma;" +
+    "uniform float u_glowStrength;" +
+    "uniform float u_glowRadius;" +
+    "uniform float u_haze;" +
     "uniform float u_presence;" +        // 0 (away) → 1 (hovering)
     "uniform vec3 u_color;" +
     "void main(){" +
@@ -79,12 +88,22 @@
     // proportional to (cursor − fragment), so it vanishes AT the centre (no swirl/pinch) and
     // smoothly magnifies the surrounding text — a clean 'seen through glass' refraction.
     "  vec2 duv = ((u_cursor - fragPx) * (f * u_strength)) / u_rectSize;" +
-    "  float ar = texture2D(u_tex, v_uv + duv*(1.0+u_chroma)).a;" +
-    "  float ag = texture2D(u_tex, v_uv + duv).a;" +
-    "  float ab = texture2D(u_tex, v_uv + duv*(1.0-u_chroma)).a;" +
-    "  vec3 col = u_color * vec3(ar, ag, ab);" +           // per-channel coverage → chromatic fringe
-    "  float a = max(max(ar, ag), ab);" +
-    "  gl_FragColor = vec4(col, a);" +                     // premultiplied (col channels ≤ a)
+    "  float a0 = texture2D(u_tex, v_uv + duv).a;" +       // sharp text, ALL channels same point → achromatic
+    // outglow: a cheap two-ring blur of the alpha around the (displaced) sample point, gated by f so it
+    // only blooms inside the lens. Sampling the neighbourhood spreads the glyph's coverage outward → a soft
+    // white halo on the edges (the core stays sharp because a0 is added separately below).
+    "  vec2 gr = vec2(u_glowRadius) / u_rectSize;" +
+    "  float glow = 0.0;" +
+    "  for (int i = 0; i < 8; i++) {" +
+    "    float ang = float(i) * 0.7853981634;" +           // 2π/8
+    "    vec2 dir = vec2(cos(ang), sin(ang));" +
+    "    glow += texture2D(u_tex, v_uv + duv + dir*gr).a;" +
+    "    glow += texture2D(u_tex, v_uv + duv + dir*gr*0.5).a;" +
+    "  }" +
+    "  glow = (glow * 0.0625) * f * u_glowStrength;" +      // /16 taps
+    "  float aCore = a0 * (1.0 - u_haze * f);" +            // haze: dim the core a touch where the lens is strong
+    "  float a = clamp(aCore + glow, 0.0, 1.0);" +
+    "  gl_FragColor = vec4(u_color * a, a);" +              // premultiplied, achromatic (col channels ≤ a)
     "}";
 
   function compile(type, src) {
@@ -108,7 +127,7 @@
 
   var U = {};
   ["u_clipMin", "u_clipMax", "u_tex", "u_rectSize", "u_cursor", "u_radius",
-   "u_strength", "u_decay", "u_chroma", "u_presence", "u_color"].forEach(function (n) {
+   "u_strength", "u_decay", "u_glowStrength", "u_glowRadius", "u_haze", "u_presence", "u_color"].forEach(function (n) {
     U[n] = gl.getUniformLocation(prog, n);
   });
   gl.uniform1i(U.u_tex, 0);
@@ -145,13 +164,19 @@
   function buildTexture(q) {
     var el = q.el, cs = getComputedStyle(el), rect = el.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return false;
-    q.rect = rect; q.size = [rect.width, rect.height];   // q.color captured once at init (see above)
+    // The texture is PADDED by TEX_PAD on every side (transparent margin). The lens pushes the sampled
+    // UV outward near the box edges; without the pad it would read past the texture and CLAMP_TO_EDGE
+    // would stretch the edge pixels into a straight bar (the "square-clipped end letters"). The pad's
+    // transparent border means an out-of-glyph read clamps to nothing → the edges just fade out.
+    var PAD = TEX_PAD;
+    q.rect = rect;                                   // <p> box (hover detection / placement anchor)
+    q.size = [rect.width + 2 * PAD, rect.height + 2 * PAD];   // PADDED size (shader/quad work in this)
 
     var fsz = parseFloat(cs.fontSize) || 48;
     var lh = parseFloat(cs.lineHeight); if (!lh) lh = fsz * 1.15;
     var o = document.createElement("canvas");
-    o.width = Math.max(1, Math.ceil(rect.width * DPR));
-    o.height = Math.max(1, Math.ceil(rect.height * DPR));
+    o.width = Math.max(1, Math.ceil(q.size[0] * DPR));
+    o.height = Math.max(1, Math.ceil(q.size[1] * DPR));
     var c = o.getContext("2d");
     c.scale(DPR, DPR);
     c.font = cs.fontStyle + " " + cs.fontWeight + " " + fsz + "px " + cs.fontFamily;
@@ -171,9 +196,10 @@
     }
     if (cur) lines.push(cur);
 
-    var x = alignRight ? rect.width : alignCenter ? rect.width / 2 : 0;
+    // draw offset by PAD so the text sits inside the transparent margin
+    var x = PAD + (alignRight ? rect.width : alignCenter ? rect.width / 2 : 0);
     var yPad = (lh - fsz) / 2;             // centre each line within its line-box (approx DOM leading)
-    for (var li = 0; li < lines.length; li++) c.fillText(lines[li], x, li * lh + yPad);
+    for (var li = 0; li < lines.length; li++) c.fillText(lines[li], x, PAD + li * lh + yPad);
 
     gl.bindTexture(gl.TEXTURE_2D, q.tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, o);
@@ -212,8 +238,8 @@
       var inside = px >= r.left - REFRACT_RADIUS * HOVER_MARGIN && px <= r.right + REFRACT_RADIUS * HOVER_MARGIN &&
                    py >= r.top - REFRACT_RADIUS * HOVER_MARGIN && py <= r.bottom + REFRACT_RADIUS * HOVER_MARGIN;
       if (inside) {
-        q.tCur[0] = px - r.left;
-        q.tCur[1] = r.height - (py - r.top);      // to box-local, y-up
+        q.tCur[0] = (px - r.left) + TEX_PAD;                 // to PADDED-box-local px
+        q.tCur[1] = q.size[1] - ((py - r.top) + TEX_PAD);    // …y-up (q.size[1] = padded height)
         if (q.pres < 0.001) { q.cur[0] = q.tCur[0]; q.cur[1] = q.tCur[1]; }  // no snap-in from a stale spot
         q.tPres = 1;
       } else q.tPres = 0;
@@ -245,15 +271,18 @@
       if (Math.abs(q.tPres - q.pres) > SETTLE_EPS ||
           (q.pres > SETTLE_EPS && (Math.abs(q.tCur[0] - q.cur[0]) > 0.5 || Math.abs(q.tCur[1] - q.cur[1]) > 0.5))) moving = true;
 
-      // box → clip space. uv(0,0)=bottom-left=(left,bottom), uv(1,1)=top-right=(right,top)
-      gl.uniform2f(U.u_clipMin, (r.left / W) * 2 - 1, 1 - (r.bottom / H) * 2);
-      gl.uniform2f(U.u_clipMax, (r.right / W) * 2 - 1, 1 - (r.top / H) * 2);
+      // PADDED box → clip space. The quad is expanded by TEX_PAD on every side so uv 0..1 spans the
+      // padded texture; uv(0,0)=bottom-left=(left-pad,bottom+pad), uv(1,1)=top-right=(right+pad,top-pad).
+      gl.uniform2f(U.u_clipMin, ((r.left - TEX_PAD) / W) * 2 - 1, 1 - ((r.bottom + TEX_PAD) / H) * 2);
+      gl.uniform2f(U.u_clipMax, ((r.right + TEX_PAD) / W) * 2 - 1, 1 - ((r.top - TEX_PAD) / H) * 2);
       gl.uniform2f(U.u_rectSize, q.size[0], q.size[1]);
       gl.uniform2f(U.u_cursor, q.cur[0], q.cur[1]);
       gl.uniform1f(U.u_radius, REFRACT_RADIUS);
       gl.uniform1f(U.u_strength, REFRACT_STRENGTH);
       gl.uniform1f(U.u_decay, REFRACT_DECAY);
-      gl.uniform1f(U.u_chroma, CHROMA);
+      gl.uniform1f(U.u_glowStrength, GLOW_STRENGTH);
+      gl.uniform1f(U.u_glowRadius, GLOW_RADIUS);
+      gl.uniform1f(U.u_haze, HAZE_AMOUNT);
       gl.uniform1f(U.u_presence, q.pres);
       gl.uniform3f(U.u_color, q.color[0], q.color[1], q.color[2]);
       gl.activeTexture(gl.TEXTURE0);

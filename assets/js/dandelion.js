@@ -110,6 +110,18 @@
   function showQuote(){ if(quoteShown) return; quoteShown=true;
     [].forEach.call(document.querySelectorAll('.hero__quote, .hero__intro'),function(q){ q.style.opacity='1'; q.style.transform='none'; }); }
 
+  // ---- flower tooltip signalling — index.html #flowerTip listens for these ----
+  // (The tooltip lives in the DOM; the flower is the only place that knows the live mouse
+  //  position, the head geometry and the decompose state, so it emits and the DOM reacts.)
+  var TIP_HOVER_R = 1.35;   // tooltip hides while the cursor is within headR × this of the flower head
+  function emitTip(name, det){ try{ window.dispatchEvent(new CustomEvent(name, { detail: det })); }catch(e){} }
+  var _tipOver = false;
+  function tipHover(mx, my){
+    var over = introDone && !falling &&
+               (mx - cx) * (mx - cx) + (my - cy) * (my - cy) < (headR * TIP_HOVER_R) * (headR * TIP_HOVER_R);
+    if (over !== _tipOver) { _tipOver = over; emitTip('dandelion:flowerhover', { over: over }); }
+  }
+
   function resize(){
     DPR=Math.min(2,window.devicePixelRatio||1);
     W=innerWidth; H=innerHeight;
@@ -632,13 +644,13 @@
     var wind=windNow(t), headDisp=wind*headR*WIND_AMP_FRAC, tiltA=wind*WIND_TILT;
 
     if(fallCur>0.0001){
-      if(!falling){ falling=true; enterFall(headDisp); }
+      if(!falling){ falling=true; enterFall(headDisp); emitTip('dandelion:falling',{active:true}); }
       if(fallCur>=0.9999) stripFrame(t);       // fully decomposed → draw ONLY the landed strip (cheap)
       else fallFrame(t,fallCur,headDisp);      // mid-flight → full pass (arc + fade + landing + wind blend)
       if(alive()) kick();                      // strip is always on the fixed canvas → keep blinking
       return;
     }
-    if(falling){ falling=false; exitFall(headDisp,t); } // scrolled back up → hand off to the living flower
+    if(falling){ falling=false; exitFall(headDisp,t); emitTip('dandelion:falling',{active:false}); _tipOver=false; } // scrolled back up → hand off to the living flower
     liveFrame(t,dtf,headDisp,tiltA); flush();
     if(alive()) kick();
   }
@@ -683,8 +695,9 @@
     var nx=e.clientX,ny=e.clientY;
     mouse.speed=Math.hypot(nx-(mouse.x<0?nx:mouse.x), ny-(mouse.y<0?ny:mouse.y));
     mouse.x=nx; mouse.y=ny;
+    tipHover(nx,ny);                              // hide the tooltip when the cursor is over the flower
   },{passive:true});
-  addEventListener('pointerleave',function(){ mouse.x=-1e5; mouse.y=-1e5; mouse.speed=0; });
+  addEventListener('pointerleave',function(){ mouse.x=-1e5; mouse.y=-1e5; mouse.speed=0; tipHover(-1e5,-1e5); });
   addEventListener('pointerdown',function(e){ if(!introDone) return; mouse.x=e.clientX; mouse.y=e.clientY;
     var dx=e.clientX-cx, dy=e.clientY-cy; if(dx*dx+dy*dy < (headR*1.6)*(headR*1.6)) shockwave(40); });
 
