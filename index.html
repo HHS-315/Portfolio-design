@@ -89,20 +89,22 @@ a{color:inherit;text-decoration:none}
    rest of the visit; see the controller script near the end of <body>. pointer-events:none so it
    never intercepts clicks. (head centre ≈ 56svh desktop / 48svh mobile, radius ≈ 13.5vmin → the
    ~16vmin offset clears the petals.) */
+/* Body + sharp left tail are ONE element carved by clip-path (approach a), so the single
+   backdrop-filter frosts the whole silhouette uniformly — no seam, no nested-filter double-sample,
+   no border line across the tail base. --tl = tail length, --bh = half its base (tl > 2·bh ⇒ thin &
+   pointed), --c = corner chamfer (soft-pill look). box-shadow would be clipped, so the shadow — and a
+   faint light rim standing in for the (clipped) border — are filter: drop-shadow()s that follow the
+   silhouette, tail included. Tail tip sits at the element's left-centre, pointing at the flower. */
 .flower-tip{position:fixed;left:calc(50vw + 16vmin);top:56svh;transform:translate(6px,-50%);z-index:4;pointer-events:none;
-  display:inline-flex;align-items:center;padding:8px 14px;border-radius:13px;white-space:nowrap;
+  --tl:13px; --bh:4.5px; --c:7px;
+  display:inline-flex;align-items:center;padding:8px 15px 8px 26px;white-space:nowrap;
   font-family:'Pretendard',system-ui,sans-serif;font-weight:500;font-size:12.5px;letter-spacing:.01em;line-height:1;
-  color:rgba(242,242,240,.92);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+  color:rgba(242,242,240,.94);background:rgba(255,255,255,.09);
   -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
-  box-shadow:0 6px 26px rgba(0,0,0,.30);
+  filter:drop-shadow(0 0 .6px rgba(255,255,255,.28)) drop-shadow(0 5px 15px rgba(0,0,0,.34));
+  -webkit-clip-path:polygon(calc(var(--tl) + var(--c)) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, calc(var(--tl) + var(--c)) 100%, var(--tl) calc(100% - var(--c)), var(--tl) calc(50% + var(--bh)), 0 50%, var(--tl) calc(50% - var(--bh)), var(--tl) var(--c));
+  clip-path:polygon(calc(var(--tl) + var(--c)) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, calc(var(--tl) + var(--c)) 100%, var(--tl) calc(100% - var(--c)), var(--tl) calc(50% + var(--bh)), 0 50%, var(--tl) calc(50% - var(--bh)), var(--tl) var(--c));
   opacity:0;visibility:hidden;transition:opacity .55s ease,transform .55s ease}
-/* speech-bubble tail — a small frosted square rotated 45°, poking out the LEFT edge toward the flower.
-   Only its two left-facing edges get the border (bottom+left after rotation) so it reads as a pointer,
-   and it shares the bubble's backdrop-filter so the glass look continues into the tail. */
-.flower-tip::after{content:"";position:absolute;left:0;top:50%;width:11px;height:11px;
-  transform:translate(-50%,-50%) rotate(45deg);
-  background:rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.16);border-left:1px solid rgba(255,255,255,.16);
-  -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(0,-50%)}
 @media(max-width:640px){.flower-tip{left:calc(50vw + 15vmin);top:48svh;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
