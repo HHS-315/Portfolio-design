@@ -83,13 +83,12 @@ a{color:inherit;text-decoration:none}
   .hero__quote--br{margin-top:6px}
   .hero__intro{position:static;margin-top:auto;max-width:none;font-size:12.5px;line-height:1.8;text-align:left}
 }
-/* flower hint tooltip — glassmorphism pill just under the dandelion head. Shown after the intro
-   (dandelion:introdone), hidden while the cursor is over the flower (dandelion:flowerhover) and once
-   it starts decomposing (dandelion:falling); see the controller script near the end of <body>.
-   pointer-events:none so it never intercepts clicks. Positioned to sit below the head on all sizes
-   (head centre ≈ 56svh desktop / 48svh mobile, radius ≈ 13.5vmin). */
-/* pill sits to the RIGHT of the flower head, vertically centred on it (head centre ≈ 56svh desktop /
-   48svh mobile, radius ≈ 13.5vmin → offset ~16vmin clears the petals). */
+/* flower hint tooltip — glassmorphism pill to the RIGHT of the dandelion head, vertically centred on
+   it. Shown once after the intro (dandelion:introdone); hidden while the cursor is over the flower
+   (dandelion:flowerhover) and once it starts decomposing (dandelion:falling) — then retired for the
+   rest of the visit; see the controller script near the end of <body>. pointer-events:none so it
+   never intercepts clicks. (head centre ≈ 56svh desktop / 48svh mobile, radius ≈ 13.5vmin → the
+   ~16vmin offset clears the petals.) */
 .flower-tip{position:fixed;left:calc(50vw + 16vmin);top:56svh;transform:translate(6px,-50%);z-index:4;pointer-events:none;
   display:inline-flex;align-items:center;padding:8px 14px;border-radius:13px;white-space:nowrap;
   font-family:'Pretendard',system-ui,sans-serif;font-weight:500;font-size:12.5px;letter-spacing:.01em;line-height:1;
