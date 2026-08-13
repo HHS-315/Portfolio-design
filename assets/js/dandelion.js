@@ -284,6 +284,7 @@
     }
 
     if(window.console) console.log('[dandelion] glyphs:', N, '('+(big?'desktop':'mobile')+', headR='+headR.toFixed(0)+', FS='+FS.toFixed(1)+')');
+    if(window.HeroPerf) HeroPerf.set('glyphs', N);          // perf HUD (perf-hud.js, ?perf=1)
   }
 
   // ---- extract "PORTFOLIO" pixel coordinates from an offscreen canvas (once) ----
@@ -629,7 +630,7 @@
     if(sctx) sctx.clearRect(0,0,W,H);          // front strip canvas — cleared every frame too
     for(var q=0;q<NB;q++){ BX[q].length=0; BY[q].length=0; BC[q].length=0; }
 
-    if(!introDone){ introFrame(t,dtf); flush(); kick(); return; }
+    if(!introDone){ var _ti=window.HeroPerf?HeroPerf.t():0; introFrame(t,dtf); flush(); if(window.HeroPerf)HeroPerf.add('field',_ti); kick(); return; }
 
     // SMOOTHING: the trajectory is a pure function of the SHOWN progress (fallCur), but fallCur
     // only eases toward the scroll target — so a jumpy wheel/trackpad glides instead of snapping,
@@ -645,13 +646,13 @@
 
     if(fallCur>0.0001){
       if(!falling){ falling=true; enterFall(headDisp); emitTip('dandelion:falling',{active:true}); }
-      if(fallCur>=0.9999) stripFrame(t);       // fully decomposed → draw ONLY the landed strip (cheap)
-      else fallFrame(t,fallCur,headDisp);      // mid-flight → full pass (arc + fade + landing + wind blend)
+      if(fallCur>=0.9999){ var _ts=window.HeroPerf?HeroPerf.t():0; stripFrame(t); if(window.HeroPerf)HeroPerf.add('strip',_ts); }   // fully decomposed → draw ONLY the landed strip (cheap)
+      else { var _tf=window.HeroPerf?HeroPerf.t():0; fallFrame(t,fallCur,headDisp); if(window.HeroPerf)HeroPerf.add('field',_tf); }   // mid-flight → full pass (arc + fade + landing + wind blend)
       if(alive()) kick();                      // strip is always on the fixed canvas → keep blinking
       return;
     }
     if(falling){ falling=false; exitFall(headDisp,t); emitTip('dandelion:falling',{active:false}); _tipOver=false; } // scrolled back up → hand off to the living flower
-    liveFrame(t,dtf,headDisp,tiltA); flush();
+    var _tl=window.HeroPerf?HeroPerf.t():0; liveFrame(t,dtf,headDisp,tiltA); flush(); if(window.HeroPerf)HeroPerf.add('field',_tl);
     if(alive()) kick();
   }
 

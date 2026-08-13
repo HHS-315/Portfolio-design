@@ -99,10 +99,11 @@
   }
 
   function draw() {
+    var _tp = window.HeroPerf ? HeroPerf.t() : 0;   // perf HUD (2D CPU time)
     ctx.clearRect(0, 0, W, H);
     var bp = blockProgress();
     updateInk(bp);                          // keep the text ink in step even before/after the stack
-    if (bp <= 0.0001) { updateDbg(bp); return; }
+    if (bp <= 0.0001) { updateDbg(bp); if (window.HeroPerf) HeroPerf.add("blocks", _tp); return; }
     ctx.fillStyle = BLOCK_COLOR;
     for (var c = 0; c < cols; c++) {
       var x = c * colW, base = c * rows;
@@ -121,6 +122,7 @@
       }
     }
     updateDbg(bp);
+    if (window.HeroPerf) HeroPerf.add("blocks", _tp);
   }
 
   // WORK text ink: light on the dark hero side → dark once the light cells fill behind it.

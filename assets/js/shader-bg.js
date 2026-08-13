@@ -302,12 +302,14 @@
     mouseY += (targetY - mouseY) * follow;
     cursorPresence += (targetPresence - cursorPresence) * follow;
     resizeCanvas();
+    var _tp = window.HeroPerf ? HeroPerf.t() : 0;   // perf HUD (submit time only — GPU work is async)
     gl.uniform4f(uni.scene, canvas.width, canvas.height,
       ((now - start) / 1000) * UNIFORMS.timeScale, UNIFORMS.colorCount);
     gl.uniform4f(uni.space, UNIFORMS.offsetX, UNIFORMS.offsetY, mouseX, mouseY);
     gl.uniform4f(uni.cursor, UNIFORMS.cursorEnabled ? cursorPresence : 0,
       UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (window.HeroPerf) HeroPerf.add("shader", _tp);
     var settling = Math.abs(targetX - mouseX) > 0.001 ||
                    Math.abs(targetY - mouseY) > 0.001 ||
                    Math.abs(targetPresence - cursorPresence) > 0.001;

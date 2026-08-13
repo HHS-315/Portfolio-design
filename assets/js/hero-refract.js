@@ -261,6 +261,7 @@
     var followK = 1 - Math.exp(-FOLLOW_LERP * dt);
     var presK = 1 - Math.exp(-PRESENCE_FADE * dt);
 
+    var _tp = window.HeroPerf ? HeroPerf.t() : 0;   // perf HUD (submit time only — GPU work is async)
     gl.clear(gl.COLOR_BUFFER_BIT);
     var moving = false;
     for (var i = 0; i < quotes.length; i++) {
@@ -289,6 +290,7 @@
       gl.bindTexture(gl.TEXTURE_2D, q.tex);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
+    if (window.HeroPerf) HeroPerf.add("refract", _tp);
     if (moving) schedule(); else lastNow = null;   // settled → hold the last frame, idle
   }
 
