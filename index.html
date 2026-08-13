@@ -89,26 +89,25 @@ a{color:inherit;text-decoration:none}
    rest of the visit; see the controller script near the end of <body>. pointer-events:none so it
    never intercepts clicks. (head centre ≈ 56svh desktop / 48svh mobile, radius ≈ 13.5vmin → the
    ~16vmin offset clears the petals.) */
-/* Subtle rounded rectangle (radius 7px, not a pill) so the left edge has a flat section the tail can
-   sit flush against. Body glass = backdrop-filter blur (verified — the shader/glyphs blur through it).
-   The tail (::after) is a 45°-rotated square that is the SAME MATERIAL as the body — identical
-   background AND its own backdrop-filter — so it frosts the same backdrop and matches exactly (no more
-   flat/brighter tail). It carries the body's 1px border on its two outer (left-facing) edges, so the
-   outline continues around the point and body+tail read as one shape. It overlaps the flat left edge
-   just enough that its inner (unbordered) half covers the body's left border line at the base. */
+/* Body + tail are ONE element shaped by a single SVG mask ("rounded rect + rounded-tip left triangle").
+   Because there's only ONE backdrop-filter over the whole silhouette, the tail frosts the backdrop at
+   the exact same density as the body — no nested-filter double-blur, no seam over the shader/glyphs,
+   no border line at the tail base (structural fix; verified against a multi-colour striped backdrop).
+   mask (unlike clip-path/filter) keeps backdrop-filter alive. No CSS border/box-shadow: a mask can't
+   outline the carved silhouette and box-shadow would leak the rectangular box around the tail notches;
+   the glass edge alone reads on the dark hero. Per-breakpoint viewBox keeps the corner/tail proportions
+   right at each width (mask-size:100% 100% stretches the SVG to the element). */
 .flower-tip{position:fixed;left:calc(50vw + 16vmin);top:56svh;transform:translate(6px,-50%);z-index:4;pointer-events:none;
-  display:inline-flex;align-items:center;padding:8px 15px;border-radius:7px;white-space:nowrap;
+  display:inline-flex;align-items:center;padding:8px 15px 8px 22px;white-space:nowrap;
   font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:12.5px;letter-spacing:.01em;line-height:1;
-  color:rgba(242,242,240,.94);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);
+  color:rgba(242,242,240,.94);background:rgba(255,255,255,.08);
   -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
-  box-shadow:0 6px 22px rgba(0,0,0,.32);
+  --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 31' preserveAspectRatio='none'><path d='M18 0 L133 0 Q140 0 140 7 L140 24 Q140 31 133 31 L18 31 Q11 31 11 24 L11 20 L3 17 Q0 15.5 3 14 L11 11 L11 7 Q11 0 18 0 Z' fill='%23000'/></svg>");
+  -webkit-mask:var(--tip-mask) center/100% 100% no-repeat;mask:var(--tip-mask) center/100% 100% no-repeat;
   opacity:0;visibility:hidden;transition:opacity .55s ease,transform .55s ease}
-.flower-tip::after{content:"";position:absolute;left:0;top:50%;width:10px;height:10px;
-  transform:translate(-52%,-50%) rotate(45deg);
-  background:rgba(255,255,255,.08);border-left:1px solid rgba(255,255,255,.16);border-bottom:1px solid rgba(255,255,255,.16);
-  -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(0,-50%)}
-@media(max-width:640px){.flower-tip{left:calc(50vw + 15vmin);top:48svh;font-size:12px}}
+@media(max-width:640px){.flower-tip{left:calc(50vw + 15vmin);top:48svh;font-size:12px;
+  --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 31' preserveAspectRatio='none'><path d='M18 0 L79 0 Q86 0 86 7 L86 24 Q86 31 79 31 L18 31 Q11 31 11 24 L11 20 L3 17 Q0 15.5 3 14 L11 11 L11 7 Q11 0 18 0 Z' fill='%23000'/></svg>")}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
 
 /* sections — full-bleed opaque panels, alternating colour only (no divider lines) */
