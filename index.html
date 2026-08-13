@@ -89,24 +89,24 @@ a{color:inherit;text-decoration:none}
    rest of the visit; see the controller script near the end of <body>. pointer-events:none so it
    never intercepts clicks. (head centre ≈ 56svh desktop / 48svh mobile, radius ≈ 13.5vmin → the
    ~16vmin offset clears the petals.) */
-/* Body is a plain rounded pill (border-radius) so backdrop-filter actually samples the backdrop —
-   the shader + glyphs blur through it (clip-path/mask/filter would have suppressed that). border and
-   box-shadow are real again. The sharp left tail is a separate CSS border-triangle (::after) with a
-   flat translucent tint — no backdrop-filter on it (nesting it under the glass body double-samples),
-   but it's tiny so the missing blur doesn't read. It overlaps the body's left edge by ~1px so the
-   pill's border never draws a line across the tail base → body + tail read as one. */
+/* Subtle rounded rectangle (radius 7px, not a pill) so the left edge has a flat section the tail can
+   sit flush against. Body glass = backdrop-filter blur (verified — the shader/glyphs blur through it).
+   The tail (::after) is a 45°-rotated square that is the SAME MATERIAL as the body — identical
+   background AND its own backdrop-filter — so it frosts the same backdrop and matches exactly (no more
+   flat/brighter tail). It carries the body's 1px border on its two outer (left-facing) edges, so the
+   outline continues around the point and body+tail read as one shape. It overlaps the flat left edge
+   just enough that its inner (unbordered) half covers the body's left border line at the base. */
 .flower-tip{position:fixed;left:calc(50vw + 16vmin);top:56svh;transform:translate(6px,-50%);z-index:4;pointer-events:none;
-  display:inline-flex;align-items:center;padding:8px 15px;border-radius:999px;white-space:nowrap;
+  display:inline-flex;align-items:center;padding:8px 15px;border-radius:7px;white-space:nowrap;
   font-family:'Pretendard',system-ui,sans-serif;font-weight:500;font-size:12.5px;letter-spacing:.01em;line-height:1;
   color:rgba(242,242,240,.94);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);
   -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
   box-shadow:0 6px 22px rgba(0,0,0,.32);
   opacity:0;visibility:hidden;transition:opacity .55s ease,transform .55s ease}
-/* left-pointing tail: filled RIGHT border → tip at the left; width 9px > half-base 5px ⇒ sharp.
-   translate(-100%+1px) tucks its base 1px into the pill so the pill border isn't crossed. */
-.flower-tip::after{content:"";position:absolute;left:1px;top:50%;width:0;height:0;
-  border-style:solid;border-width:5px 9px 5px 0;border-color:transparent rgba(238,238,240,.13) transparent transparent;
-  transform:translate(-100%,-50%)}
+.flower-tip::after{content:"";position:absolute;left:0;top:50%;width:10px;height:10px;
+  transform:translate(-52%,-50%) rotate(45deg);
+  background:rgba(255,255,255,.08);border-left:1px solid rgba(255,255,255,.16);border-bottom:1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(0,-50%)}
 @media(max-width:640px){.flower-tip{left:calc(50vw + 15vmin);top:48svh;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
