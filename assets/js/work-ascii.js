@@ -23,10 +23,15 @@
   var ctx = cv.getContext("2d");
 
   // ---- knobs --------------------------------------------------------------
-  var CELL_RATIO  = 0.17;   // glyph size = letterform size × this
-  var STEP_RATIO  = 0.44;   // grid step  = glyph size × this  (< 1 → glyphs overlap → solid, legible fill)
+  // Matched to the intro (dandelion.js extractText): glyph = FS 6–9px, step = glyph×0.7 (~1.43× overlap).
+  var CELL_RATIO  = 0.10;   // glyph size = letterform size × this, then clamped to [CELL_MIN, CELL_MAX].
+                            // Kept SMALL (near the floor): a small glyph + step 0.7 gives the intro's dense,
+                            // clean fill. Bigger glyphs at this word size read as sparse OR (with tight step) mushy.
+  var CELL_MIN    = 6, CELL_MAX = 7;   // intro glyph size is FS ≈ 6–9px — WORK stays at the small end
+  var STEP_RATIO  = 0.70;   // grid step = glyph × this. INTRO = 0.7 (~1.43× overlap). was 0.44 (~2.3× → mushy)
   var CHURN_MIN   = 280, CHURN_MAX = 1150;   // per-glyph swap period (ms) — matches the calm live flower
-  var SHIM_SPEED  = 0.006, SHIM_AMP = 0.16, SHIM_BASE = 0.84;   // alpha shimmer = the blink (subtle, stays solid)
+  var SHIM_SPEED  = 0.006, SHIM_AMP = 0.16, SHIM_BASE = 0.62;   // alpha shimmer (the blink). INTRO ≈ 0.4–1 base +
+                                                               // 0.10 shimmer; was 0.84 base → too opaque, muddy
   // -------------------------------------------------------------------------
 
   var DPR = 1, cells = [], cellFS = 10, tw = 0, th = 0;
@@ -39,7 +44,7 @@
   function build() {
     DPR = Math.min(2, window.devicePixelRatio || 1);
     var LFS = parseFloat(getComputedStyle(host).fontSize) || 54;   // letterform size (CSS-driven, responsive)
-    cellFS = Math.max(7, LFS * CELL_RATIO);
+    cellFS = Math.max(CELL_MIN, Math.min(CELL_MAX, LFS * CELL_RATIO));   // glyph 6–9px (intro range)
     var step = Math.max(3, cellFS * STEP_RATIO);
 
     // rasterise "WORK" in the hero font (heavy) and sample a grid of the filled pixels
@@ -61,6 +66,7 @@
       }
     }
 
+    if (window.console) console.log("[work-ascii] cells:", cells.length, "cellFS:", cellFS.toFixed(1), "step:", step.toFixed(1));
     cv.style.width = tw + "px"; cv.style.height = th + "px";
     cv.width = Math.round(tw * DPR); cv.height = Math.round(th * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
