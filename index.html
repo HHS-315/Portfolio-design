@@ -219,8 +219,9 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* the FLIP rectangle — starts mapped onto the item's rect (JS transform), tweens to full viewport.
    transform-origin 0 0 so translate+scale lands the top-left corner exactly on the item. */
 .wd__surface{position:fixed;inset:0;transform-origin:0 0;will-change:transform;background:#0e0e0e;overflow:hidden}
-.wd__hero{position:absolute;inset:0;background:#12131a center/cover no-repeat}      /* placeholder image layer */
-.wd__scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,.35),rgba(10,10,10,.9))}
+.wd__hero{position:absolute;inset:0;background:#ccd2d8 center/cover no-repeat}      /* placeholder image layer (image set by JS) */
+/* light vignette only — the image stays visible this step (heavy scrim returns with the detail content) */
+.wd__scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,0),rgba(10,10,10,.12))}
 /* the real detail content — fades in only after the surface has expanded (JS sets opacity via --wd-content) */
 .wd__content{position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   opacity:var(--wd-content,0);padding:clamp(64px,9vh,120px) var(--gutter) clamp(40px,8vh,90px)}

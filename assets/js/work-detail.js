@@ -90,24 +90,56 @@
 
   var root = document.documentElement, body = document.body;
 
-  // ---- placeholder image (deterministic per key) --------------------------
-  function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  // ---- placeholder mockups (deterministic; site tone, abstract shapes+type, no photos, no ext URLs) ----
+  // Each item maps to a KIND that picks the mockup style. Real images later: drop a file at
+  // assets/img/work/<key>.jpg and set IMG[<key>] to that path — it wins over the generated SVG.
   function esc(s) { return String(s).replace(/[<>&]/g, function (c) { return c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"; }); }
+  function svgURI(inner) { return "data:image/svg+xml," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">' + inner + "</svg>"); }
   var GLYPHS = "01/\\<>{}()=+-*#$%&|;:.x?!^~";
-  function placeholder(label, seed) {
-    var rnd = mulberry(seed), g = "";
-    for (var i = 0; i < 64; i++) {
-      var x = (rnd() * 100).toFixed(1), y = (6 + rnd() * 92).toFixed(1),
-          c = GLYPHS[(rnd() * GLYPHS.length) | 0], fs = (7 + (rnd() * 9 | 0)),
-          a = (0.05 + rnd() * 0.12).toFixed(2);
-      g += '<text x="' + x + '%" y="' + y + '%" font-family="monospace" font-size="' + fs + '" fill="rgba(20,20,20,' + a + ')">' + esc(c) + '</text>';
-    }
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">' +
-      '<rect width="400" height="300" fill="#ccd2d8"/>' + g +
-      '<text x="50%" y="53%" text-anchor="middle" font-family="Pretendard,system-ui,sans-serif" font-weight="700" font-size="18" fill="rgba(20,20,20,.5)">' + esc(label) + '</text></svg>';
-    return "data:image/svg+xml," + encodeURIComponent(svg);
-  }
+  function rng(seed) { var s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function glyphs(seed, n, amax) { var r = rng(seed), g = "";
+    for (var i = 0; i < (n || 60); i++) { var x = (r() * 1600) | 0, y = (20 + r() * 860) | 0, c = GLYPHS[(r() * GLYPHS.length) | 0],
+      fs = (14 + (r() * 20 | 0)), a = (0.04 + r() * (amax || 0.1)).toFixed(2);
+      g += '<text x="' + x + '" y="' + y + '" font-family="monospace" font-size="' + fs + '" fill="rgba(20,20,20,' + a + ')">' + esc(c) + '</text>'; }
+    return g; }
+  function label(t) { return '<text x="70" y="840" font-family="ui-monospace,monospace" font-size="26" letter-spacing="6" fill="rgba(20,20,20,.5)">' + esc(t) + '</text>'; }
+  var BG = '<rect width="1600" height="900" fill="#ccd2d8"/>';
+  function mockApp(seed) { var x = 660, y = 150, w = 280, h = 600, rows = "";        // mobile app screen
+    for (var i = 0; i < 5; i++) rows += '<rect x="' + (x + 26) + '" y="' + (y + 150 + i * 72) + '" width="228" height="52" rx="10" fill="rgba(20,20,20,.07)"/>';
+    return BG + glyphs(seed, 44) +
+      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="34" fill="#eef1f3" stroke="rgba(20,20,20,.6)" stroke-width="2"/>' +
+      '<rect x="' + (x + 26) + '" y="' + (y + 40) + '" width="150" height="26" rx="8" fill="rgba(20,20,20,.55)"/>' +
+      '<rect x="' + (x + 26) + '" y="' + (y + 82) + '" width="228" height="52" rx="12" fill="rgba(20,20,20,.16)"/>' + rows +
+      '<rect x="' + (x + 26) + '" y="' + (y + h - 70) + '" width="228" height="44" rx="12" fill="rgba(20,20,20,.5)"/>' + label("UX / UI · APP"); }
+  function mockAI(seed) { return BG + glyphs(seed, 70, 0.14) +                        // abstract graphic / character
+      '<circle cx="560" cy="430" r="240" fill="rgba(20,20,20,.10)"/>' +
+      '<circle cx="900" cy="380" r="180" fill="rgba(20,20,20,.16)"/>' +
+      '<circle cx="1040" cy="560" r="120" fill="rgba(20,20,20,.22)"/>' +
+      '<path d="M540 640 L760 260 L980 640 Z" fill="none" stroke="rgba(20,20,20,.5)" stroke-width="2"/>' +
+      '<circle cx="760" cy="430" r="8" fill="rgba(20,20,20,.7)"/>' + label("AI · GRAPHIC"); }
+  function mockWeb(seed) { var x = 230, y = 150, w = 1140, h = 600;                   // browser window
+    return BG + glyphs(seed, 40) +
+      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="16" fill="#eef1f3" stroke="rgba(20,20,20,.55)" stroke-width="2"/>' +
+      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="56" fill="rgba(20,20,20,.08)"/>' +
+      '<circle cx="' + (x + 30) + '" cy="' + (y + 28) + '" r="7" fill="rgba(20,20,20,.4)"/><circle cx="' + (x + 54) + '" cy="' + (y + 28) + '" r="7" fill="rgba(20,20,20,.28)"/><circle cx="' + (x + 78) + '" cy="' + (y + 28) + '" r="7" fill="rgba(20,20,20,.18)"/>' +
+      '<rect x="' + (x + 120) + '" y="' + (y + 16) + '" width="500" height="24" rx="12" fill="rgba(20,20,20,.12)"/>' +
+      '<rect x="' + (x + 40) + '" y="' + (y + 96) + '" width="' + (w - 80) + '" height="200" rx="10" fill="rgba(20,20,20,.14)"/>' +
+      '<rect x="' + (x + 40) + '" y="' + (y + 320) + '" width="330" height="230" rx="10" fill="rgba(20,20,20,.08)"/>' +
+      '<rect x="' + (x + 405) + '" y="' + (y + 320) + '" width="330" height="230" rx="10" fill="rgba(20,20,20,.08)"/>' +
+      '<rect x="' + (x + 770) + '" y="' + (y + 320) + '" width="330" height="230" rx="10" fill="rgba(20,20,20,.08)"/>' + label("WEB"); }
+  function mockCode(seed) { var x = 230, y = 150, w = 1140, h = 600, r = rng(seed), lines = "";   // code editor
+    for (var i = 0; i < 14; i++) { var ly = y + 70 + i * 36, indent = (r() * 3 | 0) * 28, lw = 120 + r() * ((w - 260) - indent);
+      lines += '<rect x="' + (x + 70) + '" y="' + (ly - 4) + '" width="18" height="18" fill="rgba(20,20,20,.14)"/>' +
+               '<rect x="' + (x + 110 + indent) + '" y="' + (ly - 14) + '" width="' + lw + '" height="16" rx="6" fill="rgba(20,20,20,' + (0.12 + r() * 0.16).toFixed(2) + ')"/>'; }
+    return BG + glyphs(seed, 36) +
+      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="14" fill="#e7eaed" stroke="rgba(20,20,20,.5)" stroke-width="2"/>' +
+      '<rect x="' + x + '" y="' + y + '" width="60" height="' + h + '" fill="rgba(20,20,20,.06)"/>' + lines + label("CODE · VIBE"); }
+  var MOCK = { app: mockApp, ai: mockAI, web: mockWeb, code: mockCode };
   function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  var KIND = { "yakbongji": "app", "stac": "ai", "company-renewal": "web", "maritime": "web", "indie-film": "code" };
+  var IMG  = { /* "yakbongji":"assets/img/work/yakbongji.jpg", … real images override the SVG */ };
+  function imageFor(key) { return IMG[key] || svgURI((MOCK[KIND[key]] || mockWeb)(hash(key))); }
 
   // ---- overlay DOM (built once, reused) -----------------------------------
   var overlay = document.createElement("div");
@@ -141,6 +173,8 @@
       elGrid  = overlay.querySelector(".wd__grid"),
       btnClose= overlay.querySelector(".wd__close");
 
+  // This step only fills the expanding image. The detail content (title/body/caps/grid) is deferred —
+  // it stays hidden; text fields are still populated so the next step can just reveal them.
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
     elKick.textContent = d.kicker || "";
@@ -149,21 +183,23 @@
     elText.innerHTML = (d.lead ? '<p class="wd__lead">' + esc(d.lead) + "</p>" : "") +
       (d.paras || []).map(function (p) { return '<p class="wd__p">' + esc(p) + "</p>"; }).join("");
     elCaps.innerHTML = (d.caps || []).map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("");
-    hero.style.backgroundImage = "url('" + (d.hero || placeholder(d.title, hash(key))) + "')";
-    var shots = d.shots || [placeholder(d.title + " 01", hash(key + "1")), placeholder(d.title + " 02", hash(key + "2")), placeholder(d.title + " 03", hash(key + "3"))];
-    elGrid.innerHTML = shots.map(function (src) { return '<div class="wd__shot"><img alt="" src="' + src + '"></div>'; }).join("");
+    hero.style.backgroundImage = "url('" + imageFor(key) + "')";   // the image that expands to fill the screen
+    elGrid.innerHTML = "";
   }
 
   // ---- animation (single rAF tween, reversible) ---------------------------
-  var startRect = null, vw = 0, vh = 0, p = 0, raf = 0, tFrom = 0, tTo = 0, tStart = 0, tDur = 0, tDone = null;
+  // Expand from a 0-size POINT at the click coords to the full viewport, keeping the viewport aspect
+  // ratio throughout: the surface is fixed inset:0 (viewport-sized) and we UNIFORMLY scale it 0→1 about
+  // the click point (transform-origin, set per open). Uniform scale keeps the image proportional — no
+  // inverse correction needed. Close reverses the same tween back to the point.
+  var ox = 0, oy = 0, p = 0, raf = 0, tFrom = 0, tTo = 0, tStart = 0, tDur = 0, tDone = null;
+  var RADIUS = 22;   // corner radius mid-expand (px in element space; visually small, converges to 0 when full)
 
   function applyFrame(pr) {
-    var sx = startRect.width / vw, sy = startRect.height / vh;
-    surface.style.transform = "translate(" + (startRect.left * (1 - pr)).toFixed(2) + "px," +
-      (startRect.top * (1 - pr)).toFixed(2) + "px) scale(" +
-      (sx + (1 - sx) * pr).toFixed(4) + "," + (sy + (1 - sy) * pr).toFixed(4) + ")";
-    var c = (pr - CONTENT_IN) / (1 - CONTENT_IN); if (c < 0) c = 0; else if (c > 1) c = 1;
-    content.style.setProperty("--wd-content", c.toFixed(3));
+    var s = pr < 0.0001 ? 0.0001 : pr;                 // avoid an exact scale(0) frame
+    surface.style.transform = "scale(" + s.toFixed(5) + ")";
+    surface.style.borderRadius = ((1 - pr) * RADIUS).toFixed(1) + "px";
+    // detail content (title/body/caps/grid) stays hidden this step — reveal is deferred to the next step.
   }
   function tick(now) {
     var e = tDur <= 0 ? 1 : (now - tStart) / tDur; if (e > 1) e = 1;
@@ -214,18 +250,21 @@
 
   function signal(open) { try { window.dispatchEvent(new CustomEvent("work:overlay", { detail: { open: open } })); } catch (e) {} }
 
-  function open(item) {
+  function open(item, ev) {
     if (isOpen) return;
     var key = item.getAttribute("data-key"); if (!WORK_DETAILS[key]) return;
     isOpen = true; activeKey = key; lastFocus = item;
     populate(key);
-    startRect = item.getBoundingClientRect();
-    vw = window.innerWidth; vh = window.innerHeight;
+    // origin point: the exact click coords, or the item centre when opened by keyboard (no coords).
+    var r = item.getBoundingClientRect();
+    if (ev && typeof ev.clientX === "number" && (ev.clientX || ev.clientY)) { ox = ev.clientX; oy = ev.clientY; }
+    else { ox = r.left + r.width / 2; oy = r.top + r.height / 2; }
+    surface.style.transformOrigin = ox + "px " + oy + "px";
     p = 0; applyFrame(0);
     overlay.classList.add("is-active");
     overlay.setAttribute("aria-hidden", "false");
     overlay.setAttribute("aria-label", (WORK_DETAILS[key].title || "Work") + " 상세");
-    content.setAttribute("aria-hidden", "false");
+    content.setAttribute("aria-hidden", "true");   // content deferred → keep it inert this step
     lockScroll();
     signal(true);
     document.addEventListener("keydown", onKeydown, true);
@@ -263,19 +302,15 @@
   // (No backdrop-click-to-close: the full-screen content covers the surface, and on a full-screen
   //  dialog a stray click shouldn't lose the reader's place — ESC / the close button / Back all close.)
 
-  // keep vw/vh honest if the viewport changes mid-open (rotate/resize)
-  window.addEventListener("resize", function () {
-    if (!isOpen) return;
-    vw = window.innerWidth; vh = window.innerHeight;
-    if (startRect && activeKey) { var el = document.querySelector('.wbig__item[data-key="' + activeKey + '"]'); if (el) startRect = el.getBoundingClientRect(); }
-    applyFrame(p);
-  }, { passive: true });
+  // surface is viewport-sized and scaled uniformly, so a mid-open resize just needs a reapply
+  // (the origin stays the click point). No per-dimension recompute.
+  window.addEventListener("resize", function () { if (isOpen) applyFrame(p); }, { passive: true });
 
   // ---- wire up the list items ---------------------------------------------
   items.forEach(function (item) {
-    item.addEventListener("click", function () { open(item); });
+    item.addEventListener("click", function (e) { open(item, e); });
     item.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(item); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(item); }   // no coords → item centre
     });
   });
 })();
