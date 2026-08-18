@@ -26,8 +26,10 @@
   --hero-font:'Plus Jakarta Sans','Helvetica Neue',Arial,sans-serif;
   /* page gutter — matches the top-bar inset so section text lines up with the nav */
   --gutter:clamp(16px,4vw,42px);
-  /* WORK text ink — work-transition.js interpolates it light→dark as the light cells stack behind it */
-  --work-ink:#e9e9e6;
+  /* WORK text ink — FIXED dark now. The text no longer colour-shifts; instead it FADES IN
+     (opacity via --work-reveal, set by work-transition.js) once the cells have filled behind it. */
+  --work-ink:#141414;
+  --work-reveal:0;   /* 0 → hidden (cells only); work-transition.js drives it 0→1 over the reveal window */
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
@@ -128,7 +130,7 @@ a{color:inherit;text-decoration:none}
 /* WORK section header: "WORK" rendered by work-ascii.js as a grid of blinking ASCII glyphs (same look
    as the intro PORTFOLIO). The font-size here IS the letterform size the script reads (responsive);
    the canvas is drawn in --work-ink so it darkens with the section. */
-.work-ascii{font-size:clamp(90px,13.5vw,135px);line-height:0;display:block}
+.work-ascii{font-size:clamp(90px,13.5vw,135px);line-height:0;display:block;opacity:var(--work-reveal)}
 .work-ascii canvas{display:block}
 .tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 .tag::before{content:"// "}
@@ -179,15 +181,18 @@ a{color:inherit;text-decoration:none}
 .chips span{font-size:12px;letter-spacing:.06em;color:var(--dim);border:1px solid var(--dimmer);border-radius:999px;padding:6px 13px}
 
 /* big category list — English hero + Korean subtitle, CSS-only hover spotlight.
-   Colour + rules bind to --work-ink (set by work-transition.js) so they track the stacking cells. */
+   Colour is FIXED ink; the list fades in (opacity:var(--work-reveal), set by work-transition.js) once the
+   cells fill behind it. --rule fades with the container. */
 #work{--rule:color-mix(in srgb,var(--work-ink) 22%,transparent)}
-.wbig{margin-top:8px;border-top:1px solid var(--rule);
+.wbig{margin-top:8px;border-top:1px solid var(--rule);opacity:var(--work-reveal);
+  cursor:crosshair;   /* keep the #field crosshair over the list */
   pointer-events:auto}   /* .shell is pointer-events:none — make the list hittable so :hover fires (items inherit) */
 .wbig__item{display:flex;flex-direction:column;gap:6px;padding:clamp(15px,2.5vw,30px) 0;border-bottom:1px solid var(--rule);
-  color:var(--work-ink);transition:color .3s ease,border-color .3s ease}   /* default = full ink (every item) */
-.wbig__en{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:1.04;
+  cursor:crosshair;color:var(--work-ink);transition:color .3s ease,border-color .3s ease}   /* default = full ink (every item) */
+.wbig__item span{cursor:crosshair}
+.wbig__en{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:1.14;
   margin-left:-.035em;   /* optical: cancel the cap's left side-bearing so it lines up with the Korean below */
-  font-size:clamp(32px,5vw,76px);color:inherit}
+  font-size:clamp(32px,5vw,76px);color:inherit;overflow:hidden}   /* overflow:hidden = curtain mask (work-list.js) */
 .wbig__ko{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;letter-spacing:.01em;
   font-size:clamp(13px,1.05vw,16px);color:inherit;opacity:.9}
 /* spotlight (reversed): every item is ink by default; while the LIST is hovered the others dim to grey
@@ -198,6 +203,12 @@ a{color:inherit;text-decoration:none}
 }
 @media(hover:none){.wbig__item{color:var(--work-ink)}}   /* touch: no hover → every item full ink */
 @media(prefers-reduced-motion:reduce){.wbig__item{transition:none}}
+/* hover curtain-roll (work-list.js builds a 2-copy track inside .wbig__en and rAF-tweens its translateY
+   ONCE per hover-enter). Mask = .wbig__en{overflow:hidden}; the track slides up one line so an identical
+   copy rolls in. rAF (not a CSS keyframe) mirrors about-lines.js, the site's proven curtain mechanism. */
+.wr__track{display:block;position:relative;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.wr__copy{display:block;line-height:1.14}
+.wr__copy--dup{position:absolute;top:100%;left:0;right:0;line-height:1.14}
 
 /* process */
 .proc{margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--dimmer);border:1px solid var(--dimmer);border-radius:6px;overflow:hidden}
@@ -312,7 +323,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
       <!-- big category list (chdartmaker-style spotlight): English is the visual lead, Korean subtitle
            below it, small. Colour + rules bind to --work-ink so they track the stacking cells; the
            hover spotlight is pure CSS (default all ink → on list hover the rest dim, the hovered stays). -->
-      <div class="wbig reveal">
+      <div class="wbig">
         <div class="wbig__item"><span class="wbig__en">UX/UI Design</span><span class="wbig__ko">UX/UI 디자인</span></div>
         <div class="wbig__item"><span class="wbig__en">AI Character</span><span class="wbig__ko">AI 캐릭터 · 그래픽</span></div>
         <div class="wbig__item"><span class="wbig__en">Vibe Coding</span><span class="wbig__ko">바이브 코딩</span></div>
@@ -403,6 +414,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/dandelion.js"></script>
 <script src="./assets/js/hero-refract.js"></script>
 <script src="./assets/js/work-ascii.js"></script>
+<script src="./assets/js/work-list.js"></script>
 <script src="./assets/js/about-lines.js"></script>
 </body>
 </html>

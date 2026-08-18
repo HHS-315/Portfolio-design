@@ -31,9 +31,10 @@
   var ALPHA_START = 0.3;                    // a landing cell appears at this opacity, then fades to 1.
                                             // Size stays a FULL SQUARE the whole time — only alpha animates —
                                             // so a translucent cell is never a flat rectangle. Settled = opaque.
-  // WORK text ink interpolates light→dark as the light cells fill behind it (replaces the old dark scrim)
-  var INK_LIGHT = [233, 233, 230], INK_DARK = [20, 20, 20];
-  var INK_START = 0.30, INK_FULL = 0.72;   // bp range over which the ink darkens
+  // WORK text FADES IN (opacity) once the cells have filled behind it, instead of colour-interpolating
+  // (the old light→dark ink muddied the text mid-transition where its value matched the background).
+  // --work-ink is a fixed dark now; this sets --work-reveal 0→1 which drives the text/rule opacity.
+  var REVEAL_START = 0.65, REVEAL_END = 0.85;   // bp range over which --work-reveal goes 0→1
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -102,7 +103,7 @@
     var _tp = window.HeroPerf ? HeroPerf.t() : 0;   // perf HUD (2D CPU time)
     ctx.clearRect(0, 0, W, H);
     var bp = blockProgress();
-    updateInk(bp);                          // keep the text ink in step even before/after the stack
+    updateReveal(bp);                       // keep the text fade in step even before/after the stack
     if (bp <= 0.0001) { updateDbg(bp); if (window.HeroPerf) HeroPerf.add("blocks", _tp); return; }
     ctx.fillStyle = BLOCK_COLOR;
     for (var c = 0; c < cols; c++) {
@@ -125,15 +126,13 @@
     if (window.HeroPerf) HeroPerf.add("blocks", _tp);
   }
 
-  // WORK text ink: light on the dark hero side → dark once the light cells fill behind it.
-  var lastInk = -1;
-  function updateInk(bp) {
-    var it = clamp01((bp - INK_START) / (INK_FULL - INK_START));
-    if (Math.abs(it - lastInk) < 0.004) return; lastInk = it;
-    var r = Math.round(INK_LIGHT[0] + (INK_DARK[0] - INK_LIGHT[0]) * it);
-    var g = Math.round(INK_LIGHT[1] + (INK_DARK[1] - INK_LIGHT[1]) * it);
-    var b = Math.round(INK_LIGHT[2] + (INK_DARK[2] - INK_LIGHT[2]) * it);
-    root.style.setProperty("--work-ink", "rgb(" + r + "," + g + "," + b + ")");
+  // WORK text/rule reveal: opacity 0→1 as the cells fill behind them (fixed dark ink, no colour muddle).
+  // Fully reversible — bp is scroll-linked, so scrolling back up fades the text out symmetrically.
+  var lastReveal = -1;
+  function updateReveal(bp) {
+    var v = clamp01((bp - REVEAL_START) / (REVEAL_END - REVEAL_START));
+    if (Math.abs(v - lastReveal) < 0.004) return; lastReveal = v;
+    root.style.setProperty("--work-reveal", v.toFixed(3));
   }
 
   var dbg = null;

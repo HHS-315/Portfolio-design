@@ -36,10 +36,9 @@
 
   var DPR = 1, cells = [], cellFS = 10, tw = 0, th = 0;
 
-  function inkColor() {
-    var c = getComputedStyle(root).getPropertyValue("--work-ink").trim();
-    return c || "#e9e9e6";
-  }
+  // Fixed dark ink now — the header no longer colour-shifts; it FADES IN via the .work-ascii element's
+  // opacity (bound to --work-reveal, set by work-transition.js). Read the token once for the value.
+  var INK = (getComputedStyle(root).getPropertyValue("--work-ink") || "#141414").trim() || "#141414";
 
   function build() {
     DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -76,7 +75,7 @@
 
   function draw(t) {
     ctx.clearRect(0, 0, tw, th);
-    ctx.fillStyle = inkColor();
+    ctx.fillStyle = INK;
     for (var i = 0; i < cells.length; i++) {
       var c = cells[i];
       if (!reduce && t > c.swapAt) { c.ch = pick(CODE); c.swapAt = t + CHURN_MIN + Math.random() * (CHURN_MAX - CHURN_MIN); }
@@ -106,7 +105,5 @@
     if (visible) kick(); else if (raf) { cancelAnimationFrame(raf); raf = 0; }
   });
   addEventListener("resize", function () { build(); draw(performance.now()); kick(); }, { passive: true });
-  // --work-ink shifts light→dark on scroll: the rAF loop reads it each frame; when it's not looping
-  // (reduced-motion, or before the loop kicks) keep the colour in step on scroll too.
-  addEventListener("scroll", function () { if (!raf) draw(performance.now()); }, { passive: true });
+  // (ink is fixed now; the fade lives in CSS via --work-reveal on .work-ascii, so no scroll-colour redraw.)
 })();
