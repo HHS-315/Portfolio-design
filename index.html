@@ -189,14 +189,14 @@ a{color:inherit;text-decoration:none}
   cursor:crosshair;color:var(--work-ink);transition:color .3s ease,border-color .3s ease}   /* default = full ink (every item) */
 .wbig__item span{cursor:crosshair}
 .wbig__en{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:1.14;
-  font-size:clamp(32px,5vw,76px);color:inherit;overflow:hidden}   /* Pretendard Bold; overflow:hidden = curtain mask (work-list.js).
+  font-size:clamp(28px,4.2vw,64px);color:inherit;overflow:hidden}   /* Pretendard Bold; overflow:hidden = curtain mask (work-list.js).
      (Latin side-bearing margin dropped — bold + subtitle are now the same Pretendard family, so they align at the box origin.) */
 .wbig__ko{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;letter-spacing:.01em;
   font-size:clamp(13px,1.05vw,16px);color:inherit;opacity:.9}
 /* spotlight (reversed): every item is ink by default; while the LIST is hovered the others dim to grey
    and only the truly-hovered item stays ink. Leaving the list returns all to ink. Grey follows --work-ink. */
 @media(hover:hover){
-  .wbig:hover .wbig__item{color:color-mix(in srgb,var(--work-ink) 52%,transparent)}
+  .wbig:hover .wbig__item{color:color-mix(in srgb,var(--work-ink) 34%,transparent)}   /* dimmed = lighter grey */
   .wbig:hover .wbig__item:hover,.wbig__item:focus-visible{color:var(--work-ink)}
 }
 @media(hover:none){.wbig__item{color:var(--work-ink)}}   /* touch: no hover → every item full ink */
@@ -315,11 +315,10 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
            hover spotlight is pure CSS (default all ink → on list hover the rest dim, the hovered stays). -->
       <div class="wbig">
         <div class="wbig__item"><span class="wbig__en">약봉지</span><span class="wbig__ko">UXUI디자인</span></div>
-        <div class="wbig__item"><span class="wbig__en">각할모</span><span class="wbig__ko">UXUI 디자인</span></div>
         <div class="wbig__item"><span class="wbig__en">STAC</span><span class="wbig__ko">AI 그래픽 디자인</span></div>
         <div class="wbig__item"><span class="wbig__en">회사 웹사이트 리뉴얼</span><span class="wbig__ko">웹사이트 디자인</span></div>
-        <div class="wbig__item"><span class="wbig__en">해양수산정책기술연구소 사이트 디자인</span><span class="wbig__ko">웹사이트 디자인</span></div>
-        <div class="wbig__item"><span class="wbig__en">가상의 독립 영화 배급 사이트 제작</span><span class="wbig__ko">바이브코딩</span></div>
+        <div class="wbig__item"><span class="wbig__en">해양수산정책기술연구소 사이트</span><span class="wbig__ko">웹사이트 디자인</span></div>
+        <div class="wbig__item"><span class="wbig__en">가상의 독립 영화 배급 사이트</span><span class="wbig__ko">바이브코딩</span></div>
       </div>
     </div>
   </section>
