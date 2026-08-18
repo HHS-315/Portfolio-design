@@ -90,56 +90,54 @@
 
   var root = document.documentElement, body = document.body;
 
-  // ---- placeholder mockups (deterministic; site tone, abstract shapes+type, no photos, no ext URLs) ----
-  // Each item maps to a KIND that picks the mockup style. Real images later: drop a file at
-  // assets/img/work/<key>.jpg and set IMG[<key>] to that path — it wins over the generated SVG.
+  // ---- generative placeholders (abstract "render": gradient-mesh blobs + turbulence grain + blur) ----
+  // Network image fetch (Unsplash/Pexels/picsum) is blocked by this environment's egress proxy, so the
+  // fallback is generated inline as an SVG data URI — no external services, deterministic per key. A dark
+  // base (#14161a) + per-item accent keeps a crisp rectangle edge on the cool-grey (#ccd2d8) WORK page.
+  // feTurbulence gives real film-like grain; heavy feGaussianBlur melts the accent blobs into a mesh.
   function esc(s) { return String(s).replace(/[<>&]/g, function (c) { return c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"; }); }
   function svgURI(inner) { return "data:image/svg+xml," + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">' + inner + "</svg>"); }
-  var GLYPHS = "01/\\<>{}()=+-*#$%&|;:.x?!^~";
   function rng(seed) { var s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
-  function glyphs(seed, n, amax) { var r = rng(seed), g = "";
-    for (var i = 0; i < (n || 60); i++) { var x = (r() * 1600) | 0, y = (20 + r() * 860) | 0, c = GLYPHS[(r() * GLYPHS.length) | 0],
-      fs = (14 + (r() * 20 | 0)), a = (0.04 + r() * (amax || 0.1)).toFixed(2);
-      g += '<text x="' + x + '" y="' + y + '" font-family="monospace" font-size="' + fs + '" fill="rgba(20,20,20,' + a + ')">' + esc(c) + '</text>'; }
-    return g; }
-  function label(t) { return '<text x="70" y="840" font-family="ui-monospace,monospace" font-size="26" letter-spacing="6" fill="rgba(20,20,20,.5)">' + esc(t) + '</text>'; }
-  var BG = '<rect width="1600" height="900" fill="#ccd2d8"/>';
-  function mockApp(seed) { var x = 660, y = 150, w = 280, h = 600, rows = "";        // mobile app screen
-    for (var i = 0; i < 5; i++) rows += '<rect x="' + (x + 26) + '" y="' + (y + 150 + i * 72) + '" width="228" height="52" rx="10" fill="rgba(20,20,20,.07)"/>';
-    return BG + glyphs(seed, 44) +
-      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="34" fill="#eef1f3" stroke="rgba(20,20,20,.6)" stroke-width="2"/>' +
-      '<rect x="' + (x + 26) + '" y="' + (y + 40) + '" width="150" height="26" rx="8" fill="rgba(20,20,20,.55)"/>' +
-      '<rect x="' + (x + 26) + '" y="' + (y + 82) + '" width="228" height="52" rx="12" fill="rgba(20,20,20,.16)"/>' + rows +
-      '<rect x="' + (x + 26) + '" y="' + (y + h - 70) + '" width="228" height="44" rx="12" fill="rgba(20,20,20,.5)"/>' + label("UX / UI · APP"); }
-  function mockAI(seed) { return BG + glyphs(seed, 70, 0.14) +                        // abstract graphic / character
-      '<circle cx="560" cy="430" r="240" fill="rgba(20,20,20,.10)"/>' +
-      '<circle cx="900" cy="380" r="180" fill="rgba(20,20,20,.16)"/>' +
-      '<circle cx="1040" cy="560" r="120" fill="rgba(20,20,20,.22)"/>' +
-      '<path d="M540 640 L760 260 L980 640 Z" fill="none" stroke="rgba(20,20,20,.5)" stroke-width="2"/>' +
-      '<circle cx="760" cy="430" r="8" fill="rgba(20,20,20,.7)"/>' + label("AI · GRAPHIC"); }
-  function mockWeb(seed) { var x = 230, y = 150, w = 1140, h = 600;                   // browser window
-    return BG + glyphs(seed, 40) +
-      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="16" fill="#eef1f3" stroke="rgba(20,20,20,.55)" stroke-width="2"/>' +
-      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="56" fill="rgba(20,20,20,.08)"/>' +
-      '<circle cx="' + (x + 30) + '" cy="' + (y + 28) + '" r="7" fill="rgba(20,20,20,.4)"/><circle cx="' + (x + 54) + '" cy="' + (y + 28) + '" r="7" fill="rgba(20,20,20,.28)"/><circle cx="' + (x + 78) + '" cy="' + (y + 28) + '" r="7" fill="rgba(20,20,20,.18)"/>' +
-      '<rect x="' + (x + 120) + '" y="' + (y + 16) + '" width="500" height="24" rx="12" fill="rgba(20,20,20,.12)"/>' +
-      '<rect x="' + (x + 40) + '" y="' + (y + 96) + '" width="' + (w - 80) + '" height="200" rx="10" fill="rgba(20,20,20,.14)"/>' +
-      '<rect x="' + (x + 40) + '" y="' + (y + 320) + '" width="330" height="230" rx="10" fill="rgba(20,20,20,.08)"/>' +
-      '<rect x="' + (x + 405) + '" y="' + (y + 320) + '" width="330" height="230" rx="10" fill="rgba(20,20,20,.08)"/>' +
-      '<rect x="' + (x + 770) + '" y="' + (y + 320) + '" width="330" height="230" rx="10" fill="rgba(20,20,20,.08)"/>' + label("WEB"); }
-  function mockCode(seed) { var x = 230, y = 150, w = 1140, h = 600, r = rng(seed), lines = "";   // code editor
-    for (var i = 0; i < 14; i++) { var ly = y + 70 + i * 36, indent = (r() * 3 | 0) * 28, lw = 120 + r() * ((w - 260) - indent);
-      lines += '<rect x="' + (x + 70) + '" y="' + (ly - 4) + '" width="18" height="18" fill="rgba(20,20,20,.14)"/>' +
-               '<rect x="' + (x + 110 + indent) + '" y="' + (ly - 14) + '" width="' + lw + '" height="16" rx="6" fill="rgba(20,20,20,' + (0.12 + r() * 0.16).toFixed(2) + ')"/>'; }
-    return BG + glyphs(seed, 36) +
-      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="14" fill="#e7eaed" stroke="rgba(20,20,20,.5)" stroke-width="2"/>' +
-      '<rect x="' + x + '" y="' + y + '" width="60" height="' + h + '" fill="rgba(20,20,20,.06)"/>' + lines + label("CODE · VIBE"); }
-  var MOCK = { app: mockApp, ai: mockAI, web: mockWeb, code: mockCode };
   function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  var KIND = { "yakbongji": "app", "stac": "ai", "company-renewal": "web", "maritime": "web", "indie-film": "code" };
-  var IMG  = { /* "yakbongji":"assets/img/work/yakbongji.jpg", … real images override the SVG */ };
-  function imageFor(key) { return IMG[key] || svgURI((MOCK[KIND[key]] || mockWeb)(hash(key))); }
+  function tag(t) { return '<text x="70" y="838" font-family="ui-monospace,monospace" font-size="24" letter-spacing="6" fill="rgba(233,233,230,.34)">' + esc(t) + "</text>"; }
+  // per-item accent palettes (dark→bright) + a short corner tag
+  var ART = {
+    "yakbongji":       { cols: ["#123d3a", "#1f8f88", "#39d3c7"], tag: "UX / UI" },       // teal
+    "stac":            { cols: ["#2a1740", "#7d43c9", "#c552b4"], tag: "AI · GRAPHIC" },  // violet→magenta
+    "company-renewal": { cols: ["#0f2740", "#2f6fc9", "#43b6c9"], tag: "WEB" },           // blue
+    "maritime":        { cols: ["#0f2a2a", "#1f7f6a", "#37b083"], tag: "WEB" },           // green-teal
+    "indie-film":      { cols: ["#2a1810", "#c05a3a", "#e0a33a"], tag: "CODE · VIBE" }    // amber
+  };
+  function artwork(seed, cols, tg) {
+    var r = rng(seed), blobs = "";
+    for (var i = 0; i < 6; i++) {
+      var cx = (r() * 1900 - 150) | 0, cy = (r() * 1200 - 150) | 0, rad = (340 + r() * 560) | 0,
+          col = cols[(r() * cols.length) | 0], op = (0.5 + r() * 0.4).toFixed(2);
+      blobs += '<circle cx="' + cx + '" cy="' + cy + '" r="' + rad + '" fill="' + col + '" opacity="' + op + '"/>';
+    }
+    var defs = "<defs>" +
+      '<filter id="mesh" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="120"/></filter>' +
+      '<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="' + (seed % 97) + '" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>' +
+      '<radialGradient id="vig" cx="50%" cy="40%" r="78%"><stop offset="52%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.55"/></radialGradient>' +
+      "</defs>";
+    return defs +
+      '<rect width="1600" height="900" fill="#14161a"/>' +
+      '<g filter="url(#mesh)">' + blobs + "</g>" +
+      '<rect width="1600" height="900" filter="url(#grain)" opacity="0.10"/>' +   // film grain
+      '<rect width="1600" height="900" fill="url(#vig)"/>' +                       // vignette for depth
+      tag(tg);
+  }
+  // real image override: drop a file at assets/img/work/<key>.jpg and add it to IMG below; it wins.
+  // Recommended: 1600×900 (16:9) or larger, JPG q≈75, < ~300KB, subject safe-framed for cover-crop.
+  var IMG = { /* "yakbongji": "assets/img/work/yakbongji.jpg", … */ };
+  function imageFor(key) {
+    if (IMG[key]) return IMG[key];
+    var a = ART[key] || ART["company-renewal"];
+    return svgURI(artwork(hash(key), a.cols, a.tag));
+  }
+  // preload so the expand never flashes (data URIs decode instantly; real JPGs get cached up front).
+  function preloadImages() { items.forEach(function (it) { var im = new Image(); im.src = imageFor(it.getAttribute("data-key")); }); }
 
   // ---- overlay DOM (built once, reused) -----------------------------------
   var overlay = document.createElement("div");
@@ -313,4 +311,6 @@
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(item); }   // no coords → item centre
     });
   });
+
+  preloadImages();   // warm the cache so the first expand doesn't flash
 })();
