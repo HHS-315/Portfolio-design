@@ -30,6 +30,7 @@
      (opacity via --work-reveal, set by work-transition.js) once the cells have filled behind it. */
   --work-ink:#141414;
   --work-reveal:0;   /* 0 → hidden (cells only); work-transition.js drives it 0→1 over the reveal window */
+  --work-cell:#ccd2d8;   /* WORK stacking-cell colour — shared by work-transition.js (BLOCK_COLOR) and the detail page bg */
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
@@ -222,33 +223,57 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__hero{position:absolute;inset:0;background:#14161a center/cover no-repeat}      /* placeholder image layer (image set by JS) */
 /* light vignette only — the image stays visible this step (heavy scrim returns with the detail content) */
 .wd__scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,0),rgba(10,10,10,.12))}
-/* the real detail content — fades in only after the surface has expanded (JS sets opacity via --wd-content) */
+/* the detail subpage — revealed after the expand completes; scrolls, grey (var --work-cell) below the
+   hero image, dark text (var --work-ink) on the grey. */
 .wd__content{position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-  opacity:var(--wd-content,0);padding:clamp(64px,9vh,120px) var(--gutter) clamp(40px,8vh,90px)}
+  opacity:var(--wd-content,0);background:var(--work-cell);color:var(--work-ink)}
 .wd__content[aria-hidden="true"]{pointer-events:none}
+/* stage = hero image + sticky title. It is the title's sticky CONTAINING BLOCK, so its height (set by JS
+   to 100svh + titleHeight) bounds how long the title stays pinned — it releases just after the image has
+   fully swept past, instead of floating over the body page forever. */
+.wd__stage{position:relative}
+/* hero: the image, one screen tall; the title sits at its bottom-left and STICKS as the image scrolls up */
+.wd__hero2{position:relative;height:100svh;background:#14161a center/cover no-repeat}
+.wd__hero2::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,10,10,0) 45%,rgba(10,10,10,.32))}
+/* sticky-TOP: pinned at the image's bottom-left from scroll 0; as the page scrolls the image rides up
+   behind it and its bottom edge sweeps down through the glyphs (white→ink via --cut). JS sets marginTop
+   (pull up to overlap the image bottom), top (the pin line), and the stage min-height (release point). */
+.wd__titles{position:sticky;z-index:1;padding:0 var(--gutter);pointer-events:none}
+/* single-element white→ink title: a to-bottom gradient HARD-STOPPED at --cut, clipped to the glyphs.
+   JS moves --cut to the image's bottom edge as it sweeps through the text → white over the image, ink below.
+   One element = the two colours are pixel-aligned by construction (no two-layer registration). */
+.wd__ttl{margin:0;max-width:16ch;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:-.02em;line-height:.92;font-size:clamp(40px,8vw,128px);
+  color:transparent;-webkit-text-fill-color:transparent;
+  background-image:linear-gradient(180deg,#fff 0,#fff var(--cut,100%),var(--work-ink) var(--cut,100%),var(--work-ink) 100%);
+  -webkit-background-clip:text;background-clip:text}
+/* grey content page below the hero */
+.wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px)}
 .wd__inner{max-width:1200px;margin:0 auto}
 /* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
    font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay
    is open. White on the dark image (the real .bar uses mix-blend-difference; here we render our own). */
 .wd__logo{position:fixed;top:0;left:0;z-index:2;margin:0;padding:18px var(--gutter);
   font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.18em;line-height:1.7;text-transform:uppercase;   /* line-height:1.7 = body's, which .bar inherits → same baseline */
-  background:transparent;border:0;color:#fff;cursor:pointer;opacity:.92;transition:opacity .25s}
+  background:transparent;border:0;color:#fff;cursor:pointer;opacity:.92;transition:opacity .25s,color .2s}
 .wd__logo:hover,.wd__logo:focus-visible{opacity:1}
 .wd__logo span{color:var(--hi)}
+/* the logo crosses from over the dark image to over the grey page — JS flips it dark once the hero has
+   scrolled past it (a small element crossing the boundary once, so a simple flip, not the title's mask). */
+.wd__logo.is-dark{color:var(--work-ink)}
+.wd__logo.is-dark span{color:var(--work-ink)}
 @media(max-width:560px){.wd__logo{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
-.wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);margin-bottom:18px}
-.wd__title{font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.02;
-  font-size:clamp(40px,8.5vw,132px);color:var(--hi);margin:0}
-.wd__sub{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(14px,1.5vw,19px);color:var(--dim);margin:16px 0 0}
-.wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px);margin-top:clamp(40px,7vh,80px)}
-.wd__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--bone);margin:0 0 26px;max-width:56ch}
-.wd__p{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.8;color:var(--dim);margin:0 0 16px;max-width:60ch}
-.wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid var(--dimmer)}
-.wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
-  padding:13px 0;border-bottom:1px solid var(--dimmer)}
+.wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 14px}
+.wd__sub{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(15px,1.6vw,20px);color:var(--work-ink);margin:0 0 clamp(30px,6vh,60px);max-width:52ch}
+.wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px)}
+.wd__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:56ch}
+.wd__p{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.8;color:color-mix(in srgb,var(--work-ink) 72%,transparent);margin:0 0 16px;max-width:60ch}
+.wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
+.wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 60%,transparent);
+  padding:13px 0;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
 .wd__grid{margin-top:clamp(40px,7vh,80px);display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,18px)}
-.wd__shot{aspect-ratio:4/3;border-radius:4px;overflow:hidden;background:#101216}
-.wd__shot img,.wd__shot svg{width:100%;height:100%;object-fit:cover;display:block}
+.wd__shot{aspect-ratio:4/3;border-radius:4px;overflow:hidden;background:#bfc5cc}
+.wd__shot img{width:100%;height:100%;object-fit:cover;display:block}
 @media(max-width:820px){
   .wd__body{grid-template-columns:1fr;gap:34px}
   .wd__grid{grid-template-columns:1fr}
