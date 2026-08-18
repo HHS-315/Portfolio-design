@@ -16,6 +16,7 @@
   var pts=[], N=0;
   var fallCur=0, keeperN=0, keeperList=[];  // fallCur: smoothed shown progress; keeperList: bottom-strip glyphs
   var canvasOn=true;                        // #field intersects the viewport (IntersectionObserver)
+  var overlayOpen=false;                     // WORK detail overlay open → pause #field + #strip (see alive())
   var mouse={x:-1e5,y:-1e5,speed:0};
   var CODE=['0','1','/','\\','<','>','{','}','(',')','=','+','-','*','#','$','%','&','|',';',':','.','x','?','!','^','~'];
   var PTIP=['*','^','/','\\','x','+','\''];
@@ -608,7 +609,7 @@
   // whether the loop should keep spinning: the page is visible and #field is on screen.
   // (The strip lives on a position:fixed canvas, so once decomposed there is ALWAYS something
   //  blinking on screen — the loop must not stop just because ABOUT scrolled away.)
-  function alive(){ return canvasOn && document.visibilityState==='visible'; }
+  function alive(){ return canvasOn && !overlayOpen && document.visibilityState==='visible'; }
   // Loop resumed after a pause (tab return, decompose, etc.): if a long gap elapsed, scatter every
   // glyph's churn deadline AND every 'gone' glyph's regrow deadline over a fresh window — otherwise
   // all the deadlines that expired during the pause fire on the first frame back (one flicker burst /
@@ -727,6 +728,9 @@
   addEventListener('resize',function(){ resize(); resume(); });
   addEventListener('scroll',resume,{passive:true});
   document.addEventListener('visibilitychange',resume);   // tab back → restart the blink
+  // WORK detail overlay: pause the field+strip loop while it's open, resume on close (work-detail.js).
+  addEventListener('work:overlay',function(e){ overlayOpen=!!(e.detail&&e.detail.open);
+    if(overlayOpen){ if(rafId){ cancelAnimationFrame(rafId); rafId=0; } } else { lastT=performance.now(); resume(); } });
   // stop when #field scrolls out of view (it's position:fixed full-viewport, so effectively never,
   // but this is the safety valve the stop condition relies on); restart when it returns.
   try{ new IntersectionObserver(function(es){ canvasOn=es[es.length-1].isIntersecting; if(canvasOn) resume(); }).observe(cv); }

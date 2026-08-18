@@ -253,6 +253,7 @@
   var raf = 0, lastNow = null, disposed = false;
   var visible = document.visibilityState === "visible";
   var inView = true;
+  var paused = false;   // WORK detail overlay open → stop rendering (nothing visible behind it)
   var start = performance.now();
   var timeAnimated = Math.abs(UNIFORMS.timeScale) > 0.0001;
 
@@ -270,7 +271,7 @@
   }
 
   function requestRender() {
-    if (!disposed && visible && inView && raf === 0) raf = requestAnimationFrame(render);
+    if (!disposed && visible && inView && !paused && raf === 0) raf = requestAnimationFrame(render);
   }
 
   function updatePointerTarget() {
@@ -294,7 +295,7 @@
 
   function render(now) {
     raf = 0;
-    if (disposed || !visible || !inView) return;
+    if (disposed || !visible || !inView || paused) return;
     var dt = lastNow === null ? 0 : Math.min((now - lastNow) / 1000, 0.1);
     lastNow = now;
     var follow = 1 - Math.exp(-12 * dt);
@@ -339,6 +340,13 @@
     else if (raf !== 0) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
   };
   document.addEventListener("visibilitychange", onVis);
+
+  // WORK detail overlay pauses/resumes the shader (work-detail.js dispatches this).
+  window.addEventListener("work:overlay", function (e) {
+    paused = !!(e.detail && e.detail.open);
+    if (paused) { if (raf !== 0) { cancelAnimationFrame(raf); raf = 0; lastNow = null; } }
+    else requestRender();
+  });
 
   resizeCanvas();
   requestRender();

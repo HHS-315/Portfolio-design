@@ -147,13 +147,15 @@
   }
 
   // scroll-driven: redraw on scroll (rAF-throttled) — no continuous loop
-  var raf = 0;
-  function schedule() { if (raf === 0) raf = requestAnimationFrame(function () { raf = 0; draw(); }); }
+  var raf = 0, overlayOpen = false;
+  function schedule() { if (overlayOpen) return; if (raf === 0) raf = requestAnimationFrame(function () { raf = 0; draw(); }); }
 
   window.WorkTransition = { progress: progress };   // expose for dandelion.js
 
   resize();
   window.addEventListener("scroll", schedule, { passive: true });
-  window.addEventListener("resize", function () { resize(); draw(); });
+  window.addEventListener("resize", function () { if (!overlayOpen) { resize(); draw(); } });
+  // WORK detail overlay open → this #blocks pass is idle (scroll is locked anyway); resume + redraw on close.
+  window.addEventListener("work:overlay", function (e) { overlayOpen = !!(e.detail && e.detail.open); if (!overlayOpen) draw(); });
   draw();   // initial state
 })();
