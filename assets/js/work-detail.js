@@ -24,10 +24,21 @@
   "use strict";
 
   // ---- knobs --------------------------------------------------------------
-  var OPEN_MS  = 720;   // expand duration (ms), 600–800
-  var CLOSE_MS = 560;   // contract duration (ms)
-  var EASE = function (x) { return 1 - Math.pow(1 - x, 4); };   // easeOutQuart
-  var CONTENT_IN = 0.55;   // content starts fading in once the expand passes this progress
+  var OPEN_MS  = 760;   // expand duration (ms) — a touch longer since the ease-in front-loads slow motion
+  var CLOSE_MS = 620;   // contract duration (ms)
+  // cubic-bezier evaluator (P0=0,P3=1) → maps eased progress; used for the tween timing.
+  function cubicBezier(x1, y1, x2, y2) {
+    function bz(t, a, b) { var u = 1 - t; return 3 * u * u * t * a + 3 * u * t * t * b + t * t * t; }
+    return function (x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      var lo = 0, hi = 1, t = x, xt;
+      for (var i = 0; i < 24; i++) { xt = bz(t, x1, x2); if (Math.abs(xt - x) < 1e-4) break; if (xt < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+      return bz(t, y1, y2);
+    };
+  }
+  var EASE_OPEN  = cubicBezier(0.65, 0, 0.85, 0.2);   // slow start → sharp finish (ease-in): emerges gently, snaps to full
+  var EASE_CLOSE = cubicBezier(0.15, 0.8, 0.35, 1);   // reverse of open: quick release, decelerates into the point
+  var RADIUS_PX  = 14;   // on-screen corner radius at the smallest scale; interpolates to 0 when full (÷scale corrected)
   // -------------------------------------------------------------------------
 
   // ---- content ------------------------------------------------------------
@@ -155,9 +166,7 @@
         '<aside><ul class="wd__caps"></ul></aside></div>' +
       '<div class="wd__grid"></div>' +
     '</div></div>' +
-    '<button class="wd__close" type="button" aria-label="상세 닫기">' +
-      '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>' +
-    '</button>';
+    '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">HWANG HYESEON<span aria-hidden="true">*</span></button>';
   body.appendChild(overlay);
 
   var surface = overlay.querySelector(".wd__surface"),
@@ -169,7 +178,7 @@
       elText  = overlay.querySelector(".wd__text"),
       elCaps  = overlay.querySelector(".wd__caps"),
       elGrid  = overlay.querySelector(".wd__grid"),
-      btnClose= overlay.querySelector(".wd__close");
+      btnLogo = overlay.querySelector(".wd__logo");
 
   // This step only fills the expanding image. The detail content (title/body/caps/grid) is deferred —
   // it stays hidden; text fields are still populated so the next step can just reveal them.
@@ -190,25 +199,27 @@
   // ratio throughout: the surface is fixed inset:0 (viewport-sized) and we UNIFORMLY scale it 0→1 about
   // the click point (transform-origin, set per open). Uniform scale keeps the image proportional — no
   // inverse correction needed. Close reverses the same tween back to the point.
-  var ox = 0, oy = 0, p = 0, raf = 0, tFrom = 0, tTo = 0, tStart = 0, tDur = 0, tDone = null;
-  var RADIUS = 22;   // corner radius mid-expand (px in element space; visually small, converges to 0 when full)
+  var ox = 0, oy = 0, p = 0, raf = 0, tFrom = 0, tTo = 0, tStart = 0, tDur = 0, tEase = EASE_OPEN, tDone = null;
 
   function applyFrame(pr) {
     var s = pr < 0.0001 ? 0.0001 : pr;                 // avoid an exact scale(0) frame
     surface.style.transform = "scale(" + s.toFixed(5) + ")";
-    surface.style.borderRadius = ((1 - pr) * RADIUS).toFixed(1) + "px";
+    // border-radius rides the scale, so divide by s to keep the ON-SCREEN radius = visR (no ballooning).
+    // visR itself eases RADIUS_PX → 0 across the expand, so it's slightly round while small, square when full.
+    var visR = (1 - pr) * RADIUS_PX;
+    surface.style.borderRadius = (visR / s).toFixed(2) + "px";
     // detail content (title/body/caps/grid) stays hidden this step — reveal is deferred to the next step.
   }
   function tick(now) {
     var e = tDur <= 0 ? 1 : (now - tStart) / tDur; if (e > 1) e = 1;
-    p = tFrom + (tTo - tFrom) * EASE(e);
+    p = tFrom + (tTo - tFrom) * tEase(e);
     applyFrame(p);
     if (e < 1) raf = requestAnimationFrame(tick);
     else { raf = 0; p = tTo; if (tDone) { var d = tDone; tDone = null; d(); } }
   }
-  function tweenTo(target, dur, done) {
+  function tweenTo(target, dur, ease, done) {
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    tFrom = p; tTo = target; tStart = performance.now(); tDur = dur; tDone = done;
+    tFrom = p; tTo = target; tStart = performance.now(); tDur = dur; tEase = ease; tDone = done;
     raf = requestAnimationFrame(tick);
   }
 
@@ -232,7 +243,7 @@
   var lastFocus = null;
   function focusables() {
     return [].slice.call(overlay.querySelectorAll('button,[href],[tabindex]:not([tabindex="-1"])'))
-      .filter(function (el) { return el.offsetParent !== null || el === btnClose; });
+      .filter(function (el) { return el.offsetParent !== null || el === btnLogo; });
   }
   function onKeydown(e) {
     if (e.key === "Escape") { e.preventDefault(); requestClose(); return; }
@@ -267,9 +278,9 @@
     signal(true);
     document.addEventListener("keydown", onKeydown, true);
     try { history.pushState({ wd: key }, "", "#work/" + key); } catch (e) {}
-    btnClose.focus();   // move focus into the dialog at once (don't wait out the expand)
+    btnLogo.focus();   // move focus into the dialog at once (the logo is the close control)
     if (reduce) { p = 1; applyFrame(1); }
-    else tweenTo(1, OPEN_MS);
+    else tweenTo(1, OPEN_MS, EASE_OPEN);
   }
 
   // Close is always routed through history.back() → the popstate handler runs doClose(),
@@ -292,11 +303,11 @@
       lastFocus = null; activeKey = null;
     };
     if (reduce) { p = 0; applyFrame(0); finish(); }
-    else tweenTo(0, CLOSE_MS, finish);
+    else tweenTo(0, CLOSE_MS, EASE_CLOSE, finish);
   }
 
   window.addEventListener("popstate", function () { if (isOpen) doClose(); });
-  btnClose.addEventListener("click", requestClose);
+  btnLogo.addEventListener("click", requestClose);
   // (No backdrop-click-to-close: the full-screen content covers the surface, and on a full-screen
   //  dialog a stray click shouldn't lose the reader's place — ESC / the close button / Back all close.)
 

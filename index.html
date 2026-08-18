@@ -227,12 +227,15 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   opacity:var(--wd-content,0);padding:clamp(64px,9vh,120px) var(--gutter) clamp(40px,8vh,90px)}
 .wd__content[aria-hidden="true"]{pointer-events:none}
 .wd__inner{max-width:1200px;margin:0 auto}
-.wd__close{position:fixed;top:clamp(16px,3vh,28px);right:var(--gutter);z-index:2;width:44px;height:44px;
-  display:flex;align-items:center;justify-content:center;border:1px solid rgba(233,233,230,.28);border-radius:50%;
-  background:rgba(20,20,20,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-  color:var(--bone);cursor:pointer;transition:background .25s,border-color .25s}
-.wd__close:hover{background:rgba(233,233,230,.14);border-color:rgba(233,233,230,.55)}
-.wd__close svg{width:16px;height:16px;display:block}
+/* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
+   font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay
+   is open. White on the dark image (the real .bar uses mix-blend-difference; here we render our own). */
+.wd__logo{position:fixed;top:0;left:0;z-index:2;margin:0;padding:18px var(--gutter);
+  font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.18em;line-height:1.7;text-transform:uppercase;   /* line-height:1.7 = body's, which .bar inherits → same baseline */
+  background:transparent;border:0;color:#fff;cursor:pointer;opacity:.92;transition:opacity .25s}
+.wd__logo:hover,.wd__logo:focus-visible{opacity:1}
+.wd__logo span{color:var(--hi)}
+@media(max-width:560px){.wd__logo{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
 .wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);margin-bottom:18px}
 .wd__title{font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.02;
   font-size:clamp(40px,8.5vw,132px);color:var(--hi);margin:0}
@@ -250,7 +253,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   .wd__body{grid-template-columns:1fr;gap:34px}
   .wd__grid{grid-template-columns:1fr}
 }
-@media(prefers-reduced-motion:reduce){.wd__close{transition:none}}
+@media(prefers-reduced-motion:reduce){.wd__logo{transition:none}}
 
 
 /* contact / wish */
