@@ -182,6 +182,21 @@ a{color:inherit;text-decoration:none}
 .chips span{font-size:12px;letter-spacing:.06em;color:var(--dim);border:1px solid var(--dimmer);border-radius:999px;padding:6px 13px}
 
 /* work list */
+/* big category list — English hero + Korean subtitle, CSS-only hover spotlight.
+   Colour + rules bind to --work-ink (set by work-transition.js) so they track the stacking cells:
+   bright background → hovered item black, rest grey; dark background → auto-follows (light ink). */
+#work{--rule:color-mix(in srgb,var(--work-ink) 20%,transparent)}
+.wbig{margin-top:38px;border-top:1px solid var(--rule)}
+.wbig__item{display:flex;flex-direction:column;gap:6px;padding:clamp(15px,2.5vw,30px) 0;border-bottom:1px solid var(--rule);
+  pointer-events:auto;   /* .shell is pointer-events:none — re-enable so the hover spotlight fires */
+  color:color-mix(in srgb,var(--work-ink) 40%,transparent);transition:color .3s ease,border-color .3s ease}
+.wbig__en{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:1.04;
+  font-size:clamp(40px,7vw,110px);color:inherit}
+.wbig__ko{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;letter-spacing:.01em;
+  font-size:clamp(13px,1.05vw,16px);color:inherit;opacity:.9}
+@media(hover:hover){.wbig__item:hover,.wbig__item:focus-visible{color:var(--work-ink)}}
+@media(hover:none){.wbig__item{color:var(--work-ink)}}   /* touch: no hover → every item full ink */
+@media(prefers-reduced-motion:reduce){.wbig__item{transition:none}}
 .work{margin-top:34px;border-top:1px solid var(--dimmer)}
 .work__disc{border-bottom:1px solid var(--dimmer);padding:26px 0}
 .work__head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
@@ -306,6 +321,15 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
     <div class="wrap">
       <h2 class="h2 reveal">세 가지 전문 분야<em>.</em></h2>
       <p class="lede reveal">디자인 · AI 그래픽 · 코드. 한 사람 안에서 이어지는 세 가지 작업입니다.</p>
+
+      <!-- big category list (chdartmaker-style spotlight): English is the visual lead, Korean subtitle
+           below it, small. Colour is bound to --work-ink so it darkens with the stacking cells; the
+           hover spotlight is pure CSS (hovered item → full ink, the rest stay dimmed). -->
+      <div class="wbig reveal">
+        <div class="wbig__item"><span class="wbig__en">UX/UI Design</span><span class="wbig__ko">UX/UI 디자인</span></div>
+        <div class="wbig__item"><span class="wbig__en">AI Character</span><span class="wbig__ko">AI 캐릭터 · 그래픽</span></div>
+        <div class="wbig__item"><span class="wbig__en">Vibe Coding</span><span class="wbig__ko">바이브 코딩</span></div>
+      </div>
 
       <div class="work reveal">
         <div class="work__disc">
