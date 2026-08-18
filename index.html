@@ -121,9 +121,7 @@ a{color:inherit;text-decoration:none}
 .sec--tint::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 90% at 50% 50%,rgba(10,10,10,.55),rgba(10,10,10,.28) 55%,transparent 100%)}
 #work::before{display:none}   /* WORK backdrop comes from the stacking cells, not a scrim */
 /* WORK text darkens with the cells behind it (var set by work-transition.js) instead of a scrim */
-#work,#work .sec__head,#work .sec__head b,#work .h2,#work .h2 em,#work .lede,
-#work .work__no,#work .work__ti,#work .work__cat,#work .work__desc,
-#work .work__item,#work .work__item .y{color:var(--work-ink)}
+#work,#work .sec__head,#work .sec__head b{color:var(--work-ink)}
 /* per-section label: number (left) · name (right), no line */
 .sec__head{display:flex;justify-content:space-between;margin-bottom:40px;padding-inline:var(--gutter);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
 .sec__head b{color:var(--hi);font-weight:500}
@@ -136,7 +134,6 @@ a{color:inherit;text-decoration:none}
 .tag::before{content:"// "}
 .h2{font-weight:300;font-size:clamp(24px,4.4vw,46px);line-height:1.18;margin:18px 0 22px;max-width:26ch}
 .h2 em{font-style:normal;color:var(--hi)}
-.lede{color:var(--dim);max-width:60ch;font-size:14.5px}
 
 /* ABOUT — full-bleed uppercase couplets flanking the centred dandelion.
    Each .about__line is an overflow-hidden mask exactly one copy tall; its
@@ -181,33 +178,26 @@ a{color:inherit;text-decoration:none}
 .chips{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px}
 .chips span{font-size:12px;letter-spacing:.06em;color:var(--dim);border:1px solid var(--dimmer);border-radius:999px;padding:6px 13px}
 
-/* work list */
 /* big category list — English hero + Korean subtitle, CSS-only hover spotlight.
-   Colour + rules bind to --work-ink (set by work-transition.js) so they track the stacking cells:
-   bright background → hovered item black, rest grey; dark background → auto-follows (light ink). */
-#work{--rule:color-mix(in srgb,var(--work-ink) 20%,transparent)}
-.wbig{margin-top:38px;border-top:1px solid var(--rule)}
+   Colour + rules bind to --work-ink (set by work-transition.js) so they track the stacking cells. */
+#work{--rule:color-mix(in srgb,var(--work-ink) 22%,transparent)}
+.wbig{margin-top:8px;border-top:1px solid var(--rule);
+  pointer-events:auto}   /* .shell is pointer-events:none — make the list hittable so :hover fires (items inherit) */
 .wbig__item{display:flex;flex-direction:column;gap:6px;padding:clamp(15px,2.5vw,30px) 0;border-bottom:1px solid var(--rule);
-  pointer-events:auto;   /* .shell is pointer-events:none — re-enable so the hover spotlight fires */
-  color:color-mix(in srgb,var(--work-ink) 40%,transparent);transition:color .3s ease,border-color .3s ease}
+  color:var(--work-ink);transition:color .3s ease,border-color .3s ease}   /* default = full ink (every item) */
 .wbig__en{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:1.04;
-  font-size:clamp(40px,7vw,110px);color:inherit}
+  margin-left:-.035em;   /* optical: cancel the cap's left side-bearing so it lines up with the Korean below */
+  font-size:clamp(32px,5vw,76px);color:inherit}
 .wbig__ko{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;letter-spacing:.01em;
   font-size:clamp(13px,1.05vw,16px);color:inherit;opacity:.9}
-@media(hover:hover){.wbig__item:hover,.wbig__item:focus-visible{color:var(--work-ink)}}
+/* spotlight (reversed): every item is ink by default; while the LIST is hovered the others dim to grey
+   and only the truly-hovered item stays ink. Leaving the list returns all to ink. Grey follows --work-ink. */
+@media(hover:hover){
+  .wbig:hover .wbig__item{color:color-mix(in srgb,var(--work-ink) 52%,transparent)}
+  .wbig:hover .wbig__item:hover,.wbig__item:focus-visible{color:var(--work-ink)}
+}
 @media(hover:none){.wbig__item{color:var(--work-ink)}}   /* touch: no hover → every item full ink */
 @media(prefers-reduced-motion:reduce){.wbig__item{transition:none}}
-.work{margin-top:34px;border-top:1px solid var(--dimmer)}
-.work__disc{border-bottom:1px solid var(--dimmer);padding:26px 0}
-.work__head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
-.work__no{color:var(--dim);font-size:12px;letter-spacing:.2em}
-.work__ti{font-size:clamp(20px,3vw,30px);font-weight:400;color:var(--bone)}
-.work__cat{margin-left:auto;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
-.work__desc{color:var(--dim);font-size:13.5px;margin:12px 0 16px;max-width:62ch}
-.work__items{display:flex;flex-direction:column;gap:2px}
-.work__item{display:flex;justify-content:space-between;gap:16px;padding:9px 10px;border-radius:4px;color:var(--dim);transition:background .4s,color .4s}
-.work__item:hover{background:rgba(255,255,255,.055);color:var(--bone)}
-.work__item .y{color:var(--dimmer);font-size:12px}
 
 /* process */
 .proc{margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--dimmer);border:1px solid var(--dimmer);border-radius:6px;overflow:hidden}
@@ -319,57 +309,13 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <section id="work" class="sec sec--tint">
     <div class="sec__head"><div id="workAscii" class="work-ascii" role="img" aria-label="Work"></div></div>
     <div class="wrap">
-      <h2 class="h2 reveal">세 가지 전문 분야<em>.</em></h2>
-      <p class="lede reveal">디자인 · AI 그래픽 · 코드. 한 사람 안에서 이어지는 세 가지 작업입니다.</p>
-
       <!-- big category list (chdartmaker-style spotlight): English is the visual lead, Korean subtitle
-           below it, small. Colour is bound to --work-ink so it darkens with the stacking cells; the
-           hover spotlight is pure CSS (hovered item → full ink, the rest stay dimmed). -->
+           below it, small. Colour + rules bind to --work-ink so they track the stacking cells; the
+           hover spotlight is pure CSS (default all ink → on list hover the rest dim, the hovered stays). -->
       <div class="wbig reveal">
         <div class="wbig__item"><span class="wbig__en">UX/UI Design</span><span class="wbig__ko">UX/UI 디자인</span></div>
         <div class="wbig__item"><span class="wbig__en">AI Character</span><span class="wbig__ko">AI 캐릭터 · 그래픽</span></div>
         <div class="wbig__item"><span class="wbig__en">Vibe Coding</span><span class="wbig__ko">바이브 코딩</span></div>
-      </div>
-
-      <div class="work reveal">
-        <div class="work__disc">
-          <div class="work__head">
-            <span class="work__no">01</span>
-            <span class="work__ti">UX/UI 디자인</span>
-            <span class="work__cat">ux/ui design</span>
-          </div>
-          <p class="work__desc">유저 리서치, 정보 구조, 인터랙션, 디자인 시스템까지. 사람의 흐름을 관찰하고 가장 자연스러운 화면을 설계합니다.</p>
-          <div class="work__items">
-            <a class="work__item"><span>뉴로 뱅킹 앱 — Z세대 모바일 뱅킹 리디자인</span><span class="y">2025</span></a>
-            <a class="work__item"><span>커머스 대시보드 — 셀러용 데이터 대시보드 설계</span><span class="y">2024</span></a>
-          </div>
-        </div>
-
-        <div class="work__disc">
-          <div class="work__head">
-            <span class="work__no">02</span>
-            <span class="work__ti">AI 캐릭터 · 그래픽</span>
-            <span class="work__cat">ai character</span>
-          </div>
-          <p class="work__desc">생성형 AI로 캐릭터와 키비주얼을 만듭니다. 콘셉트부터 스타일 시트, 브랜드 아트워크까지 상상을 빠르게 시각화하고 방향을 정제합니다.</p>
-          <div class="work__items">
-            <a class="work__item"><span>AI 캐릭터 시리즈 — 일관된 캐릭터 셋 · 스타일 시트</span><span class="y">2025</span></a>
-            <a class="work__item"><span>브랜드 키비주얼 — 생성형 AI 캠페인 아트 컬렉션</span><span class="y">2024</span></a>
-          </div>
-        </div>
-
-        <div class="work__disc">
-          <div class="work__head">
-            <span class="work__no">03</span>
-            <span class="work__ti">바이브 코딩</span>
-            <span class="work__cat">vibe coding</span>
-          </div>
-          <p class="work__desc">AI 페어 코딩으로 디자인을 실제 동작하는 웹으로 구현합니다. 아이디어를 곧바로 프로토타입으로 만들어 검증하고, 픽셀 완성도까지 챙깁니다.</p>
-          <div class="work__items">
-            <a class="work__item"><span>인터랙티브 랜딩 — 스크롤 인터랙션 구현</span><span class="y">2024</span></a>
-            <a class="work__item"><span>포트폴리오 엔진 — 코드 기반 포트폴리오 템플릿</span><span class="y">2023</span></a>
-          </div>
-        </div>
       </div>
     </div>
   </section>

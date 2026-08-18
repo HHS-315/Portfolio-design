@@ -20,7 +20,7 @@
                                            // affects the blocks — the flower reads progress() directly.
   var COLS_DESKTOP = 16, COLS_MID = 12, COLS_MOBILE = 7;  // square cells → cell size = W / cols (smaller cells)
   var COL_BP = 1000, COL_MID_BP = 640;
-  var BLOCK_COLOR = "#cecec8";             // single opaque grey-white — same for every cell, no borders/gaps
+  var BLOCK_COLOR = "#ccd2d8";             // single opaque grey-white (subtle cool cast: B>R, no yellow) — every cell same, no borders/gaps
   // Per-CELL appearance order (not per-column): each cell gets a threshold = its row height + a random
   // jitter of ±JIT_ROWS rows, kept monotonic up each column (so a cell never appears before the one below
   // it — no floating cells). bp crossing a cell's threshold makes it grow in (height 0→cell, fully opaque).
