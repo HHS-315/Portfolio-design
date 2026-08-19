@@ -43,9 +43,9 @@
   var RISE_MS    = 520;  // per-element roll-up duration (ms) — ease-out, 400–600 range
   var RISE_STAGGER = 90; // delay between elements that enter together (ms), top→down, 80–120 range
   // magnetic scroll-snap (JS, chdartmaker-style — eases to the nearest snap point after the scroll stops):
-  var SNAP_STOP_MS   = 150;   // idle time after the last scroll before snapping (scroll-stop detection)
-  var SNAP_RANGE_VH  = 0.25;  // only snap when the stop is within ±25% of the viewport height of a point
-  var SNAP_MS        = 560;   // ease-to-point duration (ms)
+  var SNAP_STOP_MS   = 240;   // idle time after the last scroll before snapping (tell a pause from a real stop)
+  var SNAP_RANGE_VH  = 0.10;  // only snap when the stop is within ±10% of the viewport height of a point (near it)
+  var SNAP_MS        = 400;   // ease-to-point duration (ms) — a short "catch", not a long pull
   // -------------------------------------------------------------------------
 
   // ---- content ------------------------------------------------------------
@@ -365,19 +365,34 @@
   //     the box than Latin caps → a smaller ascent inset)
   // rAF-throttled via onContentScroll; off-screen targets are skipped before the intersection.
   var TTL_ASCENT = 0.23, EN_ASCENT = 0.12;   // fraction of the text box above the glyph tops (ascent gap)
+  // clip = the 2D intersection of a target rect [ix0,iy0,ix1,iy1] with the logo box [L,T,W,H], as an inset()
+  // (top right bottom left). BOTH axes matter: a short list title only covers the LEFT of the logo, so only
+  // that part must go white — hence the left/right insets, not just top/bottom.
   function rectClip(ix0, iy0, ix1, iy1, L, T, W, H) {
     var x0 = ix0 > L ? ix0 : L, y0 = iy0 > T ? iy0 : T, x1 = ix1 < L + W ? ix1 : L + W, y1 = iy1 < T + H ? iy1 : T + H;
     if (x1 - x0 <= 0.5 || y1 - y0 <= 0.5) return null;   // no real overlap
     return "inset(" + (y0 - T).toFixed(1) + "px " + (L + W - x1).toFixed(1) + "px " + (T + H - y1).toFixed(1) + "px " + (x0 - L).toFixed(1) + "px)";
   }
+  // The TIGHT text rectangle (glyph extent), not the element box: .wbig__en / .wd__ttl are block/flex boxes
+  // that stretch to full width, so their getBoundingClientRect is full-width even when the text is short —
+  // which is exactly why the whole logo used to invert. A Range over the text content measures the glyphs.
+  var logoRange = document.createRange();
+  function textRect(el) {
+    var node = el.querySelector(".wr__copy") || el;   // curtain builds a .wr__copy holding the text; else the element
+    try { logoRange.selectNodeContents(node); var r = logoRange.getBoundingClientRect(); if (r.width || r.height) return r; } catch (e) {}
+    return el.getBoundingClientRect();                 // fallback
+  }
   function updateLogoMask(hb, tb) {
     var b = logoInk.getBoundingClientRect(), L = b.left, T = b.top, W = b.width, H = b.height;
-    var clips = [], c;
-    c = rectClip(L, T - 1, L + W, hb.bottom, L, T, W, H); if (c) clips.push(c);                                  // hero image (full width above its bottom edge)
-    c = rectClip(tb.left, tb.top + tb.height * TTL_ASCENT, tb.right, tb.bottom, L, T, W, H); if (c) clips.push(c); // subpage title glyphs
-    for (var i = 0; i < moreEns.length; i++) {                                                                    // OTHER WORK list big text
-      var r = moreEns[i].getBoundingClientRect();
-      if (r.bottom <= T || r.top >= T + H || r.right <= L || r.left >= L + W) continue;   // off the logo → skip
+    var clips = [], c, r;
+    c = rectClip(L, T - 1, L + W, hb.bottom, L, T, W, H); if (c) clips.push(c);   // hero image = full width (whole logo) above its bottom edge
+    r = textRect(elTtl);                                                          // subpage title — tight glyph rect
+    c = rectClip(r.left, r.top + r.height * TTL_ASCENT, r.right, r.bottom, L, T, W, H); if (c) clips.push(c);
+    for (var i = 0; i < moreEns.length; i++) {                                    // OTHER WORK list big text
+      var box = moreEns[i].getBoundingClientRect();                              // cheap vertical cull first (box height == the text line)
+      if (box.bottom <= T || box.top >= T + H) continue;
+      r = textRect(moreEns[i]);                                                   // tight glyph rect (correct horizontal extent)
+      if (r.right <= L || r.left >= L + W) continue;                             // text is left/right of the logo → no overlap
       c = rectClip(r.left, r.top + r.height * EN_ASCENT, r.right, r.bottom, L, T, W, H); if (c) clips.push(c);
     }
     for (var k = 0; k < clips.length; k++) litLayer(k).style.clipPath = clips[k];
@@ -443,20 +458,16 @@
   }
 
   // ---- magnetic scroll-snap (JS, chdartmaker-style) -----------------------
-  // After scrolling STOPS (SNAP_STOP_MS idle), if the rest position is within ±SNAP_RANGE_VH of a snap
-  // point, ease the scroll to it. Points: the hero→body boundary (page top) and the "OTHER WORK" list top.
-  // Never fires while the user keeps scrolling, and never mid-body (the ±range gate) — so it doesn't fight
-  // the title-mask scrub (which lives near scrollTop 0, far from any point) or interrupt reading.
+  // After scrolling STOPS (SNAP_STOP_MS idle), if the rest position is within ±SNAP_RANGE_VH of THE snap
+  // point, ease the scroll to it. There is a SINGLE point — the hero→body boundary (page top) — the one
+  // transition worth catching. (The "OTHER WORK list start" point was dropped: it sits after the body, so
+  // snapping there interrupted reading on the way past.) With the tighter ±10vh gate the snap only bites
+  // right at the boundary and never mid-body, so it doesn't fight the title-mask scrub or reading.
   // Disabled on mobile and under reduced-motion.
   var snapTimer = 0, snapRaf = 0, snapping = false;
   function isMobile() { return matchMedia("(max-width:560px)").matches; }
   function snapPoints() {
-    var pts = [], vh = content.clientHeight;
-    if (pageEl) pts.push(pageEl.offsetTop);            // hero → body boundary (page aligns to the top)
-    if (elMore && elMore.offsetHeight) {              // "OTHER WORK" list start, with headroom so its label clears the fixed logo
-      pts.push(Math.max(0, elMore.offsetTop - Math.round(Math.min(120, vh * 0.12))));
-    }
-    return pts;
+    return pageEl ? [pageEl.offsetTop] : [];          // hero → body boundary only
   }
   function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
   function easeScroll(target, dur) {
@@ -485,7 +496,9 @@
   }
   function scheduleSnap() { clearTimeout(snapTimer); snapTimer = setTimeout(trySnap, SNAP_STOP_MS); }
   function onSnapScroll() { if (snapping) return; scheduleSnap(); }         // ignore our own programmatic scroll
-  function onSnapWheel() { cancelSnap(); scheduleSnap(); }                   // a wheel during a snap cancels it
+  // A wheel OR a touch that starts mid-snap cancels it immediately, so the user is never fighting the ease
+  // (touchstart matters on touch devices wider than the mobile cutoff, where the snap is still active).
+  function onSnapInput() { cancelSnap(); scheduleSnap(); }
 
   // ---- item switch (FLIP expand, in place) --------------------------------
   // Swap the underlying subpage to a new item (scroll to top, re-arm mask + reveal + snap). History-agnostic
@@ -535,13 +548,14 @@
     var oxp, oyp;
     if (ev && typeof ev.clientX === "number" && (ev.clientX || ev.clientY)) { oxp = ev.clientX; oyp = ev.clientY; }
     else if (srcEl) { var r = srcEl.getBoundingClientRect(); oxp = r.left + r.width / 2; oyp = r.top + r.height / 2; }
-    else { oxp = logoOrigin().x; oyp = logoOrigin().y; }
+    else { oxp = navOrigin().x; oyp = navOrigin().y; }
     flipSwap(newKey, oxp, oyp, true);
   }
-  // Browser Back/Forward have no on-page point, so BOTH expand from the logo (top-left) — the fixed nav
-  // anchor where "navigation" reads as coming from. Same origin for both directions: a Back-vs-Forward
-  // left/right split would be arbitrary and unreadable; a consistent nav anchor is clearer.
-  function logoOrigin() { var lb = btnLogo.getBoundingClientRect(); return { x: lb.left + lb.width / 2, y: lb.top + lb.height / 2 }; }
+  // Browser Back/Forward (and keyboard activation) have no on-page point, so they expand from the viewport's
+  // TOP-LEFT CORNER — a fixed nav anchor, independent of the logo's text width. A tiny inset off the exact
+  // (0,0) corner keeps the origin from sitting on the very edge, but it's not tied to any element's size.
+  var NAV_ORIGIN = 14;   // px inset from the top-left corner for the expand origin
+  function navOrigin() { return { x: NAV_ORIGIN, y: NAV_ORIGIN }; }
 
   function showPage() {
     content.setAttribute("aria-hidden", "false");
@@ -552,13 +566,15 @@
     setupReveal();                                     // arm the sequential body reveal
     content.addEventListener("scroll", onContentScroll, { passive: true });
     content.addEventListener("scroll", onSnapScroll, { passive: true });
-    content.addEventListener("wheel", onSnapWheel, { passive: true });
+    content.addEventListener("wheel", onSnapInput, { passive: true });
+    content.addEventListener("touchstart", onSnapInput, { passive: true });
     updateMask();
   }
   function hidePage() {
     content.removeEventListener("scroll", onContentScroll);
     content.removeEventListener("scroll", onSnapScroll);
-    content.removeEventListener("wheel", onSnapWheel);
+    content.removeEventListener("wheel", onSnapInput);
+    content.removeEventListener("touchstart", onSnapInput);
     cancelSnap(); clearTimeout(snapTimer);
     resetReveal();                                     // clear reveal state so a reopen replays it
     content.setAttribute("aria-hidden", "true");
@@ -644,7 +660,7 @@
     var st = e.state;
     if (st && st.wd && WORK_DETAILS[st.wd]) {
       curDepth = st.d || curDepth;
-      if (st.wd !== activeKey) { var o = logoOrigin(); flipSwap(st.wd, o.x, o.y, false); }   // no push — history already moved
+      if (st.wd !== activeKey) { var o = navOrigin(); flipSwap(st.wd, o.x, o.y, false); }   // no push — history already moved; expand from the top-left corner
     } else {
       doClose();
     }
