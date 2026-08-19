@@ -168,11 +168,10 @@
     '<div class="wd__content" aria-hidden="true">' +
       '<div class="wd__stage">' +                                                // bounds the sticky title's pin range
         '<div class="wd__hero2"></div>' +
-        '<div class="wd__titles"><h2 class="wd__ttl" tabindex="-1"></h2></div>' + // pins while the image sweeps through
+        '<div class="wd__titles"><h2 class="wd__ttl" tabindex="-1"></h2><p class="wd__ttl-sub"></p></div>' + // title + description; both pin & sweep
       '</div>' +
       '<div class="wd__page"><div class="wd__inner">' +
         '<p class="wd__kicker"></p>' +
-        '<p class="wd__sub"></p>' +
         '<div class="wd__body"><div class="wd__text"></div><aside><ul class="wd__caps"></ul></aside></div>' +
         '<div class="wd__grid"></div>' +
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
@@ -192,8 +191,8 @@
       titles  = overlay.querySelector(".wd__titles"),
       pageEl  = overlay.querySelector(".wd__page"),
       elTtl   = overlay.querySelector(".wd__ttl"),
+      elSubTtl = overlay.querySelector(".wd__ttl-sub"),
       elKick  = overlay.querySelector(".wd__kicker"),
-      elSub   = overlay.querySelector(".wd__sub"),
       elText  = overlay.querySelector(".wd__text"),
       elCaps  = overlay.querySelector(".wd__caps"),
       elGrid  = overlay.querySelector(".wd__grid"),
@@ -203,9 +202,8 @@
 
   var LOGO_HIDDEN = "inset(0 0 100% 0)";   // image clip that shows nothing (logo reads via the blend button)
 
-  // kicker + sub are reused elements (not rebuilt as tags) → give them the mask class once
+  // kicker is a reused element (not rebuilt as a tag) → give it the reveal mask class once
   elKick.classList.add("wd-rise");
-  elSub.classList.add("wd-rise");
   function riseInner(text) { return '<span class="wd-rise__i">' + esc(text) + "</span>"; }
 
   // Snapshot the WORK list's display text once, robust to work-list.js having already wrapped .wbig__en in
@@ -241,10 +239,10 @@
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
     var img = imageFor(key);
-    // each reveal target = a .wd-rise mask wrapping a .wd-rise__i inner block that rolls up on scroll (see setupReveal)
-    elTtl.textContent = d.en || d.title || "";     // subpage heading is English (uppercased via CSS); NOT masked
-    elKick.innerHTML = riseInner(d.kicker || "");
-    elSub.innerHTML = riseInner(d.sub || "");
+    // hero title block (Korean title + description) — both carry the white→ink scroll mask (updateMask)
+    elTtl.textContent = d.title || d.en || "";
+    elSubTtl.textContent = d.sub || "";
+    elKick.innerHTML = riseInner(d.kicker || "");   // body starts with the discipline label (curtain-reveal)
     elText.innerHTML = (d.lead ? '<p class="wd__lead wd-rise">' + riseInner(d.lead) + "</p>" : "") +
       (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     elCaps.innerHTML = (d.caps || []).map(function (c) { return '<li class="wd-rise">' + riseInner(c) + "</li>"; }).join("");
@@ -331,12 +329,18 @@
   // image's on-screen bottom edge, so the part of the glyphs still over the image is white and the part
   // below the image boundary (now over the grey page) is ink. The logo flips ink once the hero scrolls past.
   var maskRaf = 0;
+  // Set the white→ink mask boundary on one element: --cut = px from the element's top down to the image's
+  // on-screen bottom edge (clamped to the element height) → white above it, ink below.
+  function setCut(el, imgBottom) {
+    var r = el.getBoundingClientRect(), cut = imgBottom - r.top;
+    if (cut < 0) cut = 0; else if (cut > r.height) cut = r.height;
+    el.style.setProperty("--cut", cut.toFixed(1) + "px");
+  }
   function updateMask() {
     if (!isOpen) return;
-    var hb = hero2.getBoundingClientRect(), tb = elTtl.getBoundingClientRect();
-    var cut = hb.bottom - tb.top;                       // px from the title top down to the image bottom
-    if (cut < 0) cut = 0; else if (cut > tb.height) cut = tb.height;
-    elTtl.style.setProperty("--cut", cut.toFixed(1) + "px");
+    var hb = hero2.getBoundingClientRect();
+    setCut(elTtl, hb.bottom);       // big Korean title
+    setCut(elSubTtl, hb.bottom);    // its description below — same mask
     updateLogoMask(hb);
   }
   // Logo mask: whiten the part of the logo that overlaps any DARK element behind it. For each target we
@@ -366,8 +370,8 @@
   //    RELEASES and scrolls away just after the image has fully passed — no title stranded over the body.
   function layoutTitle() {
     var vh = window.innerHeight;
-    var gap = Math.round(Math.min(64, vh * 0.06));     // title bottom sits this far above the image bottom
-    var th = elTtl.offsetHeight || 0;
+    var gap = Math.round(Math.min(64, vh * 0.06));     // block bottom sits this far above the image bottom
+    var th = titles.offsetHeight || 0;                 // whole block = title + description (so both pin & sweep)
     titles.style.marginTop = -(th + gap) + "px";
     titles.style.top = (vh - th - gap) + "px";
     stage.style.minHeight = (vh + th + gap) + "px";

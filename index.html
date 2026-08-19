@@ -242,17 +242,22 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    behind it and its bottom edge sweeps down through the glyphs (white→ink via --cut). JS sets marginTop
    (pull up to overlap the image bottom), top (the pin line), and the stage min-height (release point). */
 .wd__titles{position:sticky;z-index:1;padding:0 var(--gutter);pointer-events:none}
-/* single-element white→ink title: a to-bottom gradient HARD-STOPPED at --cut, clipped to the glyphs.
-   JS moves --cut to the image's bottom edge as it sweeps through the text → white over the image, ink below.
-   One element = the two colours are pixel-aligned by construction (no two-layer registration). */
-.wd__ttl{margin:0;max-width:16ch;font-family:'Plus Jakarta Sans','Pretendard',sans-serif;font-weight:700;
-  text-transform:uppercase;letter-spacing:-.02em;line-height:.92;font-size:clamp(40px,8vw,128px);
+/* white→ink scroll mask: a to-bottom gradient HARD-STOPPED at --cut, clipped to the glyphs. JS moves --cut
+   to the image's bottom edge as it sweeps through the text → white over the image, ink below. One element
+   each = the two colours are pixel-aligned by construction. The Korean title AND its description below both
+   use this same mask (updateMask sets --cut on each). Font: Korean → Pretendard, Latin (e.g. STAC) → Plus
+   Jakarta Sans, via per-character fallback (PJS first has no Korean glyphs, so Korean falls to Pretendard).
+   line-height ≥1.1 so the taller Korean glyphs stay inside the background box (background-clip:text hides
+   anything that overflows it) — the mask edge then lines up with the real glyph tops/bottoms. */
+.wd__ttl,.wd__ttl-sub{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;
   color:transparent;-webkit-text-fill-color:transparent;
   background-image:linear-gradient(180deg,#fff 0,#fff var(--cut,100%),var(--work-ink) var(--cut,100%),var(--work-ink) 100%);
   -webkit-background-clip:text;background-clip:text}
+.wd__ttl{margin:0;font-weight:800;letter-spacing:-.01em;line-height:1.14;font-size:clamp(34px,6.6vw,104px)}   /* Korean → Pretendard ExtraBold; no uppercase; no ch cap (full width) */
+.wd__ttl-sub{margin:clamp(10px,1.4vh,18px) 0 0;font-weight:400;letter-spacing:0;line-height:1.5;font-size:clamp(14px,1.6vw,20px);max-width:52ch}   /* description under the title, same mask, Pretendard Regular */
 /* grey content page below the hero */
 .wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px)}
-.wd__inner{max-width:1200px;margin:0 auto}
+.wd__inner{margin:0}   /* full section width — the only horizontal inset is .wd__page's --gutter padding */
 /* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
    font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay is
    open. It must read over the grey page, the big black title/list text (glyph-shaped, not a coarse rect),
@@ -275,11 +280,14 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__logo-img{z-index:3;color:#fff;clip-path:inset(0 0 100% 0);pointer-events:none}   /* crisp white over the hero image only (JS sets the clip; default hidden) */
 .wd__logo-star{font-style:normal}   /* inherits the layer colour (inverts with the text over dark, white over the image) */
 @media(max-width:560px){.wd__logo,.wd__logo-img{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
+/* kicker stays var(--mono): it's a label, kept in the site's monospace label system (.bar / .wd__caps /
+   .wd__more-label), not body copy — so it doesn't switch to Plus Jakarta Sans. */
 .wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 14px}
-.wd__sub{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(15px,1.6vw,20px);color:var(--work-ink);margin:0 0 clamp(30px,6vh,60px);max-width:52ch}
 .wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px)}
-.wd__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:500;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:56ch}   /* 강조(리드 문단) = Pretendard Medium */
-.wd__p{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.8;color:color-mix(in srgb,var(--work-ink) 72%,transparent);margin:0 0 16px;max-width:60ch}
+/* body copy: Latin → Plus Jakarta Sans, Korean → Pretendard (per-character fallback). ch caps KEPT for
+   readability (the section is full width now, so an uncapped line would run too long), just widened a bit. */
+.wd__lead{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:500;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:66ch}   /* 강조(리드 문단) = Medium */
+.wd__p{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.8;color:color-mix(in srgb,var(--work-ink) 72%,transparent);margin:0 0 16px;max-width:76ch}
 .wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
 .wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 60%,transparent);
   padding:13px 0;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
