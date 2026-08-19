@@ -180,10 +180,13 @@
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
     '</div>' +
-    // logo close-control: two pixel-aligned layers (ink under, white on top clipped to the image area)
+    // logo close-control: pixel-aligned layers — ink underneath, plus a white layer per dark backdrop that
+    // passes behind it (the hero image, and the big title as it scrolls up). Each white layer is clipped to
+    // its backdrop's band, so the glyphs read white over dark things and ink over the light page.
     '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">' +
       '<span class="wd__logo-layer wd__logo-ink" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
-      '<span class="wd__logo-layer wd__logo-lit" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
+      '<span class="wd__logo-layer wd__logo-lit wd__logo-lit--img" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
+      '<span class="wd__logo-layer wd__logo-lit wd__logo-lit--ttl" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
     '</button>';
   body.appendChild(overlay);
 
@@ -202,7 +205,8 @@
       elGrid  = overlay.querySelector(".wd__grid"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
-      logoLit = overlay.querySelector(".wd__logo-lit");
+      logoImg = overlay.querySelector(".wd__logo-lit--img"),
+      logoTtl = overlay.querySelector(".wd__logo-lit--ttl");
 
   // kicker + sub are reused elements (not rebuilt as tags) → give them the mask class once
   elKick.classList.add("wd-rise");
@@ -233,8 +237,8 @@
       }).join("") + "</div>";
     [].slice.call(elMore.querySelectorAll(".wbig__item")).forEach(function (node) {
       var k = node.getAttribute("data-key");
-      node.addEventListener("click", function () { switchTo(k); });
-      node.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); switchTo(k); } });
+      node.addEventListener("click", function (ev) { switchTo(k, ev, node); });                 // expand from the click point
+      node.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); switchTo(k, null, node); } });   // no coords → row centre
       if (window.WorkListCurtain) window.WorkListCurtain(node);   // same hover curtain as the main list
     });
   }
@@ -338,12 +342,29 @@
     var cut = hb.bottom - tb.top;                       // px from the title top down to the image bottom
     if (cut < 0) cut = 0; else if (cut > tb.height) cut = tb.height;
     elTtl.style.setProperty("--cut", cut.toFixed(1) + "px");
-    // logo: same clip mask as the title. --logocut = px from the lit layer's top down to the image's
-    // bottom edge; the white layer is shown only above it (over the image), ink below (over the grey).
-    var lr = logoLit.getBoundingClientRect();
-    var lc = hb.bottom - lr.top;                        // out-of-range values are fine — clip clamps (all-white / all-ink)
-    logoLit.style.setProperty("--logocut", lc.toFixed(1) + "px");
+    updateLogoMask(hb, tb);
   }
+  // Logo mask: one white layer per DARK backdrop that can pass behind the fixed logo.
+  //  · image: white above the image's bottom edge (--logocut = px from the layer top down to hb.bottom).
+  //  · title: white across the title box's vertical band while it scrolls up through the logo (the small
+  //    body/list text never reaches this top band in this layout, so those two cover every real case).
+  // Out-of-range values are fine — clip-path clamps them to fully-shown / fully-hidden.
+  var TTL_ASCENT = 0.23;   // fraction of the title box above the uppercase cap line (ascent gap to skip)
+  function updateLogoMask(hb, tb) {
+    var lr = logoImg.getBoundingClientRect(), H = lr.height;
+    logoImg.style.setProperty("--logocut", (hb.bottom - lr.top).toFixed(1) + "px");
+    // Use the GLYPH band (cap-top → baseline), not the full line box: the box includes the font's ascent
+    // space above the caps, so a raw box-clip would whiten the logo while it's actually over the grey gap
+    // above the letters. Uppercase baseline ≈ box bottom, cap-top ≈ box top + TTL_ASCENT·height.
+    var gTop = tb.top + tb.height * TTL_ASCENT, gBot = tb.bottom;
+    var top = gTop - lr.top, bot = gBot - lr.top;          // glyph band in layer-local px
+    top = top < 0 ? 0 : top > H ? H : top;
+    bot = bot < 0 ? 0 : bot > H ? H : bot;
+    if (bot - top > 0.5) { logoTtl.style.setProperty("--tcutT", top.toFixed(1) + "px"); logoTtl.style.setProperty("--tcutB", (H - bot).toFixed(1) + "px"); }
+    else { logoTtl.style.setProperty("--tcutT", "100%"); logoTtl.style.setProperty("--tcutB", "0"); }   // no overlap → title layer hidden
+  }
+  // Force the logo fully white (used while the expand surface — a dark new image — covers the screen).
+  function logoWhite() { logoImg.style.setProperty("--logocut", "100%"); logoTtl.style.setProperty("--tcutT", "100%"); logoTtl.style.setProperty("--tcutB", "0"); }
   function onContentScroll() { if (maskRaf) return; maskRaf = requestAnimationFrame(function () { maskRaf = 0; updateMask(); }); }
   // Position the sticky title at the image's bottom-left and size its pin range.
   //  · marginTop pulls the title UP to overlap the image's bottom edge (visible over the hero at scroll 0),
@@ -459,6 +480,8 @@
     }
     fadeRaf = requestAnimationFrame(step);
   }
+  // Swap the underlying subpage to a new item (scroll to top, re-arm mask + reveal + snap). History-agnostic
+  // — the caller decides push (forward click) vs pop (Back). Used by the FLIP switch and by popstate.
   function swapContent(newKey) {
     activeKey = newKey;
     cancelSnap(); clearTimeout(snapTimer);
@@ -467,11 +490,38 @@
     layoutTitle();
     setupReveal();                                     // re-arm the sequential reveal for the new content
     updateMask();
-    try { history.replaceState({ wd: newKey }, "", "#work/" + newKey); } catch (e) {}   // same history depth (see doClose)
     overlay.setAttribute("aria-label", (WORK_DETAILS[newKey].title || "Work") + " 상세");
   }
-  function switchTo(newKey) {
-    if (!isOpen || !WORK_DETAILS[newKey] || newKey === activeKey) return;
+  // Forward navigation (clicking an "OTHER WORK" row): REUSE the main FLIP expand (applyFrame/tweenTo/
+  // EASE_OPEN, click-point origin, radius correction) exactly as open() does. The subpage is covered by
+  // .wd__content (fixed) with .wd__surface display:none, so to bring the expand layer back we: point the
+  // surface at the NEW item's image, raise it above the content (z-index 1, still under the logo z-2),
+  // scale it 0→1 from the click point, and only THEN swap the content underneath and hide the surface —
+  // the new hero2 image matches the surface, so the hand-off is seamless (identical to the initial open).
+  function switchTo(newKey, ev, srcEl) {
+    if (!isOpen || switching || !WORK_DETAILS[newKey] || newKey === activeKey) return;
+    cancelSnap(); clearTimeout(snapTimer);           // don't let an in-flight magnetic snap run during the expand
+    if (reduce) { pushHist(newKey); swapContent(newKey); return; }   // no expand under reduced-motion
+    switching = true;
+    if (ev && typeof ev.clientX === "number" && (ev.clientX || ev.clientY)) { ox = ev.clientX; oy = ev.clientY; }
+    else if (srcEl) { var r = srcEl.getBoundingClientRect(); ox = r.left + r.width / 2; oy = r.top + r.height / 2; }
+    hero.style.backgroundImage = "url('" + imageFor(newKey) + "')";   // the image that expands = the new item's
+    surface.style.transformOrigin = ox + "px " + oy + "px";
+    p = 0; applyFrame(0);
+    surface.style.display = "";
+    surface.style.zIndex = "1";                        // above the current content, below the logo
+    logoWhite();                                       // the expanding dark image covers the screen → logo white
+    tweenTo(1, OPEN_MS, EASE_OPEN, function () {
+      pushHist(newKey);                                // one history entry per item (see popstate → Back = prev item)
+      swapContent(newKey);                             // repopulate underneath now that the surface hides it
+      surface.style.display = "none";
+      surface.style.zIndex = "";
+      updateMask();                                    // recompute the logo for the new (top) position
+      switching = false;
+    });
+  }
+  // Back/forward history navigation between items → a quick crossfade (no expand; there's no click point).
+  function crossfadeTo(newKey) {
     if (reduce) { swapContent(newKey); return; }
     fadeContent(0, SWAP_OUT_MS, function () { swapContent(newKey); fadeContent(1, SWAP_IN_MS); });
   }
@@ -503,7 +553,16 @@
   }
 
   // ---- open / close -------------------------------------------------------
-  var isOpen = false, activeKey = null;
+  var isOpen = false, activeKey = null, switching = false;
+  // History model: each item on screen is ONE history entry (open pushes the first, every FLIP switch
+  // pushes another), so the browser Back button steps to the PREVIOUS item, then finally out to WORK —
+  // matching the navigational feel of the expand. The depth is stored IN each state (d) so it stays correct
+  // across Back AND Forward. The explicit close controls (logo / ESC) pop ALL overlay entries at once.
+  var curDepth = 0, closingHist = false;
+  function pushHist(key) {
+    curDepth += 1;
+    try { history.pushState({ wd: key, d: curDepth }, "", "#work/" + key); } catch (e) {}
+  }
 
   function signal(open) { try { window.dispatchEvent(new CustomEvent("work:overlay", { detail: { open: open } })); } catch (e) {} }
 
@@ -527,22 +586,25 @@
     document.addEventListener("keydown", onKeydown, true);
     // keep the browser from restoring scroll on the back/popstate that closes us (belt-and-braces with the intro script)
     try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (e) {}
-    try { history.pushState({ wd: key }, "", "#work/" + key); } catch (e) {}
+    curDepth = 0; pushHist(key);                    // first overlay history entry (depth 1)
     try { btnLogo.focus({ preventScroll: true }); } catch (e) { btnLogo.focus(); }   // focus into the dialog (logo = close control)
     if (reduce) { p = 1; applyFrame(1); showPage(); }
     else tweenTo(1, OPEN_MS, EASE_OPEN, showPage);   // reveal the scrollable subpage once the expand lands
   }
 
-  // Close is always routed through history.back() → the popstate handler runs doClose(),
-  // so browser-Back and our own controls share one path (and the pushed state is popped).
+  // Explicit close (logo / ESC): pop EVERY overlay entry in one go so we always land back on WORK,
+  // regardless of how many items were browsed. The closingHist flag makes the resulting popstate close
+  // rather than treat an intermediate item-state as a Back navigation.
   function requestClose() {
     if (!isOpen) return;
-    try { history.back(); } catch (e) { doClose(); }
+    if (curDepth > 0) { closingHist = true; try { history.go(-curDepth); } catch (e) { closingHist = false; doClose(); } }
+    else doClose();
   }
   function doClose() {
     if (!isOpen) return;
-    isOpen = false;
+    isOpen = false; switching = false; closingHist = false; curDepth = 0;
     hidePage();                                   // hide the subpage + restore the FLIP layer for the contract
+    surface.style.zIndex = "";                    // clear any raise left over from a switch
     document.removeEventListener("keydown", onKeydown, true);
     var finish = function () {
       overlay.classList.remove("is-active");
@@ -557,7 +619,18 @@
     else tweenTo(0, CLOSE_MS, EASE_CLOSE, finish);
   }
 
-  window.addEventListener("popstate", function () { if (isOpen) doClose(); });
+  // Browser Back/Forward: land on a previous/next item → crossfade to it; land past the overlay → close.
+  window.addEventListener("popstate", function (e) {
+    if (!isOpen) return;
+    if (closingHist) { closingHist = false; doClose(); return; }
+    var st = e.state;
+    if (st && st.wd && WORK_DETAILS[st.wd]) {
+      curDepth = st.d || curDepth;
+      if (st.wd !== activeKey) crossfadeTo(st.wd);
+    } else {
+      doClose();
+    }
+  });
   btnLogo.addEventListener("click", requestClose);
   // (No backdrop-click-to-close: the full-screen content covers the surface, and on a full-screen
   //  dialog a stray click shouldn't lose the reader's place — ESC / the close button / Back all close.)

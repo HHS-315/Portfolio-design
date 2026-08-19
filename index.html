@@ -262,10 +262,12 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.18em;line-height:1.7;text-transform:uppercase;   /* line-height:1.7 = body's, which .bar inherits → same baseline */
   background:transparent;border:0;cursor:pointer;opacity:.92;transition:opacity .25s}
 .wd__logo:hover,.wd__logo:focus-visible{opacity:1}
-.wd__logo-layer{grid-area:1/1;white-space:nowrap;pointer-events:none}   /* both copies share one grid cell → registered */
-.wd__logo-ink{color:var(--work-ink)}                                    /* underneath: ink (shows below the image edge) */
-.wd__logo-lit{color:#fff;clip-path:inset(0 0 calc(100% - var(--logocut,100%)) 0)}   /* on top: white, clipped to the image area (JS sets --logocut = px from the layer top down to the image's bottom edge) */
-.wd__logo-star{font-style:normal;color:var(--hi)}                       /* accent star — same in both layers, so it stays accent through the cut */
+.wd__logo-layer{grid-area:1/1;white-space:nowrap;pointer-events:none}   /* all copies share one grid cell → pixel-registered */
+.wd__logo-ink{color:var(--work-ink)}                                    /* underneath: ink (shows over the light page) */
+.wd__logo-lit{color:#fff}                                               /* white layers on top, each clipped to a dark backdrop band */
+.wd__logo-lit--img{clip-path:inset(0 0 calc(100% - var(--logocut,100%)) 0)}   /* over the hero image (JS: --logocut = px from the layer top down to the image's bottom edge) */
+.wd__logo-lit--ttl{clip-path:inset(var(--tcutT,100%) 0 var(--tcutB,0) 0)}     /* over the big subpage title as it scrolls up past the logo (JS: the title box's vertical band within the layer) */
+.wd__logo-star{font-style:normal;color:var(--hi)}                       /* accent star — same in every layer, so it stays accent through any cut */
 @media(max-width:560px){.wd__logo{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
 .wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 14px}
 .wd__sub{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(15px,1.6vw,20px);color:var(--work-ink);margin:0 0 clamp(30px,6vh,60px);max-width:52ch}
