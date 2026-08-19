@@ -9,6 +9,9 @@
  * English only (the small Korean subtitle is left plain — cleaner). Plays ONCE per hover-enter and is
  * LOCKED while rolling, so a held hover never repeats and a fast sweep across rows can't stack rolls.
  * prefers-reduced-motion / touch (no hover) → no mask at all, colour change only.
+ *
+ * `wire(item)` is exposed as window.WorkListCurtain so dynamically-built lists (the work-detail subpage's
+ * "OTHER WORK" list) get the identical hover curtain without duplicating this logic.
  */
 (function () {
   "use strict";
@@ -20,18 +23,16 @@
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
   var hoverable = matchMedia("(hover:hover)").matches;
 
-  var items = [].slice.call(document.querySelectorAll(".wbig__item"));
-  if (!items.length) return;
-  if (reduce || !hoverable) return;   // reduced-motion / touch → colour spotlight only, no mask
-
   function easeInOut(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
 
-  items.forEach(function (item) {
+  // Wire one .wbig__item: rebuild its .wbig__en as a 2-copy track and roll it once per hover-enter.
+  // No-op under reduced-motion / touch, or if the item is missing/already wired (idempotent).
+  function wire(item) {
+    if (reduce || !hoverable) return;
     var en = item.querySelector(".wbig__en");
-    if (!en) return;
+    if (!en || en.querySelector(".wr__track")) return;
     var text = en.textContent;
 
-    // rebuild the word as a 2-copy track (a + dup) inside the overflow:hidden mask (.wbig__en).
     var track = document.createElement("span"); track.className = "wr__track";
     var a = document.createElement("span"); a.className = "wr__copy"; a.textContent = text;
     var d = document.createElement("span"); d.className = "wr__copy wr__copy--dup"; d.textContent = text;
@@ -55,5 +56,9 @@
       rolling = true; start = performance.now();
       requestAnimationFrame(step);
     });
-  });
+  }
+
+  window.WorkListCurtain = wire;   // reusable for dynamically-added lists (e.g. the work-detail subpage)
+
+  [].slice.call(document.querySelectorAll(".wbig__item")).forEach(wire);
 })();

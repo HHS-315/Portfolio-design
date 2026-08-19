@@ -42,6 +42,12 @@
   // subpage body reveal (sequential curtain-roll mask on scroll):
   var RISE_MS    = 520;  // per-element roll-up duration (ms) — ease-out, 400–600 range
   var RISE_STAGGER = 90; // delay between elements that enter together (ms), top→down, 80–120 range
+  // magnetic scroll-snap (JS, chdartmaker-style — eases to the nearest snap point after the scroll stops):
+  var SNAP_STOP_MS   = 150;   // idle time after the last scroll before snapping (scroll-stop detection)
+  var SNAP_RANGE_VH  = 0.25;  // only snap when the stop is within ±25% of the viewport height of a point
+  var SNAP_MS        = 560;   // ease-to-point duration (ms)
+  // item switch (clicking "OTHER WORK" swaps content in place, no expand):
+  var SWAP_OUT_MS = 170, SWAP_IN_MS = 260;   // crossfade out / in (ms)
   // -------------------------------------------------------------------------
 
   // ---- content ------------------------------------------------------------
@@ -171,9 +177,14 @@
         '<p class="wd__sub"></p>' +
         '<div class="wd__body"><div class="wd__text"></div><aside><ul class="wd__caps"></ul></aside></div>' +
         '<div class="wd__grid"></div>' +
+        '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
     '</div>' +
-    '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">HWANG HYESEON<span aria-hidden="true">*</span></button>';
+    // logo close-control: two pixel-aligned layers (ink under, white on top clipped to the image area)
+    '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">' +
+      '<span class="wd__logo-layer wd__logo-ink" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
+      '<span class="wd__logo-layer wd__logo-lit" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
+    '</button>';
   body.appendChild(overlay);
 
   var surface = overlay.querySelector(".wd__surface"),
@@ -189,12 +200,44 @@
       elText  = overlay.querySelector(".wd__text"),
       elCaps  = overlay.querySelector(".wd__caps"),
       elGrid  = overlay.querySelector(".wd__grid"),
-      btnLogo = overlay.querySelector(".wd__logo");
+      elMore  = overlay.querySelector(".wd__more"),
+      btnLogo = overlay.querySelector(".wd__logo"),
+      logoLit = overlay.querySelector(".wd__logo-lit");
 
   // kicker + sub are reused elements (not rebuilt as tags) → give them the mask class once
   elKick.classList.add("wd-rise");
   elSub.classList.add("wd-rise");
   function riseInner(text) { return '<span class="wd-rise__i">' + esc(text) + "</span>"; }
+
+  // Snapshot the WORK list's display text once, robust to work-list.js having already wrapped .wbig__en in
+  // a 2-copy curtain track (read the first .wr__copy, else the plain text). Used to rebuild the same rows
+  // in the subpage "OTHER WORK" list without duplicating markup.
+  var LIST = items.map(function (it) {
+    var en = it.querySelector(".wbig__en"), copy = en && en.querySelector(".wr__copy");
+    var ko = it.querySelector(".wbig__ko");
+    return {
+      key: it.getAttribute("data-key"),
+      big: ((copy ? copy.textContent : (en ? en.textContent : "")) || "").trim(),
+      ko:  (ko ? ko.textContent : "").trim()
+    };
+  });
+  // Build the "OTHER WORK" list for the given active key (every row except the current one). Reuses the
+  // WORK section's .wbig classes (styling + hover spotlight are shared CSS); rows switch content in place.
+  function buildMore(activeK) {
+    var rows = LIST.filter(function (e) { return e.key !== activeK; });
+    elMore.innerHTML = '<p class="wd__more-label">OTHER WORK</p><div class="wbig">' +
+      rows.map(function (e) {
+        return '<div class="wbig__item" role="button" tabindex="0" data-key="' + e.key + '">' +
+          '<span class="wbig__en">' + esc(e.big) + '</span>' +
+          '<span class="wbig__ko">' + esc(e.ko) + '</span></div>';
+      }).join("") + "</div>";
+    [].slice.call(elMore.querySelectorAll(".wbig__item")).forEach(function (node) {
+      var k = node.getAttribute("data-key");
+      node.addEventListener("click", function () { switchTo(k); });
+      node.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); switchTo(k); } });
+      if (window.WorkListCurtain) window.WorkListCurtain(node);   // same hover curtain as the main list
+    });
+  }
 
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
@@ -213,6 +256,7 @@
     elGrid.innerHTML = [0, 1, 2].map(function (i) {
       return '<div class="wd__shot"><img alt="" src="' + (IMG[key + "-" + (i + 1)] || svgURI(artwork(hash(key + i), a.cols, a.tag))) + '"></div>';
     }).join("");
+    buildMore(key);   // "OTHER WORK" list (everything but this item)
   }
 
   // ---- animation (single rAF tween, reversible) ---------------------------
@@ -294,7 +338,11 @@
     var cut = hb.bottom - tb.top;                       // px from the title top down to the image bottom
     if (cut < 0) cut = 0; else if (cut > tb.height) cut = tb.height;
     elTtl.style.setProperty("--cut", cut.toFixed(1) + "px");
-    btnLogo.classList.toggle("is-dark", hb.bottom < 58);   // hero scrolled above the logo band → dark logo
+    // logo: same clip mask as the title. --logocut = px from the lit layer's top down to the image's
+    // bottom edge; the white layer is shown only above it (over the image), ink below (over the grey).
+    var lr = logoLit.getBoundingClientRect();
+    var lc = hb.bottom - lr.top;                        // out-of-range values are fine — clip clamps (all-white / all-ink)
+    logoLit.style.setProperty("--logocut", lc.toFixed(1) + "px");
   }
   function onContentScroll() { if (maskRaf) return; maskRaf = requestAnimationFrame(function () { maskRaf = 0; updateMask(); }); }
   // Position the sticky title at the image's bottom-left and size its pin range.
@@ -350,20 +398,105 @@
     for (var k = 0; k < targets.length; k++) revealIO.observe(targets[k]);
   }
 
+  // ---- magnetic scroll-snap (JS, chdartmaker-style) -----------------------
+  // After scrolling STOPS (SNAP_STOP_MS idle), if the rest position is within ±SNAP_RANGE_VH of a snap
+  // point, ease the scroll to it. Points: the hero→body boundary (page top) and the "OTHER WORK" list top.
+  // Never fires while the user keeps scrolling, and never mid-body (the ±range gate) — so it doesn't fight
+  // the title-mask scrub (which lives near scrollTop 0, far from any point) or interrupt reading.
+  // Disabled on mobile and under reduced-motion.
+  var snapTimer = 0, snapRaf = 0, snapping = false;
+  function isMobile() { return matchMedia("(max-width:560px)").matches; }
+  function snapPoints() {
+    var pts = [], vh = content.clientHeight;
+    if (pageEl) pts.push(pageEl.offsetTop);            // hero → body boundary (page aligns to the top)
+    if (elMore && elMore.offsetHeight) {              // "OTHER WORK" list start, with headroom so its label clears the fixed logo
+      pts.push(Math.max(0, elMore.offsetTop - Math.round(Math.min(120, vh * 0.12))));
+    }
+    return pts;
+  }
+  function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+  function easeScroll(target, dur) {
+    snapping = true;
+    var from = content.scrollTop, start = performance.now();
+    if (snapRaf) cancelAnimationFrame(snapRaf);
+    function step(now) {
+      var e = dur <= 0 ? 1 : (now - start) / dur; if (e > 1) e = 1;
+      content.scrollTop = from + (target - from) * easeOutCubic(e);
+      if (e < 1) snapRaf = requestAnimationFrame(step);
+      else { snapRaf = 0; snapping = false; }
+    }
+    snapRaf = requestAnimationFrame(step);
+  }
+  function cancelSnap() { if (snapRaf) { cancelAnimationFrame(snapRaf); snapRaf = 0; } snapping = false; }
+  function trySnap() {
+    if (!isOpen || snapping || reduce || isMobile()) return;
+    if (content.getAttribute("aria-hidden") !== "false") return;
+    var y = content.scrollTop, vh = content.clientHeight, range = vh * SNAP_RANGE_VH;
+    var pts = snapPoints(), best = null, bestD = Infinity;
+    for (var i = 0; i < pts.length; i++) { var d = Math.abs(pts[i] - y); if (d < bestD) { bestD = d; best = pts[i]; } }
+    if (best == null || bestD > range || bestD < 2) return;
+    var max = content.scrollHeight - vh, target = Math.max(0, Math.min(best, max));
+    if (Math.abs(target - y) < 2) return;
+    easeScroll(target, SNAP_MS);
+  }
+  function scheduleSnap() { clearTimeout(snapTimer); snapTimer = setTimeout(trySnap, SNAP_STOP_MS); }
+  function onSnapScroll() { if (snapping) return; scheduleSnap(); }         // ignore our own programmatic scroll
+  function onSnapWheel() { cancelSnap(); scheduleSnap(); }                   // a wheel during a snap cancels it
+
+  // ---- item switch (in-place content swap, short crossfade) ---------------
+  var fadeRaf = 0;
+  function fadeContent(to, dur, done) {
+    if (fadeRaf) cancelAnimationFrame(fadeRaf);
+    var from = content.style.opacity !== "" ? parseFloat(content.style.opacity)
+                                            : (parseFloat(getComputedStyle(content).opacity) || 0);
+    var start = null;
+    function step(now) {
+      if (start === null) start = now;
+      var e = dur <= 0 ? 1 : (now - start) / dur; if (e > 1) e = 1;
+      content.style.opacity = (from + (to - from) * e).toFixed(3);
+      if (e < 1) fadeRaf = requestAnimationFrame(step);
+      else { fadeRaf = 0; if (to >= 1) { content.style.opacity = ""; content.style.setProperty("--wd-content", "1"); } if (done) done(); }
+    }
+    fadeRaf = requestAnimationFrame(step);
+  }
+  function swapContent(newKey) {
+    activeKey = newKey;
+    cancelSnap(); clearTimeout(snapTimer);
+    content.scrollTop = 0;
+    populate(newKey);                                  // rebuilds body + "OTHER WORK" + images
+    layoutTitle();
+    setupReveal();                                     // re-arm the sequential reveal for the new content
+    updateMask();
+    try { history.replaceState({ wd: newKey }, "", "#work/" + newKey); } catch (e) {}   // same history depth (see doClose)
+    overlay.setAttribute("aria-label", (WORK_DETAILS[newKey].title || "Work") + " 상세");
+  }
+  function switchTo(newKey) {
+    if (!isOpen || !WORK_DETAILS[newKey] || newKey === activeKey) return;
+    if (reduce) { swapContent(newKey); return; }
+    fadeContent(0, SWAP_OUT_MS, function () { swapContent(newKey); fadeContent(1, SWAP_IN_MS); });
+  }
+
   function showPage() {
     content.setAttribute("aria-hidden", "false");
     content.scrollTop = 0;
+    content.style.opacity = "";                        // clear any lingering inline fade
     content.style.setProperty("--wd-content", "1");   // reveal (hero2 == surface image → seamless)
     surface.style.display = "none";                    // the subpage hero now stands in for the FLIP layer
     layoutTitle();
     setupReveal();                                     // arm the sequential body reveal
     content.addEventListener("scroll", onContentScroll, { passive: true });
+    content.addEventListener("scroll", onSnapScroll, { passive: true });
+    content.addEventListener("wheel", onSnapWheel, { passive: true });
     updateMask();
   }
   function hidePage() {
     content.removeEventListener("scroll", onContentScroll);
+    content.removeEventListener("scroll", onSnapScroll);
+    content.removeEventListener("wheel", onSnapWheel);
+    cancelSnap(); clearTimeout(snapTimer);
+    if (fadeRaf) { cancelAnimationFrame(fadeRaf); fadeRaf = 0; }
+    content.style.opacity = "";
     resetReveal();                                     // clear reveal state so a reopen replays it
-    btnLogo.classList.remove("is-dark");
     content.setAttribute("aria-hidden", "true");
     content.style.setProperty("--wd-content", "0");
     surface.style.display = "";                         // bring the FLIP layer back for the contract
