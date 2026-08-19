@@ -178,11 +178,10 @@
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
     '</div>' +
-    // logo close-control: an ink layer + a JS-managed pool of white layers (created on demand below). Each
-    // white layer is clipped per frame to one dark element's rect where it overlaps the logo.
-    '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">' +
-      '<span class="wd__logo-layer wd__logo-ink" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
-    '</button>';
+    // logo close-control: the button itself is mix-blend-difference (glyph-shaped inversion of the content
+    // behind it), plus a SEPARATE white element on top, JS-clipped to the hero image (crisp white). See CSS.
+    '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">HWANG HYESEON<i class="wd__logo-star">*</i></button>' +
+    '<span class="wd__logo-img" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>';
   body.appendChild(overlay);
 
   var surface = overlay.querySelector(".wd__surface"),
@@ -200,23 +199,9 @@
       elGrid  = overlay.querySelector(".wd__grid"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
-      logoInk = overlay.querySelector(".wd__logo-ink");
+      logoImg = overlay.querySelector(".wd__logo-img");
 
-  // pool of white logo layers (one per dark element overlapping the logo); created lazily, reused across frames
-  var LOGO_HIDDEN = "inset(0 0 100% 0)";   // clip that shows nothing
-  var litPool = [];
-  function litLayer(i) {
-    while (litPool.length <= i) {
-      var s = document.createElement("span");
-      s.className = "wd__logo-layer wd__logo-lit";
-      s.setAttribute("aria-hidden", "true");
-      s.innerHTML = 'HWANG HYESEON<i class="wd__logo-star">*</i>';
-      s.style.clipPath = LOGO_HIDDEN;
-      btnLogo.appendChild(s);
-      litPool.push(s);
-    }
-    return litPool[i];
-  }
+  var LOGO_HIDDEN = "inset(0 0 100% 0)";   // image clip that shows nothing (logo reads via the blend button)
 
   // kicker + sub are reused elements (not rebuilt as tags) → give them the mask class once
   elKick.classList.add("wd-rise");
@@ -251,9 +236,7 @@
       node.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); switchTo(k, null, node); } });   // no coords → row centre
       if (window.WorkListCurtain) window.WorkListCurtain(node);   // same hover curtain as the main list
     });
-    moreEns = [].slice.call(elMore.querySelectorAll(".wbig__en"));   // big-text targets for the logo mask
   }
-  var moreEns = [];
 
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
@@ -354,7 +337,7 @@
     var cut = hb.bottom - tb.top;                       // px from the title top down to the image bottom
     if (cut < 0) cut = 0; else if (cut > tb.height) cut = tb.height;
     elTtl.style.setProperty("--cut", cut.toFixed(1) + "px");
-    updateLogoMask(hb, tb);
+    updateLogoMask(hb);
   }
   // Logo mask: whiten the part of the logo that overlaps any DARK element behind it. For each target we
   // intersect its on-screen rect with the logo box (2D — so a short list title covering only the left of
@@ -364,45 +347,15 @@
   //   · OTHER WORK list big text (.wbig__en) — the case in the report; glyph band (Korean fills more of
   //     the box than Latin caps → a smaller ascent inset)
   // rAF-throttled via onContentScroll; off-screen targets are skipped before the intersection.
-  var TTL_ASCENT = 0.23, EN_ASCENT = 0.12;   // fraction of the text box above the glyph tops (ascent gap)
-  // clip = the 2D intersection of a target rect [ix0,iy0,ix1,iy1] with the logo box [L,T,W,H], as an inset()
-  // (top right bottom left). BOTH axes matter: a short list title only covers the LEFT of the logo, so only
-  // that part must go white — hence the left/right insets, not just top/bottom.
-  function rectClip(ix0, iy0, ix1, iy1, L, T, W, H) {
-    var x0 = ix0 > L ? ix0 : L, y0 = iy0 > T ? iy0 : T, x1 = ix1 < L + W ? ix1 : L + W, y1 = iy1 < T + H ? iy1 : T + H;
-    if (x1 - x0 <= 0.5 || y1 - y0 <= 0.5) return null;   // no real overlap
-    return "inset(" + (y0 - T).toFixed(1) + "px " + (L + W - x1).toFixed(1) + "px " + (T + H - y1).toFixed(1) + "px " + (x0 - L).toFixed(1) + "px)";
+  // The body/title/list inversion is handled per-pixel by the .wd__logo button's own mix-blend-mode (CSS,
+  // no JS). All JS does is clip the crisp-white .wd__logo-img element to the hero image's rectangle: the
+  // image is full-width, so the clip is a vertical band from the logo top down to the image's bottom edge.
+  function updateLogoMask(hb) {
+    var b = btnLogo.getBoundingClientRect(), lc = hb.bottom - b.top;
+    logoImg.style.clipPath = lc <= 0 ? LOGO_HIDDEN : lc >= b.height ? "inset(0)" : "inset(0 0 " + (b.height - lc).toFixed(1) + "px 0)";
   }
-  // The TIGHT text rectangle (glyph extent), not the element box: .wbig__en / .wd__ttl are block/flex boxes
-  // that stretch to full width, so their getBoundingClientRect is full-width even when the text is short —
-  // which is exactly why the whole logo used to invert. A Range over the text content measures the glyphs.
-  var logoRange = document.createRange();
-  function textRect(el) {
-    var node = el.querySelector(".wr__copy") || el;   // curtain builds a .wr__copy holding the text; else the element
-    try { logoRange.selectNodeContents(node); var r = logoRange.getBoundingClientRect(); if (r.width || r.height) return r; } catch (e) {}
-    return el.getBoundingClientRect();                 // fallback
-  }
-  function updateLogoMask(hb, tb) {
-    var b = logoInk.getBoundingClientRect(), L = b.left, T = b.top, W = b.width, H = b.height;
-    var clips = [], c, r;
-    c = rectClip(L, T - 1, L + W, hb.bottom, L, T, W, H); if (c) clips.push(c);   // hero image = full width (whole logo) above its bottom edge
-    r = textRect(elTtl);                                                          // subpage title — tight glyph rect
-    c = rectClip(r.left, r.top + r.height * TTL_ASCENT, r.right, r.bottom, L, T, W, H); if (c) clips.push(c);
-    for (var i = 0; i < moreEns.length; i++) {                                    // OTHER WORK list big text
-      var box = moreEns[i].getBoundingClientRect();                              // cheap vertical cull first (box height == the text line)
-      if (box.bottom <= T || box.top >= T + H) continue;
-      r = textRect(moreEns[i]);                                                   // tight glyph rect (correct horizontal extent)
-      if (r.right <= L || r.left >= L + W) continue;                             // text is left/right of the logo → no overlap
-      c = rectClip(r.left, r.top + r.height * EN_ASCENT, r.right, r.bottom, L, T, W, H); if (c) clips.push(c);
-    }
-    for (var k = 0; k < clips.length; k++) litLayer(k).style.clipPath = clips[k];
-    for (var j = clips.length; j < litPool.length; j++) litPool[j].style.clipPath = LOGO_HIDDEN;   // hide unused
-  }
-  // Force the logo fully white (used while the expand surface — a dark new image — covers the screen).
-  function logoWhite() {
-    litLayer(0).style.clipPath = "inset(0)";
-    for (var j = 1; j < litPool.length; j++) litPool[j].style.clipPath = LOGO_HIDDEN;
-  }
+  // Force the image layer fully white — used while the expand surface (a dark new image) covers the screen.
+  function logoWhite() { logoImg.style.clipPath = "inset(0)"; }
   function onContentScroll() { if (maskRaf) return; maskRaf = requestAnimationFrame(function () { maskRaf = 0; updateMask(); }); }
   // Position the sticky title at the image's bottom-left and size its pin range.
   //  · marginTop pulls the title UP to overlap the image's bottom edge (visible over the hero at scroll 0),
@@ -554,7 +507,7 @@
   // Browser Back/Forward (and keyboard activation) have no on-page point, so they expand from the viewport's
   // TOP-LEFT CORNER — a fixed nav anchor, independent of the logo's text width. A tiny inset off the exact
   // (0,0) corner keeps the origin from sitting on the very edge, but it's not tied to any element's size.
-  var NAV_ORIGIN = 14;   // px inset from the top-left corner for the expand origin
+  var NAV_ORIGIN = 0;    // expand origin = the exact top-left viewport corner (0,0)
   function navOrigin() { return { x: NAV_ORIGIN, y: NAV_ORIGIN }; }
 
   function showPage() {

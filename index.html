@@ -254,20 +254,27 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px)}
 .wd__inner{max-width:1200px;margin:0 auto}
 /* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
-   font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay
-   is open. Any DARK element passing behind it (hero image, big title, the OTHER WORK list text) turns the
-   overlapping part white: an ink layer underneath + a POOL of white layers on top, each clipped (by JS,
-   per frame) to one dark element's on-screen rect overlapping the logo. inline-grid stacks every layer in
-   one cell so they are pixel-aligned (same font/tracking/size, same padding). */
-.wd__logo{display:inline-grid;position:fixed;top:0;left:0;z-index:2;margin:0;padding:18px var(--gutter);
-  font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.18em;line-height:1.7;text-transform:uppercase;   /* line-height:1.7 = body's, which .bar inherits → same baseline */
-  background:transparent;border:0;cursor:pointer;opacity:.92;transition:opacity .25s}
+   font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay is
+   open. It must read over the grey page, the big black title/list text (glyph-shaped, not a coarse rect),
+   AND the hero image. Two pixel-aligned fixed elements:
+     · .wd__logo — the button itself carries mix-blend-mode:difference, so it inverts the content behind it
+       PER PIXEL, glyph-shaped by construction: over the grey page it reads dark, over the big black strokes
+       it turns light, and in the GAPS between those letters (which are grey) it stays dark. (The blend has
+       to sit on the fixed element itself — a blended child of a fixed/opacity ancestor is isolated and
+       can't see the page.) The colour is TUNED, not pure white: difference gives |backdrop − colour|, so a
+       colour of (page-grey + ink) makes the result over the grey page come out to the ink colour exactly.
+       #E1E1E1 ≈ --work-cell + --work-ink.
+     · .wd__logo-img — a SEPARATE white element on top (not a child, so the blend doesn't touch it),
+       JS-clipped to the hero image's rectangle. The image is full-width and colourful, and blend would
+       tint the white there, so over the image the logo keeps an exact-white rect clip. */
+.wd__logo,.wd__logo-img{position:fixed;top:0;left:0;margin:0;padding:18px var(--gutter);text-align:left;white-space:nowrap;
+  font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.18em;line-height:1.7;text-transform:uppercase}   /* line-height:1.7 = body's, which .bar inherits → same baseline; shared so the two stay registered */
+.wd__logo{z-index:2;background:transparent;border:0;cursor:pointer;opacity:.92;transition:opacity .25s;
+  color:#E1E1E1;mix-blend-mode:difference}
 .wd__logo:hover,.wd__logo:focus-visible{opacity:1}
-.wd__logo-layer{grid-area:1/1;white-space:nowrap;pointer-events:none}   /* all copies share one grid cell → pixel-registered */
-.wd__logo-ink{color:var(--work-ink)}                                    /* underneath: ink (shows over the light page) */
-.wd__logo-lit{color:#fff;clip-path:inset(0 0 100% 0)}                   /* white; JS sets each pooled layer's clip to a dark element's overlap rect (default hidden) */
-.wd__logo-star{font-style:normal;color:var(--hi)}                       /* accent star — same in every layer, so it stays accent through any cut */
-@media(max-width:560px){.wd__logo{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
+.wd__logo-img{z-index:3;color:#fff;clip-path:inset(0 0 100% 0);pointer-events:none}   /* crisp white over the hero image only (JS sets the clip; default hidden) */
+.wd__logo-star{font-style:normal}   /* inherits the layer colour (inverts with the text over dark, white over the image) */
+@media(max-width:560px){.wd__logo,.wd__logo-img{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
 .wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 14px}
 .wd__sub{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(15px,1.6vw,20px);color:var(--work-ink);margin:0 0 clamp(30px,6vh,60px);max-width:52ch}
 .wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px)}
