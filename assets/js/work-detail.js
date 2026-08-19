@@ -46,8 +46,6 @@
   var SNAP_STOP_MS   = 150;   // idle time after the last scroll before snapping (scroll-stop detection)
   var SNAP_RANGE_VH  = 0.25;  // only snap when the stop is within ±25% of the viewport height of a point
   var SNAP_MS        = 560;   // ease-to-point duration (ms)
-  // item switch (clicking "OTHER WORK" swaps content in place, no expand):
-  var SWAP_OUT_MS = 170, SWAP_IN_MS = 260;   // crossfade out / in (ms)
   // -------------------------------------------------------------------------
 
   // ---- content ------------------------------------------------------------
@@ -180,13 +178,10 @@
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
     '</div>' +
-    // logo close-control: pixel-aligned layers — ink underneath, plus a white layer per dark backdrop that
-    // passes behind it (the hero image, and the big title as it scrolls up). Each white layer is clipped to
-    // its backdrop's band, so the glyphs read white over dark things and ink over the light page.
+    // logo close-control: an ink layer + a JS-managed pool of white layers (created on demand below). Each
+    // white layer is clipped per frame to one dark element's rect where it overlaps the logo.
     '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">' +
       '<span class="wd__logo-layer wd__logo-ink" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
-      '<span class="wd__logo-layer wd__logo-lit wd__logo-lit--img" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
-      '<span class="wd__logo-layer wd__logo-lit wd__logo-lit--ttl" aria-hidden="true">HWANG HYESEON<i class="wd__logo-star">*</i></span>' +
     '</button>';
   body.appendChild(overlay);
 
@@ -205,8 +200,23 @@
       elGrid  = overlay.querySelector(".wd__grid"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
-      logoImg = overlay.querySelector(".wd__logo-lit--img"),
-      logoTtl = overlay.querySelector(".wd__logo-lit--ttl");
+      logoInk = overlay.querySelector(".wd__logo-ink");
+
+  // pool of white logo layers (one per dark element overlapping the logo); created lazily, reused across frames
+  var LOGO_HIDDEN = "inset(0 0 100% 0)";   // clip that shows nothing
+  var litPool = [];
+  function litLayer(i) {
+    while (litPool.length <= i) {
+      var s = document.createElement("span");
+      s.className = "wd__logo-layer wd__logo-lit";
+      s.setAttribute("aria-hidden", "true");
+      s.innerHTML = 'HWANG HYESEON<i class="wd__logo-star">*</i>';
+      s.style.clipPath = LOGO_HIDDEN;
+      btnLogo.appendChild(s);
+      litPool.push(s);
+    }
+    return litPool[i];
+  }
 
   // kicker + sub are reused elements (not rebuilt as tags) → give them the mask class once
   elKick.classList.add("wd-rise");
@@ -241,7 +251,9 @@
       node.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); switchTo(k, null, node); } });   // no coords → row centre
       if (window.WorkListCurtain) window.WorkListCurtain(node);   // same hover curtain as the main list
     });
+    moreEns = [].slice.call(elMore.querySelectorAll(".wbig__en"));   // big-text targets for the logo mask
   }
+  var moreEns = [];
 
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
@@ -344,27 +356,38 @@
     elTtl.style.setProperty("--cut", cut.toFixed(1) + "px");
     updateLogoMask(hb, tb);
   }
-  // Logo mask: one white layer per DARK backdrop that can pass behind the fixed logo.
-  //  · image: white above the image's bottom edge (--logocut = px from the layer top down to hb.bottom).
-  //  · title: white across the title box's vertical band while it scrolls up through the logo (the small
-  //    body/list text never reaches this top band in this layout, so those two cover every real case).
-  // Out-of-range values are fine — clip-path clamps them to fully-shown / fully-hidden.
-  var TTL_ASCENT = 0.23;   // fraction of the title box above the uppercase cap line (ascent gap to skip)
+  // Logo mask: whiten the part of the logo that overlaps any DARK element behind it. For each target we
+  // intersect its on-screen rect with the logo box (2D — so a short list title covering only the left of
+  // the logo whitens only that part) and clip one pooled white layer to that overlap. Targets:
+  //   · hero image (.wd__hero2) — a dark region filling the width from the top down to its bottom edge
+  //   · subpage title (.wd__ttl) — big uppercase, cap-top→baseline glyph band
+  //   · OTHER WORK list big text (.wbig__en) — the case in the report; glyph band (Korean fills more of
+  //     the box than Latin caps → a smaller ascent inset)
+  // rAF-throttled via onContentScroll; off-screen targets are skipped before the intersection.
+  var TTL_ASCENT = 0.23, EN_ASCENT = 0.12;   // fraction of the text box above the glyph tops (ascent gap)
+  function rectClip(ix0, iy0, ix1, iy1, L, T, W, H) {
+    var x0 = ix0 > L ? ix0 : L, y0 = iy0 > T ? iy0 : T, x1 = ix1 < L + W ? ix1 : L + W, y1 = iy1 < T + H ? iy1 : T + H;
+    if (x1 - x0 <= 0.5 || y1 - y0 <= 0.5) return null;   // no real overlap
+    return "inset(" + (y0 - T).toFixed(1) + "px " + (L + W - x1).toFixed(1) + "px " + (T + H - y1).toFixed(1) + "px " + (x0 - L).toFixed(1) + "px)";
+  }
   function updateLogoMask(hb, tb) {
-    var lr = logoImg.getBoundingClientRect(), H = lr.height;
-    logoImg.style.setProperty("--logocut", (hb.bottom - lr.top).toFixed(1) + "px");
-    // Use the GLYPH band (cap-top → baseline), not the full line box: the box includes the font's ascent
-    // space above the caps, so a raw box-clip would whiten the logo while it's actually over the grey gap
-    // above the letters. Uppercase baseline ≈ box bottom, cap-top ≈ box top + TTL_ASCENT·height.
-    var gTop = tb.top + tb.height * TTL_ASCENT, gBot = tb.bottom;
-    var top = gTop - lr.top, bot = gBot - lr.top;          // glyph band in layer-local px
-    top = top < 0 ? 0 : top > H ? H : top;
-    bot = bot < 0 ? 0 : bot > H ? H : bot;
-    if (bot - top > 0.5) { logoTtl.style.setProperty("--tcutT", top.toFixed(1) + "px"); logoTtl.style.setProperty("--tcutB", (H - bot).toFixed(1) + "px"); }
-    else { logoTtl.style.setProperty("--tcutT", "100%"); logoTtl.style.setProperty("--tcutB", "0"); }   // no overlap → title layer hidden
+    var b = logoInk.getBoundingClientRect(), L = b.left, T = b.top, W = b.width, H = b.height;
+    var clips = [], c;
+    c = rectClip(L, T - 1, L + W, hb.bottom, L, T, W, H); if (c) clips.push(c);                                  // hero image (full width above its bottom edge)
+    c = rectClip(tb.left, tb.top + tb.height * TTL_ASCENT, tb.right, tb.bottom, L, T, W, H); if (c) clips.push(c); // subpage title glyphs
+    for (var i = 0; i < moreEns.length; i++) {                                                                    // OTHER WORK list big text
+      var r = moreEns[i].getBoundingClientRect();
+      if (r.bottom <= T || r.top >= T + H || r.right <= L || r.left >= L + W) continue;   // off the logo → skip
+      c = rectClip(r.left, r.top + r.height * EN_ASCENT, r.right, r.bottom, L, T, W, H); if (c) clips.push(c);
+    }
+    for (var k = 0; k < clips.length; k++) litLayer(k).style.clipPath = clips[k];
+    for (var j = clips.length; j < litPool.length; j++) litPool[j].style.clipPath = LOGO_HIDDEN;   // hide unused
   }
   // Force the logo fully white (used while the expand surface — a dark new image — covers the screen).
-  function logoWhite() { logoImg.style.setProperty("--logocut", "100%"); logoTtl.style.setProperty("--tcutT", "100%"); logoTtl.style.setProperty("--tcutB", "0"); }
+  function logoWhite() {
+    litLayer(0).style.clipPath = "inset(0)";
+    for (var j = 1; j < litPool.length; j++) litPool[j].style.clipPath = LOGO_HIDDEN;
+  }
   function onContentScroll() { if (maskRaf) return; maskRaf = requestAnimationFrame(function () { maskRaf = 0; updateMask(); }); }
   // Position the sticky title at the image's bottom-left and size its pin range.
   //  · marginTop pulls the title UP to overlap the image's bottom edge (visible over the hero at scroll 0),
@@ -464,24 +487,9 @@
   function onSnapScroll() { if (snapping) return; scheduleSnap(); }         // ignore our own programmatic scroll
   function onSnapWheel() { cancelSnap(); scheduleSnap(); }                   // a wheel during a snap cancels it
 
-  // ---- item switch (in-place content swap, short crossfade) ---------------
-  var fadeRaf = 0;
-  function fadeContent(to, dur, done) {
-    if (fadeRaf) cancelAnimationFrame(fadeRaf);
-    var from = content.style.opacity !== "" ? parseFloat(content.style.opacity)
-                                            : (parseFloat(getComputedStyle(content).opacity) || 0);
-    var start = null;
-    function step(now) {
-      if (start === null) start = now;
-      var e = dur <= 0 ? 1 : (now - start) / dur; if (e > 1) e = 1;
-      content.style.opacity = (from + (to - from) * e).toFixed(3);
-      if (e < 1) fadeRaf = requestAnimationFrame(step);
-      else { fadeRaf = 0; if (to >= 1) { content.style.opacity = ""; content.style.setProperty("--wd-content", "1"); } if (done) done(); }
-    }
-    fadeRaf = requestAnimationFrame(step);
-  }
+  // ---- item switch (FLIP expand, in place) --------------------------------
   // Swap the underlying subpage to a new item (scroll to top, re-arm mask + reveal + snap). History-agnostic
-  // — the caller decides push (forward click) vs pop (Back). Used by the FLIP switch and by popstate.
+  // — the caller decides push (forward click) vs pop (Back). Used by flipSwap.
   function swapContent(newKey) {
     activeKey = newKey;
     cancelSnap(); clearTimeout(snapTimer);
@@ -492,27 +500,27 @@
     updateMask();
     overlay.setAttribute("aria-label", (WORK_DETAILS[newKey].title || "Work") + " 상세");
   }
-  // Forward navigation (clicking an "OTHER WORK" row): REUSE the main FLIP expand (applyFrame/tweenTo/
-  // EASE_OPEN, click-point origin, radius correction) exactly as open() does. The subpage is covered by
-  // .wd__content (fixed) with .wd__surface display:none, so to bring the expand layer back we: point the
-  // surface at the NEW item's image, raise it above the content (z-index 1, still under the logo z-2),
-  // scale it 0→1 from the click point, and only THEN swap the content underneath and hide the surface —
-  // the new hero2 image matches the surface, so the hand-off is seamless (identical to the initial open).
-  function switchTo(newKey, ev, srcEl) {
-    if (!isOpen || switching || !WORK_DETAILS[newKey] || newKey === activeKey) return;
-    cancelSnap(); clearTimeout(snapTimer);           // don't let an in-flight magnetic snap run during the expand
-    if (reduce) { pushHist(newKey); swapContent(newKey); return; }   // no expand under reduced-motion
+  // The shared FLIP expand used for EVERY item change — clicking a row AND browser Back/Forward. REUSES the
+  // main expand (applyFrame/tweenTo/EASE_OPEN, radius correction) exactly as open() does. The subpage is
+  // covered by .wd__content (fixed) with .wd__surface display:none, so we: point the surface at the NEW
+  // item's image, raise it above the content (z-index 1, still under the logo z-2), scale it 0→1 from the
+  // origin, then swap the content underneath and hide the surface — the new hero2 image matches, so the
+  // hand-off is seamless (identical to the initial open). `doPush` distinguishes a forward click (push a new
+  // history entry) from a Back/Forward nav (history already moved). Calling it again mid-expand (rapid Back)
+  // just retargets: tweenTo cancels the in-flight tween, so only the last one's swap runs → ends correct.
+  function flipSwap(newKey, oxp, oyp, doPush) {
+    cancelSnap(); clearTimeout(snapTimer);
+    if (reduce) { if (doPush) pushHist(newKey); swapContent(newKey); return; }   // no expand under reduced-motion
     switching = true;
-    if (ev && typeof ev.clientX === "number" && (ev.clientX || ev.clientY)) { ox = ev.clientX; oy = ev.clientY; }
-    else if (srcEl) { var r = srcEl.getBoundingClientRect(); ox = r.left + r.width / 2; oy = r.top + r.height / 2; }
-    hero.style.backgroundImage = "url('" + imageFor(newKey) + "')";   // the image that expands = the new item's
+    ox = oxp; oy = oyp;
+    hero.style.backgroundImage = "url('" + imageFor(newKey) + "')";   // the image that expands = the target item's
     surface.style.transformOrigin = ox + "px " + oy + "px";
     p = 0; applyFrame(0);
     surface.style.display = "";
     surface.style.zIndex = "1";                        // above the current content, below the logo
     logoWhite();                                       // the expanding dark image covers the screen → logo white
     tweenTo(1, OPEN_MS, EASE_OPEN, function () {
-      pushHist(newKey);                                // one history entry per item (see popstate → Back = prev item)
+      if (doPush) pushHist(newKey);
       swapContent(newKey);                             // repopulate underneath now that the surface hides it
       surface.style.display = "none";
       surface.style.zIndex = "";
@@ -520,16 +528,24 @@
       switching = false;
     });
   }
-  // Back/forward history navigation between items → a quick crossfade (no expand; there's no click point).
-  function crossfadeTo(newKey) {
-    if (reduce) { swapContent(newKey); return; }
-    fadeContent(0, SWAP_OUT_MS, function () { swapContent(newKey); fadeContent(1, SWAP_IN_MS); });
+  // Forward navigation — clicking an OTHER WORK row: expand from the CLICK point (direct manipulation; the
+  // cursor/finger IS the origin). Keyboard activation (no coords) → the row centre.
+  function switchTo(newKey, ev, srcEl) {
+    if (!isOpen || switching || !WORK_DETAILS[newKey] || newKey === activeKey) return;
+    var oxp, oyp;
+    if (ev && typeof ev.clientX === "number" && (ev.clientX || ev.clientY)) { oxp = ev.clientX; oyp = ev.clientY; }
+    else if (srcEl) { var r = srcEl.getBoundingClientRect(); oxp = r.left + r.width / 2; oyp = r.top + r.height / 2; }
+    else { oxp = logoOrigin().x; oyp = logoOrigin().y; }
+    flipSwap(newKey, oxp, oyp, true);
   }
+  // Browser Back/Forward have no on-page point, so BOTH expand from the logo (top-left) — the fixed nav
+  // anchor where "navigation" reads as coming from. Same origin for both directions: a Back-vs-Forward
+  // left/right split would be arbitrary and unreadable; a consistent nav anchor is clearer.
+  function logoOrigin() { var lb = btnLogo.getBoundingClientRect(); return { x: lb.left + lb.width / 2, y: lb.top + lb.height / 2 }; }
 
   function showPage() {
     content.setAttribute("aria-hidden", "false");
     content.scrollTop = 0;
-    content.style.opacity = "";                        // clear any lingering inline fade
     content.style.setProperty("--wd-content", "1");   // reveal (hero2 == surface image → seamless)
     surface.style.display = "none";                    // the subpage hero now stands in for the FLIP layer
     layoutTitle();
@@ -544,8 +560,6 @@
     content.removeEventListener("scroll", onSnapScroll);
     content.removeEventListener("wheel", onSnapWheel);
     cancelSnap(); clearTimeout(snapTimer);
-    if (fadeRaf) { cancelAnimationFrame(fadeRaf); fadeRaf = 0; }
-    content.style.opacity = "";
     resetReveal();                                     // clear reveal state so a reopen replays it
     content.setAttribute("aria-hidden", "true");
     content.style.setProperty("--wd-content", "0");
@@ -588,6 +602,7 @@
     try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (e) {}
     curDepth = 0; pushHist(key);                    // first overlay history entry (depth 1)
     try { btnLogo.focus({ preventScroll: true }); } catch (e) { btnLogo.focus(); }   // focus into the dialog (logo = close control)
+    logoWhite();                                    // white over the expanding dark image (updateMask corrects it in showPage)
     if (reduce) { p = 1; applyFrame(1); showPage(); }
     else tweenTo(1, OPEN_MS, EASE_OPEN, showPage);   // reveal the scrollable subpage once the expand lands
   }
@@ -619,14 +634,17 @@
     else tweenTo(0, CLOSE_MS, EASE_CLOSE, finish);
   }
 
-  // Browser Back/Forward: land on a previous/next item → crossfade to it; land past the overlay → close.
+  // Browser Back/Forward: land on a previous/next item → FLIP-expand to it from the logo; land past the
+  // overlay → close. NOTE: the close branch (doClose → unlockScroll) still owns the window scroll-restore
+  // (scrollRestoration + next-frame re-assert); the item-nav branch only animates content.scrollTop, never
+  // the locked window scroll, so the expand can't disturb that restore.
   window.addEventListener("popstate", function (e) {
     if (!isOpen) return;
     if (closingHist) { closingHist = false; doClose(); return; }
     var st = e.state;
     if (st && st.wd && WORK_DETAILS[st.wd]) {
       curDepth = st.d || curDepth;
-      if (st.wd !== activeKey) crossfadeTo(st.wd);
+      if (st.wd !== activeKey) { var o = logoOrigin(); flipSwap(st.wd, o.x, o.y, false); }   // no push — history already moved
     } else {
       doClose();
     }
