@@ -226,7 +226,8 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* the detail subpage — revealed after the expand completes; scrolls, grey (var --work-cell) below the
    hero image, dark text (var --work-ink) on the grey. */
 .wd__content{position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-  opacity:var(--wd-content,0);background:var(--work-cell);color:var(--work-ink)}
+  opacity:var(--wd-content,0);background:var(--work-cell);color:var(--work-ink);
+  scroll-snap-type:y proximity}   /* proximity(≠mandatory): 본문 시작 근처에서만 살짝 붙고, 본문 읽기는 방해 안 함 */
 .wd__content[aria-hidden="true"]{pointer-events:none}
 /* stage = hero image + sticky title. It is the title's sticky CONTAINING BLOCK, so its height (set by JS
    to 100svh + titleHeight) bounds how long the title stays pinned — it releases just after the image has
@@ -248,7 +249,10 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   background-image:linear-gradient(180deg,#fff 0,#fff var(--cut,100%),var(--work-ink) var(--cut,100%),var(--work-ink) 100%);
   -webkit-background-clip:text;background-clip:text}
 /* grey content page below the hero */
-.wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px)}
+/* 스냅 지점은 본문(.wd__page) 시작 '한 곳'만. 히어로는 스냅 타깃에서 제외 — 둘 다 걸면 타이틀
+   스윕 구간 어디서 멈춰도 proximity가 더 가까운 히어로 상단(0)으로 되끌어당겨 마스크 스크럽과 충돌함
+   (검증됨). 본문 시작만 타깃으로 두면 스윕 구간엔 가까운 스냅점이 없어 자유 스크롤 → 마스크와 충돌 없음. */
+.wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px);scroll-snap-align:start}
 .wd__inner{max-width:1200px;margin:0 auto}
 /* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
    font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay
@@ -266,7 +270,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 14px}
 .wd__sub{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(15px,1.6vw,20px);color:var(--work-ink);margin:0 0 clamp(30px,6vh,60px);max-width:52ch}
 .wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px)}
-.wd__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:56ch}
+.wd__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:500;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:56ch}   /* 강조(리드 문단) = Pretendard Medium */
 .wd__p{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.8;color:color-mix(in srgb,var(--work-ink) 72%,transparent);margin:0 0 16px;max-width:60ch}
 .wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
 .wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 60%,transparent);
@@ -274,10 +278,21 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__grid{margin-top:clamp(40px,7vh,80px);display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,18px)}
 .wd__shot{aspect-ratio:4/3;border-radius:4px;overflow:hidden;background:#bfc5cc}
 .wd__shot img{width:100%;height:100%;object-fit:cover;display:block}
+/* sequential reveal mask (about-lines-style curtain roll): each body element is an overflow:hidden mask
+   whose inner block starts pushed down and rolls up into view once. JS (IntersectionObserver, root=.wd__content)
+   adds .is-in with a per-element stagger delay. Duration/easing from --wd-rise-dur (set by JS). Only under
+   no-preference → reduced-motion shows everything instantly (the transform rules simply don't apply). */
+@media(prefers-reduced-motion:no-preference){
+  .wd-rise{overflow:hidden}
+  .wd-rise__i{display:block;transform:translateY(112%);transition:transform var(--wd-rise-dur,520ms) cubic-bezier(.22,.7,.2,1)}
+  .wd-rise.is-in .wd-rise__i{transform:translateY(0)}
+}
 @media(max-width:820px){
   .wd__body{grid-template-columns:1fr;gap:34px}
   .wd__grid{grid-template-columns:1fr}
 }
+/* mobile: snap can feel jerky with touch momentum → turn it off on small screens */
+@media(max-width:560px){.wd__content{scroll-snap-type:none}}
 @media(prefers-reduced-motion:reduce){.wd__logo{transition:none}}
 
 

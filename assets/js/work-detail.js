@@ -39,6 +39,9 @@
   var EASE_OPEN  = cubicBezier(0.65, 0, 0.85, 0.2);   // slow start → sharp finish (ease-in): emerges gently, snaps to full
   var EASE_CLOSE = cubicBezier(0.15, 0.8, 0.35, 1);   // reverse of open: quick release, decelerates into the point
   var RADIUS_PX  = 14;   // on-screen corner radius at the smallest scale; interpolates to 0 when full (÷scale corrected)
+  // subpage body reveal (sequential curtain-roll mask on scroll):
+  var RISE_MS    = 520;  // per-element roll-up duration (ms) — ease-out, 400–600 range
+  var RISE_STAGGER = 90; // delay between elements that enter together (ms), top→down, 80–120 range
   // -------------------------------------------------------------------------
 
   // ---- content ------------------------------------------------------------
@@ -188,15 +191,21 @@
       elGrid  = overlay.querySelector(".wd__grid"),
       btnLogo = overlay.querySelector(".wd__logo");
 
+  // kicker + sub are reused elements (not rebuilt as tags) → give them the mask class once
+  elKick.classList.add("wd-rise");
+  elSub.classList.add("wd-rise");
+  function riseInner(text) { return '<span class="wd-rise__i">' + esc(text) + "</span>"; }
+
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
     var img = imageFor(key);
-    elTtl.textContent = d.en || d.title || "";     // subpage heading is English (uppercased via CSS)
-    elKick.textContent = d.kicker || "";
-    elSub.textContent = d.sub || "";
-    elText.innerHTML = (d.lead ? '<p class="wd__lead">' + esc(d.lead) + "</p>" : "") +
-      (d.paras || []).map(function (p) { return '<p class="wd__p">' + esc(p) + "</p>"; }).join("");
-    elCaps.innerHTML = (d.caps || []).map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("");
+    // each reveal target = a .wd-rise mask wrapping a .wd-rise__i inner block that rolls up on scroll (see setupReveal)
+    elTtl.textContent = d.en || d.title || "";     // subpage heading is English (uppercased via CSS); NOT masked
+    elKick.innerHTML = riseInner(d.kicker || "");
+    elSub.innerHTML = riseInner(d.sub || "");
+    elText.innerHTML = (d.lead ? '<p class="wd__lead wd-rise">' + riseInner(d.lead) + "</p>" : "") +
+      (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
+    elCaps.innerHTML = (d.caps || []).map(function (c) { return '<li class="wd-rise">' + riseInner(c) + "</li>"; }).join("");
     hero.style.backgroundImage = "url('" + img + "')";      // FLIP surface image (the one that expands)
     hero2.style.backgroundImage = "url('" + img + "')";     // subpage hero (same image → seamless hand-off)
     // grid: three deterministic accent variations of the same artwork (real shots override via IMG later)
@@ -303,17 +312,57 @@
     titles.style.top = (vh - th - gap) + "px";
     stage.style.minHeight = (vh + th + gap) + "px";
   }
+  // ---- sequential body reveal (curtain-roll mask, one-shot per open) -------
+  // Each .wd-rise element rolls its inner block up as it enters the scrollport. The scrollport is
+  // .wd__content (position:fixed) — NOT the window — so the IntersectionObserver root MUST be content,
+  // or nothing would ever intersect. Elements that enter in the same callback are staggered top→down so
+  // a screenful of paragraphs doesn't burst at once. One-shot: unobserve on reveal (no replay on re-entry).
+  var revealIO = null;
+  function resetReveal() {
+    if (revealIO) { revealIO.disconnect(); revealIO = null; }
+    var els = content.querySelectorAll(".wd-rise");
+    for (var i = 0; i < els.length; i++) { els[i].classList.remove("is-in"); els[i].style.transitionDelay = ""; }
+  }
+  function setupReveal() {
+    resetReveal();
+    content.style.setProperty("--wd-rise-dur", RISE_MS + "ms");
+    if (reduce || !("IntersectionObserver" in window)) {   // no motion → show everything immediately
+      var all = content.querySelectorAll(".wd-rise");
+      for (var i = 0; i < all.length; i++) all[i].classList.add("is-in");
+      return;
+    }
+    revealIO = new IntersectionObserver(function (entries) {
+      var fresh = [];
+      for (var i = 0; i < entries.length; i++) {
+        var e = entries[i];
+        if (e.isIntersecting && !e.target.classList.contains("is-in")) fresh.push(e);
+      }
+      if (!fresh.length) return;
+      fresh.sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; });
+      for (var j = 0; j < fresh.length; j++) {
+        var el = fresh[j].target;
+        el.style.transitionDelay = (j * RISE_STAGGER) + "ms";
+        el.classList.add("is-in");
+        revealIO.unobserve(el);
+      }
+    }, { root: content, rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    var targets = content.querySelectorAll(".wd-rise");
+    for (var k = 0; k < targets.length; k++) revealIO.observe(targets[k]);
+  }
+
   function showPage() {
     content.setAttribute("aria-hidden", "false");
     content.scrollTop = 0;
     content.style.setProperty("--wd-content", "1");   // reveal (hero2 == surface image → seamless)
     surface.style.display = "none";                    // the subpage hero now stands in for the FLIP layer
     layoutTitle();
+    setupReveal();                                     // arm the sequential body reveal
     content.addEventListener("scroll", onContentScroll, { passive: true });
     updateMask();
   }
   function hidePage() {
     content.removeEventListener("scroll", onContentScroll);
+    resetReveal();                                     // clear reveal state so a reopen replays it
     btnLogo.classList.remove("is-dark");
     content.setAttribute("aria-hidden", "true");
     content.style.setProperty("--wd-content", "0");
