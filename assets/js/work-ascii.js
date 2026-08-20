@@ -106,8 +106,8 @@
     return out;
   }
   function contactKeep() {
-    var out = []; if (bar) out.push(pad(bar.getBoundingClientRect()));
-    if (contact) [".wish__lead", ".email", ".clinks"].forEach(function (sel) { var el = contact.querySelector(sel); if (el) out.push(pad(el.getBoundingClientRect())); });
+    var out = []; if (bar) out.push(pad(bar.getBoundingClientRect()));   // .email/.clinks were removed — only the
+    if (contact) [".wish__lead"].forEach(function (sel) { var el = contact.querySelector(sel); if (el) out.push(pad(el.getBoundingClientRect())); });   // left statement remains
     return out;
   }
 

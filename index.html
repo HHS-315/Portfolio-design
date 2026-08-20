@@ -388,19 +388,11 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* closing statement — Pretendard Bold, large, left, on the dark CONTACT bg (--bone). .reveal drives the
    fade-up (dandelion.js IntersectionObserver). word-break:keep-all breaks Korean at spaces only; the nbsp in
    the markup keeps "작은 것에서부터." together and max-width shapes the wrap to "모든 시작은" / "작은 것에서부터.". */
+/* 1.5× the previous size (30/5.6vw/66 → the max is 99 = 66×1.5). The MIN is 40 (not 45) so the longest line
+   "작은 것에서부터." + --gutter fits a 375px viewport; the vw term (8.4 = 5.6×1.5) still reaches 99 by ~1180px.
+   max-width:12ch keeps the "모든 시작은" / "작은 것에서부터." two-line wrap at every size (ch scales with font). */
 .wish__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;color:var(--bone);
-  font-size:clamp(30px,5.6vw,66px);line-height:1.22;letter-spacing:-.01em;word-break:keep-all;max-width:12ch;margin:0}
-.email{display:block;margin-top:clamp(28px,5vh,48px);font-size:clamp(20px,3.4vw,30px);color:var(--bone);letter-spacing:.02em}
-.clinks{margin-top:18px;display:flex;gap:24px;justify-content:flex-start;font-size:13px}
-.clinks a{color:var(--dim);border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
-.clinks a:hover{color:var(--hi);border-color:var(--hi)}
-
-/* footer */
-footer{position:relative;z-index:4;padding:60px 0 46px;background:transparent}
-footer::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(10,10,10,.72),rgba(10,10,10,.5))}
-.foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:12px;color:var(--dim);line-height:1.9}
-.foot a{color:var(--hi)}
-.foot pre{color:var(--dimmer);font-size:11px;line-height:1.25}
+  font-size:clamp(40px,8.4vw,99px);line-height:1.22;letter-spacing:-.01em;word-break:keep-all;max-width:12ch;margin:0}
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
@@ -494,36 +486,12 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 
   <!-- CONTACT -->
   <section id="contact" class="sec sec--tint">
-    <div class="sec__head"><b>03</b><span>Contact</span></div>
     <div class="wish">
       <p class="wish__lead reveal">모든 시작은 작은&nbsp;것에서부터.</p>
-      <a href="mailto:hello@hyeseon.design" class="email reveal">hello@hyeseon.design</a>
-      <div class="clinks reveal">
-        <a href="#">Behance</a>
-        <a href="#">Instagram</a>
-        <a href="#">LinkedIn</a>
-      </div>
     </div>
   </section>
 </div>
 
-<footer>
-  <div class="wrap foot">
-    <div>
-      <b style="color:var(--bone)">HWANG HYESEON*</b> — UX/UI · AI 캐릭터 · 바이브코딩 디자이너.<br/>
-      © 2026 황혜선. All rights reserved.<br/>
-      배경은 글리프로만 그린 민들레 — 머리를 hover 하면 홀씨가 흩날립니다.
-    </div>
-    <div>
-<pre>       \ | /  *
-     -- ( * ) --      hover the flower
-       / | \          up there ↑
-        \|/
-         |
-       \_|_/</pre>
-    </div>
-  </div>
-</footer>
 
 <!-- flower tooltip controller: reveal after the intro, hide over the flower / during decompose.
      Kept out of hero-refract.js (which no-ops on touch/reduced-motion) so the hint still works there. -->
