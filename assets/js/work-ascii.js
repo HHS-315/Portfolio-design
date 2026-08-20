@@ -22,6 +22,16 @@
   cv.style.display = "block"; host.appendChild(cv);
   var ctx = cv.getContext("2d");
 
+  // ambient scatter field — a separate viewport-fixed canvas (see FIELD_* knobs). Only created if the WORK
+  // section exists; drawn in the same loop as the header.
+  var section = document.getElementById("work");
+  var fx = null, fctx = null, FW = 0, FH = 0, fcells = [];
+  if (section) {
+    fx = document.createElement("canvas"); fx.className = "work-fx"; fx.setAttribute("aria-hidden", "true");
+    document.body.appendChild(fx);
+    fctx = fx.getContext("2d");
+  }
+
   // ---- knobs --------------------------------------------------------------
   // Matched to the intro (dandelion.js extractText): glyph = FS 6–9px, step = glyph×0.7 (~1.43× overlap).
   var CELL_RATIO  = 0.10;   // glyph size = letterform size × this, then clamped to [CELL_MIN, CELL_MAX].
@@ -32,6 +42,20 @@
   var CHURN_MIN   = 280, CHURN_MAX = 1150;   // per-glyph swap period (ms) — matches the calm live flower
   var SHIM_SPEED  = 0.006, SHIM_AMP = 0.16, SHIM_BASE = 0.62;   // alpha shimmer (the blink). INTRO ≈ 0.4–1 base +
                                                                // 0.10 shimmer; was 0.84 base → too opaque, muddy
+  // ---- ambient scatter field (empty space around the WORK list) -----------
+  // Sparse dark glyphs churning/shimmering in the blank areas around the list (right margin, top/bottom),
+  // reference: artefakt.mov. Drawn on a viewport-fixed canvas (#work-fx, z3 — above the white cells, below
+  // the list text) inside THIS file's existing rAF loop (no new loop). Colour = same --work-ink but very low
+  // alpha; the element's opacity is bound to --work-reveal (CSS) so it appears/disappears WITH the cells.
+  var FIELD_GLYPHS   = 46;    // total scattered glyphs on screen (sparse — reference is a few dozen)
+  var FIELD_CLUSTERS = 7;     // loose clusters they group into (not fully random)
+  var FIELD_CLUSTER_R= 64;    // cluster radius (px) glyphs scatter within their seed
+  var FIELD_FS       = 12;    // glyph size (px) — individually legible, unlike the tiny header glyphs
+  var FIELD_PAD      = 16;    // keep-out padding (px) around each list-text / header rect
+  var FIELD_ALPHA_BASE = 0.24, FIELD_ALPHA_AMP = 0.09;   // low alpha (0.15–0.33 range) — subtle on the white bg
+  var FIELD_CHURN_MIN  = 900, FIELD_CHURN_MAX = 2600;    // per-glyph swap period (ms) — SLOWER than the header
+  var FIELD_SHIM_SPEED = 0.0026;                         // alpha shimmer speed — gentler than the header
+  var FIELD_ALPHA_MAX  = 0.35;
   // -------------------------------------------------------------------------
 
   var DPR = 1, cells = [], cellFS = 10, tw = 0, th = 0;
@@ -71,6 +95,87 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.font = cellFS.toFixed(1) + "px " + MONO;
+
+    buildField();
+  }
+
+  // tightest on-screen rect of an element's TEXT (not its full-width box) — so glyphs may use the empty
+  // right margin of each list row, not just the gaps. Uses a Range over the visible copy; falls back to the
+  // element box. Returns viewport coords.
+  function textRect(el) {
+    var t = el.querySelector(".wr__copy:not(.wr__copy--dup)") || el;   // work-list.js wraps .wbig__en in a 2-copy track
+    try { var rg = document.createRange(); rg.selectNodeContents(t); var r = rg.getBoundingClientRect(); if (r && r.width) return r; } catch (e) {}
+    return el.getBoundingClientRect();
+  }
+
+  // Live keep-out rects (viewport coords, padded): the nav bar, the header word, and each list row's TEXT
+  // (tight, so the right margin stays usable). Recomputed on demand because they move as the list scrolls.
+  var bar = document.querySelector(".bar");
+  function keepOut() {
+    var ex = [];
+    function add(r) { if (r && r.width && r.height) ex.push({ x: r.left - FIELD_PAD, y: r.top - FIELD_PAD, w: r.width + FIELD_PAD * 2, h: r.height + FIELD_PAD * 2 }); }
+    if (bar) add(bar.getBoundingClientRect());
+    add(host.getBoundingClientRect());
+    [].forEach.call(section.querySelectorAll(".wbig__en,.wbig__ko"), function (el) { add(textRect(el)); });
+    return ex;
+  }
+  function hits(ex, x, y) { for (var i = 0; i < ex.length; i++) { var r = ex[i]; if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true; } return false; }
+
+  // Lay out the scatter glyphs (viewport space) in a few loose clusters, biased into the empty bands (right
+  // margin / top / bottom) and rejected out of the keep-out rects. Recomputed on resize.
+  function buildField() {
+    if (!fx) return;
+    FW = window.innerWidth; FH = window.innerHeight;
+    fx.width = Math.round(FW * DPR); fx.height = Math.round(FH * DPR);
+    fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    fctx.textAlign = "center"; fctx.textBaseline = "middle";
+    fctx.font = FIELD_FS.toFixed(1) + "px " + MONO;
+
+    var ex = keepOut();
+    function blocked(x, y) { return hits(ex, x, y); }
+    function tooClose(x, y) { for (var i = 0; i < fcells.length; i++) { var dx = fcells[i].x - x, dy = fcells[i].y - y; if (dx * dx + dy * dy < (FIELD_FS * 1.1) * (FIELD_FS * 1.1)) return true; } return false; }
+
+    // cluster seeds — weighted toward the right margin, then top/bottom bands (where the left-aligned list
+    // leaves the most room). A few glyphs scatter within FIELD_CLUSTER_R of each seed.
+    function seed() {
+      var band = Math.random();
+      if (band < 0.55) return { x: FW * (0.60 + Math.random() * 0.36), y: FH * (0.10 + Math.random() * 0.80) }; // right margin
+      if (band < 0.78) return { x: FW * (0.06 + Math.random() * 0.88), y: FH * (0.04 + Math.random() * 0.12) };  // top band
+      return { x: FW * (0.06 + Math.random() * 0.88), y: FH * (0.82 + Math.random() * 0.14) };                   // bottom band
+    }
+    fcells = [];
+    var margin = FIELD_FS, per = Math.max(2, Math.round(FIELD_GLYPHS / FIELD_CLUSTERS)), guard = 0;
+    for (var ci = 0; ci < FIELD_CLUSTERS && fcells.length < FIELD_GLYPHS; ci++) {
+      var s = seed();
+      for (var k = 0; k < per * 4 && fcells.length < FIELD_GLYPHS; k++) {
+        if (guard++ > FIELD_GLYPHS * 60) break;
+        var gx = s.x + (Math.random() * 2 - 1) * FIELD_CLUSTER_R, gy = s.y + (Math.random() * 2 - 1) * FIELD_CLUSTER_R;
+        if (gx < margin || gx > FW - margin || gy < margin || gy > FH - margin) continue;
+        if (blocked(gx, gy) || tooClose(gx, gy)) continue;
+        fcells.push({ x: gx, y: gy, ch: pick(CODE), swapAt: 0, ph: Math.random() * 6.283 });
+      }
+    }
+  }
+
+  // Draw the scatter field. Glyphs are viewport-fixed; the list scrolls, so re-test each glyph against the
+  // CURRENT text rects and skip any the list has scrolled over (keeps them out of the words while moving).
+  function drawField(t) {
+    if (!fx || !fcells.length) return;
+    var _tp = window.HeroPerf ? HeroPerf.t() : 0;
+    fctx.clearRect(0, 0, FW, FH);
+    var live = keepOut();   // rects move as the list scrolls — re-test each glyph against the CURRENT rects
+    fctx.fillStyle = INK;
+    for (var i = 0; i < fcells.length; i++) {
+      var c = fcells[i];
+      if (hits(live, c.x, c.y)) continue;
+      if (!reduce && t > c.swapAt) { c.ch = pick(CODE); c.swapAt = t + FIELD_CHURN_MIN + Math.random() * (FIELD_CHURN_MAX - FIELD_CHURN_MIN); }
+      var a = reduce ? FIELD_ALPHA_BASE : FIELD_ALPHA_BASE + Math.sin(t * FIELD_SHIM_SPEED + c.ph) * FIELD_ALPHA_AMP;
+      if (a < 0.02) continue; if (a > FIELD_ALPHA_MAX) a = FIELD_ALPHA_MAX;
+      fctx.globalAlpha = a;
+      fctx.fillText(c.ch, c.x, c.y);
+    }
+    fctx.globalAlpha = 1;
+    if (window.HeroPerf) HeroPerf.add("workfx", _tp);
   }
 
   function draw(t) {
@@ -88,22 +193,25 @@
   }
 
   var raf = 0, onScreen = false, visible = document.visibilityState === "visible";
-  function frame(t) { raf = 0; if (!onScreen || !visible) return; draw(t); if (!reduce) raf = requestAnimationFrame(frame); }
+  function paint(t) { draw(t); drawField(t); }   // header + ambient field share this file's single loop
+  function frame(t) { raf = 0; if (!onScreen || !visible) return; paint(t); if (!reduce) raf = requestAnimationFrame(frame); }
   function kick() { if (!raf && onScreen && visible && !reduce) raf = requestAnimationFrame(frame); }
 
   build();
-  draw(performance.now());
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { build(); draw(performance.now()); kick(); });
+  paint(performance.now());
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { build(); paint(performance.now()); kick(); });
 
+  // observe the whole WORK section (not just the header): it runs tall, so the ambient field keeps
+  // animating through the full-white plateau after the header has scrolled off the top.
   new IntersectionObserver(function (es) {
     onScreen = es[0] ? es[0].isIntersecting : true;
-    if (onScreen) { if (reduce) draw(performance.now()); else kick(); }
+    if (onScreen) { if (reduce) paint(performance.now()); else kick(); }
     else if (raf) { cancelAnimationFrame(raf); raf = 0; }
-  }).observe(host);
+  }).observe(section || host);
   document.addEventListener("visibilitychange", function () {
     visible = document.visibilityState === "visible";
     if (visible) kick(); else if (raf) { cancelAnimationFrame(raf); raf = 0; }
   });
-  addEventListener("resize", function () { build(); draw(performance.now()); kick(); }, { passive: true });
+  addEventListener("resize", function () { build(); paint(performance.now()); kick(); }, { passive: true });
   // (ink is fixed now; the fade lives in CSS via --work-reveal on .work-ascii, so no scroll-colour redraw.)
 })();

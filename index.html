@@ -219,6 +219,23 @@ a{color:inherit;text-decoration:none}
 .wr__copy{display:block;line-height:1.14}
 .wr__copy--dup{position:absolute;top:100%;left:0;right:0;line-height:1.14}
 
+/* WORK ambient ASCII field — sparse dark glyphs churning/shimmering in the empty space around the list
+   (work-ascii.js draws them on this viewport-fixed canvas, reusing its churn+shimmer loop; no new rAF).
+   z3 = above the white cells (#blocks z2), below the list text (.shell z4). Opacity rides --work-reveal so
+   the glyphs appear once the cells fill and fade out again as the grid falls into CONTACT. */
+.work-fx{position:fixed;inset:0;z-index:3;display:block;pointer-events:none;opacity:var(--work-reveal)}
+/* "Click" chip trailing the cursor over a WORK list row (work-list.js). Outer div = JS-driven position
+   (translate, no transition — the follow is lerped in JS); inner = the glass pill with the scale+opacity
+   show/hide transition. Plain pill (border-radius only — NO clip-path/mask, which would kill the blur). */
+.work-chip{position:fixed;left:0;top:0;z-index:50;pointer-events:none;will-change:transform}
+.work-chip__i{pointer-events:none;display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;letter-spacing:.08em;line-height:1;color:#fff;
+  padding:6px 14px;border-radius:999px;background:rgba(20,20,20,.45);border:1px solid rgba(255,255,255,.22);
+  -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
+  opacity:0;transform:scale(.8);transform-origin:top left;
+  transition:opacity .18s ease,transform .18s cubic-bezier(.2,.8,.2,1);will-change:opacity,transform}
+.work-chip.is-on .work-chip__i{opacity:1;transform:scale(1)}
+@media(prefers-reduced-motion:reduce){.work-chip__i{transition:none}}
+
 /* ============================================================================
    WORK DETAIL OVERLAY — in-page, FLIP-expanded from the clicked .wbig__item.
    Built + driven by work-detail.js. z-index 60 sits above every canvas (0–4),

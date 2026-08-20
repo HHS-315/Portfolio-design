@@ -38,6 +38,7 @@
     ["field",   "flower     2D CPU   "],
     ["strip",   "strip      2D CPU   "],
     ["blocks",  "blocks     2D CPU   "],
+    ["workfx",  "work-fx    2D CPU   "],
     ["refract", "refract    GPU submit"]
   ];
   var frames = 0, lastT = performance.now();
@@ -51,7 +52,7 @@
     var cpu = 0;
     LAYERS.forEach(function (L) {
       var f = HP._fr[L[0]] || 0, ms = f ? HP._acc[L[0]] / f : 0;
-      if (L[0] === "field" || L[0] === "strip" || L[0] === "blocks") cpu += ms;
+      if (L[0] === "field" || L[0] === "strip" || L[0] === "blocks" || L[0] === "workfx") cpu += ms;
       lines.push("  " + L[1] + "  " + ms.toFixed(2).padStart(6) + " ms" + (f ? "" : "  (idle)"));
     });
     lines.push("  ----------------------------------");
