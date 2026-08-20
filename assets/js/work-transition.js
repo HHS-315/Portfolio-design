@@ -47,6 +47,9 @@
   // WORK text fades out EARLY — before the blocks under it clear — so a dark-on-dark flash never happens
   // (the top cells, where the WORK text sits, are the LAST to fall, so the text must be gone well before then).
   var REVEAL_FALL_START = 0.04, REVEAL_FALL_END = 0.30;  // bpFall range over which --work-reveal fades back 1→0
+  // --contact-reveal rises 0→1 as the blocks CLEAR (bpFall up) → the CONTACT ambient field (work-ascii.js)
+  // fades in with the reveal of the dark background. Starts almost immediately (bottom clears first).
+  var CONTACT_REVEAL_START = 0.02, CONTACT_REVEAL_END = 0.25;
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -162,13 +165,16 @@
 
   // WORK text/rule reveal: opacity 0→1 as the cells fill behind them (fixed dark ink, no colour muddle).
   // Fully reversible — bp is scroll-linked, so scrolling back up fades the text out symmetrically.
-  var lastReveal = -1;
+  var lastReveal = -1, lastContactReveal = -1;
   function updateReveal(bpFill, bpFall) {
     var vIn = clamp01((bpFill - REVEAL_START) / (REVEAL_END - REVEAL_START));
     var vOut = clamp01((bpFall - REVEAL_FALL_START) / (REVEAL_FALL_END - REVEAL_FALL_START));
     var v = vIn * (1 - vOut);               // fades in with the fill, back out as the cells fall away
-    if (Math.abs(v - lastReveal) < 0.004) return; lastReveal = v;
-    root.style.setProperty("--work-reveal", v.toFixed(3));
+    if (Math.abs(v - lastReveal) >= 0.004) { lastReveal = v; root.style.setProperty("--work-reveal", v.toFixed(3)); }
+    // CONTACT ambient field opacity — rises as the blocks clear (bpFall). Set in the SAME pass (no new listener);
+    // guarded separately so it still updates while --work-reveal sits at 0 through the CONTACT range.
+    var cv = clamp01((bpFall - CONTACT_REVEAL_START) / (CONTACT_REVEAL_END - CONTACT_REVEAL_START));
+    if (Math.abs(cv - lastContactReveal) >= 0.004) { lastContactReveal = cv; root.style.setProperty("--contact-reveal", cv.toFixed(3)); }
   }
 
   var dbg = null;
@@ -188,7 +194,9 @@
   var raf = 0, overlayOpen = false;
   function schedule() { if (overlayOpen) return; if (raf === 0) raf = requestAnimationFrame(function () { raf = 0; draw(); }); }
 
-  window.WorkTransition = { progress: progress, fall: fallProgress };   // progress → dandelion.js; fall → WORK→CONTACT
+  // progress → dandelion.js (flower) / work-ascii.js (WORK field). fall/fallProgress → bpFall, read by
+  // dandelion.js (strip colour) and work-ascii.js (CONTACT field). Two names for the one value.
+  window.WorkTransition = { progress: progress, fall: fallProgress, fallProgress: fallProgress };
 
   resize();
   window.addEventListener("scroll", schedule, { passive: true });

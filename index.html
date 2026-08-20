@@ -30,6 +30,7 @@
      (opacity via --work-reveal, set by work-transition.js) once the cells have filled behind it. */
   --work-ink:#141414;
   --work-reveal:0;   /* 0 → hidden (cells only); work-transition.js drives it 0→1 over the reveal window */
+  --contact-reveal:0;/* CONTACT ambient field opacity — work-transition.js drives it 0→1 as the blocks clear */
   --work-cell:#ccd2d8;   /* WORK stacking-cell colour — shared by work-transition.js (BLOCK_COLOR) and the detail page bg */
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -126,7 +127,7 @@ a{color:inherit;text-decoration:none}
 /* CONTACT rides the same dark shader as the hero — NO section scrim. The scrim (dark radial) used to paint
    OVER the WORK cells that are still standing where #contact overlaps them during the WORK→CONTACT fall,
    which read as a mid-grey band under the white area. Dropped so the falling cells reveal the pure shader,
-   and the settled CONTACT sits on the same dark background as the hero (the .wish__frame carries its own). */
+   and the settled CONTACT sits on the same dark background as the hero. */
 #contact::before{display:none}
 /* WORK text darkens with the cells behind it (var set by work-transition.js) instead of a scrim */
 #work,#work .sec__head,#work .sec__head b{color:var(--work-ink)}
@@ -224,6 +225,10 @@ a{color:inherit;text-decoration:none}
    z3 = above the white cells (#blocks z2), below the list text (.shell z4). Opacity rides --work-reveal so
    the glyphs appear once the cells fill and fade out again as the grid falls into CONTACT. */
 .work-fx{position:fixed;inset:0;z-index:3;display:block;pointer-events:none;opacity:var(--work-reveal)}
+/* CONTACT ambient field (work-ascii.js): light glyphs on the dark CONTACT bg. Same fixed viewport canvas as
+   .work-fx; opacity rides --contact-reveal so it fades in as the WORK blocks clear into CONTACT. z3 keeps it
+   above the shader/blocks and below the .shell content (the left statement / email / links stay on top). */
+.contact-fx{position:fixed;inset:0;z-index:3;display:block;pointer-events:none;opacity:var(--contact-reveal)}
 /* "Click" chip trailing the cursor over a WORK list row (work-list.js). Outer div = JS-driven position
    (translate, no transition — the follow is lerped in JS); inner = the glass pill. Show/hide is scale+tilt
    ONLY (no opacity fade — that muddied the pop); visibility (stepped) does the appear/vanish. Plain pill
@@ -376,20 +381,17 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 @media(prefers-reduced-motion:reduce){.wd__logo{transition:none}}
 
 
-/* contact / wish */
-.wish{width:100%;margin-inline:auto;padding-inline:var(--gutter);text-align:center}
-.wish__frame{border:1px solid var(--dimmer);border-radius:8px;background:rgba(16,16,16,.6);backdrop-filter:blur(3px);padding:30px 26px}
-.wish__label{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-bottom:16px}
-.wish__row{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--dimmer);padding-bottom:10px}
-.wish__row .p{color:var(--hi)}
-.wish__row input{flex:1;background:transparent;border:none;outline:none;color:var(--bone);font:inherit;font-size:16px}
-.wish__row input::placeholder{color:var(--dimmer)}
-.wish__hint{margin-top:14px;font-size:12px;color:var(--dim);min-height:1.4em}
-.wish__hint b{color:var(--hi);font-weight:400}
-.blink{animation:blink 1.1s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
-.email{display:block;margin-top:30px;font-size:clamp(20px,3.4vw,30px);color:var(--bone);letter-spacing:.02em}
-.clinks{margin-top:18px;display:flex;gap:24px;justify-content:center;font-size:13px}
+/* contact / wish — LEFT-aligned closing block (was a centred say_hello() input frame; the frame + its
+   blink/input/hint CSS were removed). The whole .wish reads as one left column: big statement, then email +
+   links flow left under it (kept cohesive rather than mixing left title with centred links). */
+.wish{width:100%;margin-inline:auto;padding-inline:var(--gutter);text-align:left}
+/* closing statement — Pretendard Bold, large, left, on the dark CONTACT bg (--bone). .reveal drives the
+   fade-up (dandelion.js IntersectionObserver). word-break:keep-all breaks Korean at spaces only; the nbsp in
+   the markup keeps "작은 것에서부터." together and max-width shapes the wrap to "모든 시작은" / "작은 것에서부터.". */
+.wish__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;color:var(--bone);
+  font-size:clamp(30px,5.6vw,66px);line-height:1.22;letter-spacing:-.01em;word-break:keep-all;max-width:12ch;margin:0}
+.email{display:block;margin-top:clamp(28px,5vh,48px);font-size:clamp(20px,3.4vw,30px);color:var(--bone);letter-spacing:.02em}
+.clinks{margin-top:18px;display:flex;gap:24px;justify-content:flex-start;font-size:13px}
 .clinks a{color:var(--dim);border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
 .clinks a:hover{color:var(--hi);border-color:var(--hi)}
 
@@ -403,8 +405,6 @@ footer::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:no
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
 body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PORTFOLIO intro plays */
-
-@media(prefers-reduced-motion:reduce){.blink{animation:none}}
 </style>
 </head>
 <body>
@@ -496,15 +496,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <section id="contact" class="sec sec--tint">
     <div class="sec__head"><b>03</b><span>Contact</span></div>
     <div class="wish">
-      <div class="wish__frame reveal">
-        <div class="wish__label">say_hello( )</div>
-        <div class="wish__row">
-          <span class="p">&gt;</span>
-          <input id="wishInput" type="text" maxlength="80" placeholder="메시지를 입력하고 Enter — 민들레가 흩날립니다" aria-label="메시지" />
-          <span class="blink">▋</span>
-        </div>
-        <div class="wish__hint" id="wishHint">새로운 프로젝트·협업·가벼운 인사 모두 환영합니다. 24시간 안에 답장 드립니다.</div>
-      </div>
+      <p class="wish__lead reveal">모든 시작은 작은&nbsp;것에서부터.</p>
       <a href="mailto:hello@hyeseon.design" class="email reveal">hello@hyeseon.design</a>
       <div class="clinks reveal">
         <a href="#">Behance</a>

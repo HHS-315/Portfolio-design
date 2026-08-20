@@ -101,6 +101,28 @@
                                // tiny there so the strip barely showed. Desktop keeps 1× (LAND_GAP_MOB spacing
                                // leaves room for the bump, so slots never collide).
   var stripScale      = 1;     // set in resize(): STRIP_SCALE_MOB on mobile, 1 on desktop
+  // WORK→CONTACT: the strip ink lerps from its dark landed colour to a light one as the blocks clear, so it
+  // stays visible once the background turns black. Driven by work-transition.js's bpFall (WorkTransition.fall()).
+  // The window is bpFall 0→END: END is tiny because the bottom cells (where the strip sits) clear within
+  // bpFall 0–0.06 — the strip must already be light by then, else a dark-on-black gap shows.
+  var STRIP_CONTACT_START = 0.0, STRIP_CONTACT_END = 0.07;
+  var STRIP_BOLD_FADE     = 0.7;   // faux-bold shrinks by this fraction over the same window (light-on-black
+                                   // needs less weight than dark-on-light). 0 = keep full bold, 1 = to zero.
+  var STRIP_LIGHT = (function () {                          // light target = --bone (#e9e9e6), the body-text token
+    var s = (getComputedStyle(document.documentElement).getPropertyValue('--bone') || '#e9e9e6').trim();
+    var m = /#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(s);
+    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [233,233,230];
+  })();
+  var STRIP_DARK_V = (255 * (1 - LAND_DARK)) | 0;           // dark landed brightness (25)
+  var stripCf = 0;                                          // per-frame CONTACT colour factor (0 dark → 1 light)
+  // settled RGB string for the current stripCf — DARK grey → --bone. Computed once per frame (stripFrame),
+  // reused across all keepers. cf is a pure function of bpFall, so it's fully reversible (no stored state).
+  function stripInk(cf) {
+    var r = (STRIP_DARK_V + (STRIP_LIGHT[0] - STRIP_DARK_V) * cf) | 0;
+    var g = (STRIP_DARK_V + (STRIP_LIGHT[1] - STRIP_DARK_V) * cf) | 0;
+    var bch = (STRIP_DARK_V + (STRIP_LIGHT[2] - STRIP_DARK_V) * cf) | 0;
+    return 'rgb(' + r + ',' + g + ',' + bch + ')';
+  }
   var introT0=0, scatterInit=false, formInit=false;
   var quoteShown=false;
   // fire once when the intro finishes forming the flower (unlocks the scroll lock)
@@ -562,8 +584,11 @@
         var y=p.fy+oyb+(p.landY-p.fy)*ez-arc;             // parabola onto the slot baseline (+ curved scatter)
         var exz=1-Math.pow(1-lp,3);                       // ease toward the slot x, then settle
         var x=p.fx+wOff+oxb+(p.slotX-p.fx)*exz+Math.sin(p.fdrift+fallP*4)*FALL_DRIFT*Math.sin(Math.PI*lp);
-        var colorT=land*LAND_DARK;                        // white in flight → dark once landed
-        var v=(255*(1-colorT))|0;
+        // settled colour = the strip's CONTACT-lerped ink (dark → --bone via stripCf); white in flight,
+        // reaching that settled colour as it lands. Same stripCf as stripFrame → the two paths never diverge.
+        var sr=STRIP_DARK_V+(STRIP_LIGHT[0]-STRIP_DARK_V)*stripCf, sg=STRIP_DARK_V+(STRIP_LIGHT[1]-STRIP_DARK_V)*stripCf, sbb=STRIP_DARK_V+(STRIP_LIGHT[2]-STRIP_DARK_V)*stripCf;
+        var kr=(255+(sr-255)*land)|0, kg=(255+(sg-255)*land)|0, kb=(255+(sbb-255)*land)|0;
+        var fillC='rgb('+kr+','+kg+','+kb+')';
         var vis=lerp(flowerBase,0.94,land); if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP*land;
         if(vis<=0.03) continue; if(vis>1)vis=1;
         var ang=p.frot*FALL_ROT*lp*(1-land);              // tumble in flight, upright on landing
@@ -573,12 +598,12 @@
         // landed keepers (land>LAND_FRONT) draw on the FRONT #strip canvas (over the blocks); still-falling
         // ones stay on #field (behind the blocks). Same progress → same choice, so it's reversible.
         var g=(land>LAND_FRONT && sctx)?sctx:ctx;
-        g.globalAlpha=vis; g.fillStyle='rgb('+v+','+v+','+v+')';
+        g.globalAlpha=vis; g.fillStyle=fillC;
         g.save(); g.translate(x,y); if(ang)g.rotate(ang); if(sc!==1)g.scale(sc,sc);
         g.fillText(p.ch,0,0);
-        // faux-bold: overstroke in the same ink, fading in with `land`. lineWidth is divided by sc so the
-        // ON-SCREEN weight stays STRIP_BOLD regardless of the scale transform around the glyph.
-        if(land>0.02){ g.strokeStyle=g.fillStyle; g.lineWidth=STRIP_BOLD*land/(sc||1); g.strokeText(p.ch,0,0); }
+        // faux-bold: overstroke in the same ink, fading in with `land` and thinning as it lightens (stripCf),
+        // matching stripFrame. lineWidth /sc so the ON-SCREEN weight is unaffected by the scale transform.
+        if(land>0.02){ g.strokeStyle=g.fillStyle; g.lineWidth=STRIP_BOLD*(1-stripCf*STRIP_BOLD_FADE)*land/(sc||1); g.strokeText(p.ch,0,0); }
         g.restore();
       } else {
         var fade=smooth(0.06,0.62,lp);                    // fades out over the first ~⅔ of its fall
@@ -641,6 +666,12 @@
     else { fallCur+=(target-fallCur)*FALL_LERP; if(Math.abs(target-fallCur)<0.0008) fallCur=target; }
     if(DEBUG) updateDbg(target);
 
+    // strip CONTACT colour factor: bpFall (WORK→CONTACT) mapped through the transition window, ONCE per frame
+    // (one getBoundingClientRect via WorkTransition.fall()); stripFrame/fallFrame just read stripCf, no reflow.
+    var _bpFall=(window.WorkTransition&&WorkTransition.fall)?WorkTransition.fall():0;
+    var _cf=(_bpFall-STRIP_CONTACT_START)/(STRIP_CONTACT_END-STRIP_CONTACT_START);
+    stripCf=_cf<0?0:_cf>1?1:_cf;
+
     // wind computed once per frame → shared by liveFrame (full sway) and fallFrame (early-fall blend),
     // so the sway is continuous across the live↔decompose boundary in both directions.
     var wind=windNow(t), headDisp=wind*headR*WIND_AMP_FRAC, tiltA=wind*WIND_TILT;
@@ -662,9 +693,8 @@
   function stripFrame(t){
     var g=sctx||ctx;                           // fully decomposed → the whole strip is in FRONT of the blocks
     g.font=(FS*stripScale)+'px '+font();       // landed size (mobile gets the STRIP_SCALE_MOB bump)
-    var v=(255*(1-LAND_DARK))|0;
-    g.fillStyle='rgb('+v+','+v+','+v+')';      // constant across keepers → set once, not per glyph
-    g.strokeStyle=g.fillStyle; g.lineWidth=STRIP_BOLD;   // faux-bold overstroke, same ink (set once)
+    g.fillStyle=stripInk(stripCf);             // dark → --bone by CONTACT progress; constant across keepers → set once
+    g.strokeStyle=g.fillStyle; g.lineWidth=STRIP_BOLD*(1-stripCf*STRIP_BOLD_FADE);   // faux-bold, thinner as it lightens
     for(var i=0;i<keeperList.length;i++){ var p=keeperList[i];
       var vis=0.94; if(!reduce) vis+=Math.sin(t*LAND_SHIM_SPEED+p.sway)*LAND_SHIM_AMP;
       if(vis<=0.03) continue; if(vis>1)vis=1;
@@ -703,10 +733,8 @@
   addEventListener('pointerdown',function(e){ if(!introDone) return; mouse.x=e.clientX; mouse.y=e.clientY;
     var dx=e.clientX-cx, dy=e.clientY-cy; if(dx*dx+dy*dy < (headR*1.6)*(headR*1.6)) shockwave(40); });
 
-  var wi=document.getElementById('wishInput'), wh=document.getElementById('wishHint');
-  if(wi){ wi.addEventListener('keydown',function(e){
-    if(e.key==='Enter' && wi.value.trim()){ shockwave(80); if(wh) wh.innerHTML='sent · <b>“'+wi.value.trim().replace(/[<>&]/g,'')+'”</b> — the flower will grow back.'; wi.value=''; }
-  });}
+  // (the CONTACT say_hello() input was removed — its Enter→shockwave(80) handler went with it. shockwave()
+  //  is kept for the flower's own click/pointer interactions and any future re-wiring.)
 
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity=1;e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.12});
   [].forEach.call(document.querySelectorAll('.reveal'),function(el){el.style.opacity=0;el.style.transform='translateY(20px)';el.style.transition='opacity .9s ease,transform .9s ease';io.observe(el);});
