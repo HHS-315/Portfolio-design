@@ -37,12 +37,16 @@
   // (the old light→dark ink muddied the text mid-transition where its value matched the background).
   // --work-ink is a fixed dark now; this sets --work-reveal 0→1 which drives the text/rule opacity.
   var REVEAL_START = 0.65, REVEAL_END = 0.85;   // bpFill range over which --work-reveal goes 0→1
-  // WORK → CONTACT: once the grid is full, entering #contact makes the cells FALL AWAY upward (top-first),
-  // revealing the dark hero background. A second progress (T2) drives this, off #contact's rect. It reuses
-  // the SAME per-cell thresholds in reverse (fallThresh = TH_TOP − appearThresh) so the top cells — which
-  // appeared last on the way in — leave first, scattered the same way. Fully reversible (scroll back up).
+  // WORK → CONTACT: once the grid is full, entering #contact makes the cells FALL AWAY from the BOTTOM up,
+  // as if the dark background pushes up from below. A second progress (T2) drives this, off #contact's rect.
+  // Each cell's fall-start = its OWN appear-threshold (th): the bottom cells (smallest th) leave FIRST and the
+  // top cells leave last — the reverse of the earlier top-first version. Scattered the same way, fully
+  // reversible (scroll back up → the bottom cells refill first). Revealing bottom-first also means the dark
+  // area and #contact's dark scrim coincide at the bottom, so no light cell shows through the scrim as grey.
   var CELL_FALL = 0.06;                         // bpFall span over which a leaving cell fades 1→0
-  var REVEAL_FALL_START = 0.12, REVEAL_FALL_END = 0.5;  // bpFall range over which --work-reveal fades back 1→0
+  // WORK text fades out EARLY — before the blocks under it clear — so a dark-on-dark flash never happens
+  // (the top cells, where the WORK text sits, are the LAST to fall, so the text must be gone well before then).
+  var REVEAL_FALL_START = 0.04, REVEAL_FALL_END = 0.30;  // bpFall range over which --work-reveal fades back 1→0
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -137,12 +141,12 @@
         if (bpFill <= th) break;             // thresholds rise up the column → this & everything above aren't up yet
         // fade IN as it lands (ALPHA_START→1). A full square the whole time (no flat-rectangle look).
         var aIn = ALPHA_START + (1 - ALPHA_START) * ease(clamp01((bpFill - th) / CELL_RISE));
-        // fade OUT as CONTACT enters: the cell leaves when bpFall passes its reversed fall-start (top-first).
-        // fall-start = TH_TOP − th (bottom cells, smallest th, leave LAST). With few rows the normalize factor
-        // is large, so a bottom cell's jittered th can go slightly negative → fall-start > 1, which would never
-        // be reached (the cell stays solid at CONTACT — the reported bottom strip). Cap the fall-start at
-        // 1 − CELL_FALL so EVERY cell — bottom row included — finishes its fade by bpFall=1: the grid fully clears.
-        var fs = TH_TOP - th; if (fs > 1 - CELL_FALL) fs = 1 - CELL_FALL;
+        // fade OUT as CONTACT enters: the cell leaves when bpFall passes its fall-start (BOTTOM-first).
+        // fall-start = th DIRECTLY — bottom cells (smallest th) leave first, top cells (largest th) leave last,
+        // so the grid clears from the bottom up. Clamp into [0, 1−CELL_FALL]: ≥0 so no cell is already gone at
+        // bpFall=0, and ≤1−CELL_FALL so EVERY cell — the TOP row included (its th can exceed TH_TOP after the
+        // CELL_RISE spacing pass) — finishes its fade by bpFall=1 and the grid fully clears.
+        var fs = th < 0 ? 0 : th > 1 - CELL_FALL ? 1 - CELL_FALL : th;
         var aOut = 1 - clamp01((bpFall - fs) / CELL_FALL);
         var a = aIn * aOut;
         if (a <= 0.004) continue;            // already fallen away (don't break — lower cells still stand)

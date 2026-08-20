@@ -123,6 +123,11 @@ a{color:inherit;text-decoration:none}
 .sec{background:transparent}
 .sec--tint::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 90% at 50% 50%,rgba(10,10,10,.55),rgba(10,10,10,.28) 55%,transparent 100%)}
 #work::before{display:none}   /* WORK backdrop comes from the stacking cells, not a scrim */
+/* CONTACT rides the same dark shader as the hero — NO section scrim. The scrim (dark radial) used to paint
+   OVER the WORK cells that are still standing where #contact overlaps them during the WORK→CONTACT fall,
+   which read as a mid-grey band under the white area. Dropped so the falling cells reveal the pure shader,
+   and the settled CONTACT sits on the same dark background as the hero (the .wish__frame carries its own). */
+#contact::before{display:none}
 /* WORK text darkens with the cells behind it (var set by work-transition.js) instead of a scrim */
 #work,#work .sec__head,#work .sec__head b{color:var(--work-ink)}
 /* per-section label: number (left) · name (right), no line */
@@ -182,7 +187,12 @@ a{color:inherit;text-decoration:none}
 /* big category list — English hero + Korean subtitle, CSS-only hover spotlight.
    Colour is FIXED ink; the list fades in (opacity:var(--work-reveal), set by work-transition.js) once the
    cells fill behind it. --rule fades with the container. */
-#work{--rule:color-mix(in srgb,var(--work-ink) 22%,transparent)}
+/* WORK gets extra tail room BELOW its list (padding-bottom, additive — min-height wouldn't bind because the
+   list already runs taller than a screen). After the cells finish stacking (bpFill=1) this pushes #contact
+   down, lengthening the full-white plateau you scroll through before the fall (bpFall) begins — more
+   breathing room for the WORK white area, without touching the fall timing (which stays locked to #contact's
+   entry so its light text never lands on still-white cells). */
+#work{--rule:color-mix(in srgb,var(--work-ink) 22%,transparent);padding-bottom:38svh}
 .wbig{margin-top:8px;border-top:1px solid var(--rule);opacity:var(--work-reveal);
   cursor:crosshair;   /* keep the #field crosshair over the list */
   pointer-events:auto}   /* .shell is pointer-events:none — make the list hittable so :hover fires (items inherit) */
