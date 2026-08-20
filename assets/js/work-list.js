@@ -77,8 +77,11 @@
     if (!document.querySelector(".wbig")) return;
 
     var wrap = document.createElement("div"); wrap.className = "work-chip";
-    var inner = document.createElement("span"); inner.className = "work-chip__i"; inner.textContent = CHIP_TEXT;
-    wrap.appendChild(inner); document.body.appendChild(wrap);
+    var inner = document.createElement("span"); inner.className = "work-chip__i";
+    // label lives in its own span so a vertical nudge (position:relative; top:--chip-nudge-y) can optically
+    // centre it WITHOUT touching .work-chip__i's scale+rotate transform or the pill's padding/height.
+    var txt = document.createElement("span"); txt.className = "work-chip__t"; txt.textContent = CHIP_TEXT;
+    inner.appendChild(txt); wrap.appendChild(inner); document.body.appendChild(wrap);
 
     var tx = 0, ty = 0, cx = 0, cy = 0, on = false, raf = 0;
     function place(px, py) {
@@ -109,5 +112,12 @@
       if (reduce) { cx = tx; cy = ty; place(cx, cy); }
       else if (!raf) raf = requestAnimationFrame(loop);
     }, { passive: true });
+    // Clear the chip when the subpage overlay opens or closes (work-detail.js already fires this), so no chip
+    // lingers over the FLIP or over the wrong page. A hover inside the open overlay re-shows it via pointermove.
+    window.addEventListener("work:overlay", hide);
+    // A click on a .wbig row starts a navigation/expand (main → open, subpage → flipSwap, which fires no
+    // overlay event). Hide on pointerdown so the pill doesn't sit on the expanding image mid-transition; the
+    // next pointermove re-shows it if still over a list. pointerdown (press) beats the animation start.
+    document.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest(".wbig")) hide(); }, { passive: true });
   })();
 })();

@@ -228,14 +228,25 @@ a{color:inherit;text-decoration:none}
    (translate, no transition — the follow is lerped in JS); inner = the glass pill. Show/hide is scale+tilt
    ONLY (no opacity fade — that muddied the pop); visibility (stepped) does the appear/vanish. Plain pill
    (border-radius only — NO clip-path/mask, which would kill the blur). */
-.work-chip{position:fixed;left:0;top:0;z-index:50;pointer-events:none;will-change:transform}
+/* z-index 70 > #workOverlay's 60 so the cursor chip shows over the OPEN subpage too (its "OTHER WORK" list
+   reuses .wbig, so the document-level hover already tracks it — it was only being COVERED by the overlay).
+   The overlay's own .wd__logo(2)/.wd__logo-img(3) live inside the overlay's stacking context, so they can't
+   rise above an outer 70. pointer-events:none means the chip never intercepts clicks despite being on top. */
+.work-chip{position:fixed;left:0;top:0;z-index:70;pointer-events:none;will-change:transform}
 .work-chip__i{pointer-events:none;display:inline-flex;align-items:center;white-space:nowrap;
   font-family:var(--hero-font);font-weight:400;font-size:12px;letter-spacing:0;line-height:normal;color:#fff;
-  /* Vertical centring is done the FONT-AGNOSTIC way (PJS isn't guaranteed to be loaded): inline-flex +
-     align-items:center centres the LINE BOX, and line-height:normal makes that box span the font's true
-     ascender/descender so the centre is real (line-height:1 clipped it and pushed the label off). Padding is
-     SYMMETRIC (6/6) — the earlier 7/5 pushed the descender-less "Click" DOWN, the wrong way. No metric-tuned
-     asymmetric padding, so a different fallback font won't re-break it. letter-spacing:0 keeps L/R centred. */
+  /* Vertical centring. PRIMARY: @supports text-box-trim (below) trims the line box to cap→baseline so
+     align-items:center centres the real ink — exact, font-agnostic. FALLBACK (no text-box-trim): inline-flex
+     + align-items:center + line-height:normal centres the line box, then .work-chip__t nudges the label by
+     --chip-nudge-y (measured from canvas measureText: inkCentre−lineCentre). Padding stays SYMMETRIC 6/6 and
+     the nudge lives on the inner span, so neither the pill height nor the scale+rotate transform is touched.
+     letter-spacing:0 keeps L/R centred (do not change). */
+  --chip-nudge-y:-1px;       /* label vertical optical offset (+down / −up), applied on .work-chip__t via
+                                position:relative (height-safe → pill box & place() unaffected). DIRECTION from
+                                the real-PJS observation (label sat slightly LOW → nudge UP → negative). Magnitude
+                                is a starting estimate: PJS can't be measured in this sandbox (only the Helvetica
+                                fallback loads, and it measured the OPPOSITE sign +0.5, proving a fallback
+                                measurement is unreliable here). Tune in 0.5px steps under real PJS. */
   padding:6px 14px;border-radius:999px;background:rgba(20,20,20,.45);border:1px solid rgba(255,255,255,.22);
   -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
   /* motion knobs (named). HIDDEN = small + tilted; SHOWN = full + level. Enter/exit use DIFFERENT easings via
@@ -253,6 +264,12 @@ a{color:inherit;text-decoration:none}
 .work-chip.is-on .work-chip__i{visibility:visible;transform:scale(1) rotate(0deg);
   transition:transform var(--chip-in-dur) var(--chip-in-ease),visibility 0s}   /* enter: appears instantly, then scales */
 @media(prefers-reduced-motion:reduce){.work-chip__i{transition:none}}
+/* label span carries the optical vertical nudge. position:relative → visual shift only, NO layout/height
+   change, so the pill's offsetHeight and work-list.js place() edge-correction stay exactly as before.
+   (text-box-trim was evaluated for exact font-agnostic centring but dropped: on the inline-flex container it
+   is inert — height 28px & gaps unchanged — and it only takes effect on an inline-block label, which shrinks
+   the pill 28→22px, violating the "offsetHeight unchanged" requirement. The height-safe nudge is used instead.) */
+.work-chip__t{position:relative;top:var(--chip-nudge-y)}
 
 /* ============================================================================
    WORK DETAIL OVERLAY — in-page, FLIP-expanded from the clicked .wbig__item.
