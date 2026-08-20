@@ -36,28 +36,43 @@
   // WORK text FADES IN (opacity) once the cells have filled behind it, instead of colour-interpolating
   // (the old light→dark ink muddied the text mid-transition where its value matched the background).
   // --work-ink is a fixed dark now; this sets --work-reveal 0→1 which drives the text/rule opacity.
-  var REVEAL_START = 0.65, REVEAL_END = 0.85;   // bp range over which --work-reveal goes 0→1
+  var REVEAL_START = 0.65, REVEAL_END = 0.85;   // bpFill range over which --work-reveal goes 0→1
+  // WORK → CONTACT: once the grid is full, entering #contact makes the cells FALL AWAY upward (top-first),
+  // revealing the dark hero background. A second progress (T2) drives this, off #contact's rect. It reuses
+  // the SAME per-cell thresholds in reverse (fallThresh = TH_TOP − appearThresh) so the top cells — which
+  // appeared last on the way in — leave first, scattered the same way. Fully reversible (scroll back up).
+  var CELL_FALL = 0.06;                         // bpFall span over which a leaving cell fades 1→0
+  var REVEAL_FALL_START = 0.12, REVEAL_FALL_END = 0.5;  // bpFall range over which --work-reveal fades back 1→0
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
   var canvas = document.getElementById("blocks"); if (!canvas) return;
   var ctx = canvas.getContext("2d"); if (!ctx) return;
   var work = document.getElementById("work"); if (!work) return;
+  var contact = document.getElementById("contact");   // WORK → CONTACT fall reference (optional)
   var root = document.documentElement;
 
   var W = 0, H = 0, DPR = 1, cols = 0, colW = 0, rows = 0, thresh = [];   // thresh[c*rows+r] = bp at which the cell appears
   function ease(x) { return 1 - Math.pow(1 - x, 3); }
   function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
 
-  // master progress (read by dandelion.js too)
-  function progress() {
-    var r = work.getBoundingClientRect(), vh = H || window.innerHeight;
-    var t = (T_START - r.top / vh) / (T_START - T_END);
-    return clamp01(t);
+  // map a section's on-screen position to 0→1 as its top rises from T_START·vh to T_END·vh
+  function sectionT(el) {
+    if (!el) return 0;
+    var r = el.getBoundingClientRect(), vh = H || window.innerHeight;
+    return clamp01((T_START - r.top / vh) / (T_START - T_END));
   }
-  function blockProgress() {
+  // master progress T1 (ABOUT→WORK) — read by dandelion.js too
+  function progress() { return sectionT(work); }
+  function blockProgress() {                            // bpFill: cells stack UP as WORK enters
     var T = progress();
     if (reduce) return T >= 0.5 ? 1 : 0;              // reduced motion → snap, no gradual stack
+    return clamp01((T - BLOCK_T_START) / (1 - BLOCK_T_START));
+  }
+  // T2 (WORK→CONTACT) → bpFall: cells fall AWAY as CONTACT enters (same shaping as the fill)
+  function fallProgress() {
+    var T = sectionT(contact);
+    if (reduce) return T >= 0.5 ? 1 : 0;
     return clamp01((T - BLOCK_T_START) / (1 - BLOCK_T_START));
   }
 
@@ -101,46 +116,63 @@
     build();
   }
 
+  // Snap a CSS-px coordinate to the DEVICE-pixel grid (ctx is DPR-scaled). Adjacent cells share an edge
+  // (cell c's right = snap((c+1)·colW) = cell c+1's left), so with snapped, non-overlapping rects there is
+  // NO sub-pixel seam AT ANY ALPHA — which is why the old +1 overlap (opaque-only) is gone: it left a gap
+  // under translucent landing cells that showed the dark background as a grid line (the reported issue).
+  function snap(v) { return Math.round(v * DPR) / DPR; }
+
   function draw() {
     var _tp = window.HeroPerf ? HeroPerf.t() : 0;   // perf HUD (2D CPU time)
     ctx.clearRect(0, 0, W, H);
-    var bp = blockProgress();
-    updateReveal(bp);                       // keep the text fade in step even before/after the stack
-    if (bp <= 0.0001) { updateDbg(bp); if (window.HeroPerf) HeroPerf.add("blocks", _tp); return; }
+    var bpFill = blockProgress();           // cells stacking up (ABOUT→WORK)
+    var bpFall = fallProgress();            // cells falling away (WORK→CONTACT)
+    updateReveal(bpFill, bpFall);
+    if (bpFill <= 0.0001) { updateDbg(bpFill, bpFall); if (window.HeroPerf) HeroPerf.add("blocks", _tp); return; }
     ctx.fillStyle = BLOCK_COLOR;
     for (var c = 0; c < cols; c++) {
-      var x = c * colW, base = c * rows;
+      var x0 = snap(c * colW), x1 = snap((c + 1) * colW), cw = x1 - x0, base = c * rows;
       for (var r = 0; r < rows; r++) {
         var th = thresh[base + r];
-        if (bp <= th) break;                 // thresholds rise up the column → this & everything above aren't up yet
-        // ALPHA ONLY — the cell is a full square from the start; it just fades ALPHA_START→1 as it lands.
-        // (Fading a full square avoids the flat-rectangle look a growing height gave at low opacity.)
-        var a = ALPHA_START + (1 - ALPHA_START) * ease(clamp01((bp - th) / CELL_RISE));
-        // overlap the +1 seam-filler ONLY once the cell is opaque — a translucent cell drawn +1 over its
-        // neighbour would double up and read as a grid line. Opaque overlap is invisible (same colour).
-        var o = a >= 0.999 ? 1 : 0;
+        if (bpFill <= th) break;             // thresholds rise up the column → this & everything above aren't up yet
+        // fade IN as it lands (ALPHA_START→1). A full square the whole time (no flat-rectangle look).
+        var aIn = ALPHA_START + (1 - ALPHA_START) * ease(clamp01((bpFill - th) / CELL_RISE));
+        // fade OUT as CONTACT enters: the cell leaves when bpFall passes its reversed fall-start (top-first).
+        // fall-start = TH_TOP − th (bottom cells, smallest th, leave LAST). With few rows the normalize factor
+        // is large, so a bottom cell's jittered th can go slightly negative → fall-start > 1, which would never
+        // be reached (the cell stays solid at CONTACT — the reported bottom strip). Cap the fall-start at
+        // 1 − CELL_FALL so EVERY cell — bottom row included — finishes its fade by bpFall=1: the grid fully clears.
+        var fs = TH_TOP - th; if (fs > 1 - CELL_FALL) fs = 1 - CELL_FALL;
+        var aOut = 1 - clamp01((bpFall - fs) / CELL_FALL);
+        var a = aIn * aOut;
+        if (a <= 0.004) continue;            // already fallen away (don't break — lower cells still stand)
+        var y0 = snap(H - (r + 1) * colW), y1 = snap(H - r * colW);
         if (a < 1) ctx.globalAlpha = a;
-        ctx.fillRect(x, H - (r + 1) * colW, colW + o, colW + o);
+        ctx.fillRect(x0, y0, cw, y1 - y0);
         if (a < 1) ctx.globalAlpha = 1;
       }
     }
-    updateDbg(bp);
+    updateDbg(bpFill, bpFall);
     if (window.HeroPerf) HeroPerf.add("blocks", _tp);
   }
 
   // WORK text/rule reveal: opacity 0→1 as the cells fill behind them (fixed dark ink, no colour muddle).
   // Fully reversible — bp is scroll-linked, so scrolling back up fades the text out symmetrically.
   var lastReveal = -1;
-  function updateReveal(bp) {
-    var v = clamp01((bp - REVEAL_START) / (REVEAL_END - REVEAL_START));
+  function updateReveal(bpFill, bpFall) {
+    var vIn = clamp01((bpFill - REVEAL_START) / (REVEAL_END - REVEAL_START));
+    var vOut = clamp01((bpFall - REVEAL_FALL_START) / (REVEAL_FALL_END - REVEAL_FALL_START));
+    var v = vIn * (1 - vOut);               // fades in with the fill, back out as the cells fall away
     if (Math.abs(v - lastReveal) < 0.004) return; lastReveal = v;
     root.style.setProperty("--work-reveal", v.toFixed(3));
   }
 
   var dbg = null;
-  function updateDbg(bp) {
+  function updateDbg(bpFill, bpFall) {
     if (!dbg) return;
-    dbg.textContent = "T=" + progress().toFixed(3) + "\nblockP=" + bp.toFixed(3) + "\ncols=" + cols + " rows=" + rows;
+    dbg.textContent = "T1=" + progress().toFixed(3) + " fill=" + bpFill.toFixed(3) +
+      "\nT2=" + sectionT(contact).toFixed(3) + " fall=" + bpFall.toFixed(3) +
+      "\ncols=" + cols + " rows=" + rows;
   }
   if (DEBUG) {
     dbg = document.createElement("div");
@@ -152,7 +184,7 @@
   var raf = 0, overlayOpen = false;
   function schedule() { if (overlayOpen) return; if (raf === 0) raf = requestAnimationFrame(function () { raf = 0; draw(); }); }
 
-  window.WorkTransition = { progress: progress };   // expose for dandelion.js
+  window.WorkTransition = { progress: progress, fall: fallProgress };   // progress → dandelion.js; fall → WORK→CONTACT
 
   resize();
   window.addEventListener("scroll", schedule, { passive: true });

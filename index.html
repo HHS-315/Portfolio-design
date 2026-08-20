@@ -280,9 +280,6 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__logo-img{z-index:3;color:#fff;clip-path:inset(0 0 100% 0);pointer-events:none}   /* crisp white over the hero image only (JS sets the clip; default hidden) */
 .wd__logo-star{font-style:normal}   /* inherits the layer colour (inverts with the text over dark, white over the image) */
 @media(max-width:560px){.wd__logo,.wd__logo-img{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
-/* kicker stays var(--mono): it's a label, kept in the site's monospace label system (.bar / .wd__caps /
-   .wd__more-label), not body copy — so it doesn't switch to Plus Jakarta Sans. */
-.wd__kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 14px}
 .wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px)}
 /* body copy: Latin → Plus Jakarta Sans, Korean → Pretendard (per-character fallback). ch caps KEPT for
    readability (the section is full width now, so an uncapped line would run too long), just widened a bit. */
