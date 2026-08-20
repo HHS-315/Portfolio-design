@@ -230,11 +230,13 @@ a{color:inherit;text-decoration:none}
    (border-radius only — NO clip-path/mask, which would kill the blur). */
 .work-chip{position:fixed;left:0;top:0;z-index:50;pointer-events:none;will-change:transform}
 .work-chip__i{pointer-events:none;display:inline-flex;align-items:center;white-space:nowrap;
-  font-family:var(--hero-font);font-weight:400;font-size:12px;letter-spacing:0;line-height:1;color:#fff;
-  /* padding: sides 14 symmetric; top 7 / bottom 5 nudges the cap-height-high "Click" (no descender) down to
-     optical centre. 7+5 == old 6+6, so the box height is unchanged → work-list.js place() edge-correction
-     is unaffected. letter-spacing:0 (was .01em) removes the trailing gap after 'k' that shoved text left. */
-  padding:7px 14px 5px;border-radius:999px;background:rgba(20,20,20,.45);border:1px solid rgba(255,255,255,.22);
+  font-family:var(--hero-font);font-weight:400;font-size:12px;letter-spacing:0;line-height:normal;color:#fff;
+  /* Vertical centring is done the FONT-AGNOSTIC way (PJS isn't guaranteed to be loaded): inline-flex +
+     align-items:center centres the LINE BOX, and line-height:normal makes that box span the font's true
+     ascender/descender so the centre is real (line-height:1 clipped it and pushed the label off). Padding is
+     SYMMETRIC (6/6) — the earlier 7/5 pushed the descender-less "Click" DOWN, the wrong way. No metric-tuned
+     asymmetric padding, so a different fallback font won't re-break it. letter-spacing:0 keeps L/R centred. */
+  padding:6px 14px;border-radius:999px;background:rgba(20,20,20,.45);border:1px solid rgba(255,255,255,.22);
   -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
   /* motion knobs (named). HIDDEN = small + tilted; SHOWN = full + level. Enter/exit use DIFFERENT easings via
      two rules (a single rule makes exit a plain reverse). Hidden state is identical on enter-start & exit-end
