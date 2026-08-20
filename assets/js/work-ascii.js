@@ -25,7 +25,7 @@
   // ambient scatter field — a separate viewport-fixed canvas (see FIELD_* knobs). Only created if the WORK
   // section exists; drawn in the same loop as the header.
   var section = document.getElementById("work");
-  var fx = null, fctx = null, FW = 0, FH = 0, fcells = [];
+  var fx = null, fctx = null, FW = 0, FH = 0, fcells = [], fieldFS = 12;   // fieldFS recomputed per build (responsive)
   if (section) {
     fx = document.createElement("canvas"); fx.className = "work-fx"; fx.setAttribute("aria-hidden", "true");
     document.body.appendChild(fx);
@@ -50,7 +50,14 @@
   var FIELD_GLYPHS   = 46;    // total scattered glyphs on screen (sparse — reference is a few dozen)
   var FIELD_CLUSTERS = 7;     // loose clusters they group into (not fully random)
   var FIELD_CLUSTER_R= 64;    // cluster radius (px) glyphs scatter within their seed
-  var FIELD_FS       = 12;    // glyph size (px) — individually legible, unlike the tiny header glyphs
+  // glyph size — MIRRORS dandelion.js's bottom-strip size so the ambient field reads at the SAME scale.
+  // dandelion.js is out of scope, so we recompute its formula here — keep these in sync with it:
+  //   FS = clamp(W/170, 6, 9), ×STRIP_SCALE_MOB(1.22) on mobile (W≤640). 1440→8.47px (was a fixed 12).
+  var FIELD_FS_DIV = 170, FIELD_FS_MIN = 6, FIELD_FS_MAX = 9;   // == dandelion.js FS = clamp(W/170, 6, 9)
+  var FIELD_MOB_BP = 640, FIELD_MOB_SCALE = 1.22;              // == dandelion.js STRIP_SCALE_MOB on W≤640
+  var FIELD_GAP_RATIO = 1.1;   // tooClose reject radius = fieldFS × this — narrows WITH the glyph so clusters
+                               // stay proportionally spaced as the size drops; tune cluster spacing here alone.
+  var FIELD_MARGIN   = 12;     // viewport-edge keep-out (px) — ABSOLUTE (was = FIELD_FS) so it holds at 12.
   var FIELD_PAD      = 16;    // keep-out padding (px) around each list-text / header rect
   var FIELD_ALPHA_BASE = 0.24, FIELD_ALPHA_AMP = 0.09;   // low alpha (0.15–0.33 range) — subtle on the white bg
   var FIELD_CHURN_MIN  = 900, FIELD_CHURN_MAX = 2600;    // per-glyph swap period (ms) — SLOWER than the header
@@ -126,14 +133,17 @@
   function buildField() {
     if (!fx) return;
     FW = window.innerWidth; FH = window.innerHeight;
+    // responsive glyph size = dandelion.js strip size: clamp(W/170, 6, 9) × mobile bump. Recomputed per build.
+    fieldFS = Math.max(FIELD_FS_MIN, Math.min(FIELD_FS_MAX, FW / FIELD_FS_DIV)) * (FW <= FIELD_MOB_BP ? FIELD_MOB_SCALE : 1);
     fx.width = Math.round(FW * DPR); fx.height = Math.round(FH * DPR);
     fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     fctx.textAlign = "center"; fctx.textBaseline = "middle";
-    fctx.font = FIELD_FS.toFixed(1) + "px " + MONO;
+    fctx.font = fieldFS.toFixed(1) + "px " + MONO;
 
     var ex = keepOut();
     function blocked(x, y) { return hits(ex, x, y); }
-    function tooClose(x, y) { for (var i = 0; i < fcells.length; i++) { var dx = fcells[i].x - x, dy = fcells[i].y - y; if (dx * dx + dy * dy < (FIELD_FS * 1.1) * (FIELD_FS * 1.1)) return true; } return false; }
+    var gap = fieldFS * FIELD_GAP_RATIO, gap2 = gap * gap;   // min glyph spacing (narrows with fieldFS)
+    function tooClose(x, y) { for (var i = 0; i < fcells.length; i++) { var dx = fcells[i].x - x, dy = fcells[i].y - y; if (dx * dx + dy * dy < gap2) return true; } return false; }
 
     // cluster seeds — weighted toward the right margin, then top/bottom bands (where the left-aligned list
     // leaves the most room). A few glyphs scatter within FIELD_CLUSTER_R of each seed.
@@ -144,7 +154,7 @@
       return { x: FW * (0.06 + Math.random() * 0.88), y: FH * (0.82 + Math.random() * 0.14) };                   // bottom band
     }
     fcells = [];
-    var margin = FIELD_FS, per = Math.max(2, Math.round(FIELD_GLYPHS / FIELD_CLUSTERS)), guard = 0;
+    var margin = FIELD_MARGIN, per = Math.max(2, Math.round(FIELD_GLYPHS / FIELD_CLUSTERS)), guard = 0;
     for (var ci = 0; ci < FIELD_CLUSTERS && fcells.length < FIELD_GLYPHS; ci++) {
       var s = seed();
       for (var k = 0; k < per * 4 && fcells.length < FIELD_GLYPHS; k++) {
