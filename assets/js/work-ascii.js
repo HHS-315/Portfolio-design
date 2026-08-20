@@ -22,15 +22,12 @@
   cv.style.display = "block"; host.appendChild(cv);
   var ctx = cv.getContext("2d");
 
-  // ambient scatter field — a separate viewport-fixed canvas (see FIELD_* knobs). Only created if the WORK
-  // section exists; drawn in the same loop as the header.
+  // ambient scatter field — a separate viewport-fixed canvas (see FIELD_* knobs). Created below, only when the
+  // WORK section exists AND FIELD_ON is true; drawn in the same loop as the header. When OFF, fx stays null and
+  // buildField()/drawField()/keepOut() all early-return on their `if (!fx)` guard — so NOTHING runs, including
+  // keepOut()'s per-frame getBoundingClientRect() reflow. The field is fully inert, not merely hidden.
   var section = document.getElementById("work");
   var fx = null, fctx = null, FW = 0, FH = 0, fcells = [], fieldFS = 12;   // fieldFS recomputed per build (responsive)
-  if (section) {
-    fx = document.createElement("canvas"); fx.className = "work-fx"; fx.setAttribute("aria-hidden", "true");
-    document.body.appendChild(fx);
-    fctx = fx.getContext("2d");
-  }
 
   // ---- knobs --------------------------------------------------------------
   // Matched to the intro (dandelion.js extractText): glyph = FS 6–9px, step = glyph×0.7 (~1.43× overlap).
@@ -47,6 +44,10 @@
   // reference: artefakt.mov. Drawn on a viewport-fixed canvas (#work-fx, z3 — above the white cells, below
   // the list text) inside THIS file's existing rAF loop (no new loop). Colour = same --work-ink but very low
   // alpha; the element's opacity is bound to --work-reveal (CSS) so it appears/disappears WITH the cells.
+  var FIELD_ON       = false; // MASTER SWITCH. false → the #work-fx canvas is never created; buildField /
+                              // drawField / keepOut never run (fully inert, no reflow), while the .work-fx CSS
+                              // and perf-hud "workfx" row stay in place. Flip to true to bring the field back —
+                              // every sizing/alpha/churn knob below is preserved for that.
   var FIELD_GLYPHS   = 46;    // total scattered glyphs on screen (sparse — reference is a few dozen)
   var FIELD_CLUSTERS = 7;     // loose clusters they group into (not fully random)
   var FIELD_CLUSTER_R= 64;    // cluster radius (px) glyphs scatter within their seed
@@ -64,6 +65,13 @@
   var FIELD_SHIM_SPEED = 0.0026;                         // alpha shimmer speed — gentler than the header
   var FIELD_ALPHA_MAX  = 0.35;
   // -------------------------------------------------------------------------
+
+  // create the ambient-field canvas ONLY when enabled (see FIELD_ON). Placed after the knobs so the flag is set.
+  if (section && FIELD_ON) {
+    fx = document.createElement("canvas"); fx.className = "work-fx"; fx.setAttribute("aria-hidden", "true");
+    document.body.appendChild(fx);
+    fctx = fx.getContext("2d");
+  }
 
   var DPR = 1, cells = [], cellFS = 10, tw = 0, th = 0;
 

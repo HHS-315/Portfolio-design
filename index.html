@@ -13,7 +13,7 @@
 <meta property="og:type" content="website" />
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
 /* Pretendard (self-hosted variable) — Korean body/paragraph text */
 @font-face{font-family:'Pretendard';font-weight:100 900;font-style:normal;font-display:swap;src:url('./assets/fonts/pretendard-variable.woff2') format('woff2-variations')}
 
@@ -228,12 +228,22 @@ a{color:inherit;text-decoration:none}
    (translate, no transition — the follow is lerped in JS); inner = the glass pill with the scale+opacity
    show/hide transition. Plain pill (border-radius only — NO clip-path/mask, which would kill the blur). */
 .work-chip{position:fixed;left:0;top:0;z-index:50;pointer-events:none;will-change:transform}
-.work-chip__i{pointer-events:none;display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;letter-spacing:.08em;line-height:1;color:#fff;
+.work-chip__i{pointer-events:none;display:inline-block;white-space:nowrap;font-family:var(--hero-font);font-weight:400;font-size:12px;letter-spacing:.01em;line-height:1;color:#fff;
   padding:6px 14px;border-radius:999px;background:rgba(20,20,20,.45);border:1px solid rgba(255,255,255,.22);
   -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
-  opacity:0;transform:scale(.8);transform-origin:top left;
-  transition:opacity .18s ease,transform .18s cubic-bezier(.2,.8,.2,1);will-change:opacity,transform}
-.work-chip.is-on .work-chip__i{opacity:1;transform:scale(1)}
+  /* motion knobs (named). HIDDEN state = small + tilted; SHOWN state = full + level. Enter/exit use
+     DIFFERENT easings via two rules (a single rule would make exit a plain reverse of enter). The hidden
+     state is identical on enter-start and exit-end, so the tilt direction never flips on rapid re-hover. */
+  --chip-scale:.58;          /* hidden scale (0.5–0.65) — big enough travel to read as a "pop" */
+  --chip-tilt:-10deg;        /* hidden tilt (−8…−12deg) — SAME value on enter-start & exit-end */
+  --chip-in-dur:.36s;  --chip-in-ease:cubic-bezier(.34,1.56,.64,1);   /* back-OUT: overshoots past level → settles */
+  --chip-out-dur:.26s; --chip-out-ease:cubic-bezier(.36,0,.66,-.56);  /* back-IN: anticipates → flicks away tilted */
+  --chip-out-op:.30s;        /* exit opacity ≥ exit transform, so the leaving tilt is actually seen */
+  opacity:0;transform:scale(var(--chip-scale)) rotate(var(--chip-tilt));transform-origin:top left;
+  transition:transform var(--chip-out-dur) var(--chip-out-ease),opacity var(--chip-out-op) ease;
+  will-change:opacity,transform}
+.work-chip.is-on .work-chip__i{opacity:1;transform:scale(1) rotate(0deg);
+  transition:transform var(--chip-in-dur) var(--chip-in-ease),opacity .2s ease}
 @media(prefers-reduced-motion:reduce){.work-chip__i{transition:none}}
 
 /* ============================================================================
