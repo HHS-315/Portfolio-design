@@ -64,27 +64,40 @@
   var WORK_FS_SCALE    = 1.0;                                                  // strip-matched (unchanged)
   var WORK_ALPHA_BASE  = 0.24, WORK_ALPHA_AMP = 0.09, WORK_ALPHA_MAX = 0.35;   // subtle on the WHITE bg
   var WORK_CHURN_MIN   = 900, WORK_CHURN_MAX = 2600, WORK_SHIM_SPEED = 0.0026; // slow/gentle
-  // CONTACT: LIGHT glyphs (--bone) on the BLACK bg. Reshaped to be SMALLER, SPARSER (spread over the whole
-  //       screen in many tiny clusters, not banded), and to BLINK — each glyph fully turns OFF then ON on its
-  //       own timing (duty cycle below), replacing WORK's always-on sine shimmer. Opacity still gated by
-  //       --contact-reveal (rises as the blocks clear; set by work-transition.js).
+  // CONTACT: LIGHT glyphs (--bone) on the BLACK bg. Small, spread over the whole screen in clusters of VARYING
+  //       size (big clumps + singletons). Its "twinkle" now matches the rest of the site: the alpha stays ON
+  //       and only WOBBLES (never hits 0), and the visible flicker is the fast CHAR SWAP (churn) — the same
+  //       model as the bottom strip and the WORK header. Opacity still gated by --contact-reveal.
   var CONTACT_FIELD_ON  = true;
-  var CONTACT_FS_SCALE  = 0.60;    // × base FS — decoupled from the strip; ~5.08px @1440 (base 8.47), smaller
-  var CONTACT_GLYPHS    = 52;      // total (WORK 46) — barely higher, but now over the WHOLE screen → sparser
-  var CONTACT_CLUSTERS  = 13;      // MORE clusters (WORK 7) …
-  var CONTACT_CLUSTER_R = 34;      // … each SMALLER (WORK 64) with FEWER glyphs (52/13 ≈ 4 vs 46/7 ≈ 6.6)
-  var CONTACT_PAD       = 22;      // larger keep-out pad (WORK 16) — compensates the smaller glyph hit-box so
-                                   //   the shrunk glyphs still clear .wish__lead by a comfortable margin
-  // blink — each glyph runs its own OFF→ON cycle, desynced by its per-glyph phase (c.ph). A short edge fade
-  //   (not a hard strip-style snap) reads as a gentle twinkle rather than a harsh 60fps flicker across dozens
-  //   of tiny glyphs. Only ~DUTY of a full cycle is the ON window, so only a fraction is lit at any instant.
-  var CONTACT_BLINK      = true;
-  var CONTACT_BLINK_SPEED = 0.00042;  // cycle rate — 1/SPEED ≈ 2380ms period per glyph
-  var CONTACT_BLINK_DUTY  = 0.32;     // fraction of each cycle a glyph is ON (~1/3 visible at once)
-  var CONTACT_BLINK_FADE  = 0.22;     // fade-in/out portion at each edge of the ON window (0 = hard snap)
-  var CONTACT_ALPHA_PEAK  = 0.78;     // ON-brightness cap on the black bg (WORK-era aMax was 0.66)
-  var CONTACT_ALPHA_BASE  = 0.42;     // static level shown under prefers-reduced-motion (no blink)
-  var CONTACT_CHURN_MIN  = 320, CONTACT_CHURN_MAX = 1400;   // char-swap cadence (independent of blink)
+  var CONTACT_FS_SCALE  = 0.60;    // × base FS — decoupled from the strip; ~5.08px @1440 (base 8.47) — UNCHANGED
+  var CONTACT_GLYPHS    = 74;      // soft CEILING on total glyphs (was 52). Higher to allow the big clumps of
+                                   //   part-2's varied cluster sizes; actual total emerges from the size draw.
+  var CONTACT_CLUSTERS  = 13;      // cluster CENTRES (unchanged) — full-screen coverage via seedContact grid
+  var CONTACT_CLUSTER_R = 34;      // fallback fixed radius (only used if size-linked radius is off)
+  var CONTACT_PAD       = 26;      // keep-out pad around .wish__lead (was 22) — a touch more room now that the
+                                   //   field is denser (always-on) so the statement doesn't feel crowded
+  // --- shimmer (ALWAYS-ON alpha, like the strip/header) ---
+  //   alpha = aBase ± aAmp, never touching 0. Range 0.26..0.54 — dimmer than the strip (0.68..1.0) and the
+  //   header (0.46..0.78) so it clearly reads as the BACKGROUND layer on black.
+  var CONTACT_ALPHA_BASE = 0.40, CONTACT_ALPHA_AMP = 0.14, CONTACT_ALPHA_MAX = 0.60;
+  var CONTACT_SHIM_SPEED = 0.004;  // gentle alpha wobble — below the header (0.006) / strip (0.012); the churn,
+                                   //   not the alpha, carries the sparkle so this stays subtle
+  var CONTACT_CHURN_MIN  = 150, CONTACT_CHURN_MAX = 600;    // FAST char-swap (was 320..1400) — between the strip
+                                   //   (60..260, fastest) and the header (280..1150, mid); this is the twinkle
+  // --- varied cluster sizes (part 2) — big clumps + medium + singletons, all from the SEEDED rnd ---
+  var CONTACT_SIZE_MIN   = 1;      // singletons allowed (낱개)
+  var CONTACT_SIZE_MAX   = 11;     // biggest clump target
+  var CONTACT_SIZE_POW   = 2.1;    // skew of the size draw: size = MIN + floor(rnd()^POW × span). POW>1 → most
+                                   //   clusters small, a long tail of a few big clumps (E[size] ≈ 4.2)
+  var CONTACT_CLUSTER_R_K = 6.0;   // size-linked radius: R = K × sqrt(size). Grows with the clump so a big one
+                                   //   isn't cramped, but sub-linearly so areal density stays roughly constant
+  var CONTACT_CLUSTER_R_MIN = 7;   // floor radius (px) so even small clusters have a little scatter
+  var CONTACT_GAP_RATIO  = 0.82;   // tooClose reject radius = fs × this (CONTACT-only; shared FIELD_GAP_RATIO is
+                                   //   1.1). Lower → glyphs in a clump sit nearly touching, as in the reference
+  // --- blink — DISABLED, kept for future. When CONTACT_BLINK=true, draw() takes the duty-cycle path instead
+  //     of the shimmer path above. All constants preserved so a single flag flip restores it. ---
+  var CONTACT_BLINK      = false;
+  var CONTACT_BLINK_SPEED = 0.00042, CONTACT_BLINK_DUTY = 0.32, CONTACT_BLINK_FADE = 0.22, CONTACT_ALPHA_PEAK = 0.78;
   // -------------------------------------------------------------------------
 
   var DPR = 1, cells = [], cellFS = 10, tw = 0, th = 0;
@@ -159,25 +172,39 @@
       canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
       g.setTransform(DPR, 0, 0, DPR, 0, 0); g.textAlign = "center"; g.textBaseline = "middle"; g.font = fs.toFixed(1) + "px " + MONO;
       var ex = cfg.keep();
-      var gap = fs * FIELD_GAP_RATIO, gap2 = gap * gap;
+      var gap = fs * (cfg.gapRatio || FIELD_GAP_RATIO), gap2 = gap * gap;
       function tooClose(x, y) { for (var i = 0; i < fcells.length; i++) { var dx = fcells[i].x - x, dy = fcells[i].y - y; if (dx * dx + dy * dy < gap2) return true; } return false; }
       fcells = [];
       var GLYPHS = cfg.glyphs, CLUSTERS = cfg.clusters, CLUSTER_R = cfg.clusterR;
       var rnd = mulberry32(cfg.seed);   // fixed seed → identical layout every build (scroll/resize stable)
       var margin = FIELD_MARGIN, per = Math.max(2, Math.round(GLYPHS / CLUSTERS)), guard = 0;
+      var placed = [];   // debug: [targetSize, actuallyPlaced] per cluster
       for (var ci = 0; ci < CLUSTERS && fcells.length < GLYPHS; ci++) {
-        var s = cfg.seedFn(W, H, rnd, ci, CLUSTERS), added = 0;
-        // cap ACCEPTED glyphs at ~per PER cluster: a clusterR region can hold far more than `per`, so without
-        // this the first clusters greedily fill the whole quota and the later clusters (other screen regions)
-        // never contribute — collapsing the field into one corner. Capping spreads glyphs across ALL clusters.
-        for (var k = 0; k < per * 6 && added < per && fcells.length < GLYPHS; k++) {
-          if (guard++ > GLYPHS * 60) break;
-          var gx = s.x + (rnd() * 2 - 1) * CLUSTER_R, gy = s.y + (rnd() * 2 - 1) * CLUSTER_R;
-          if (gx < margin || gx > W - margin || gy < margin || gy > H - margin) continue;
-          if (boxHits(ex, gx, gy, hx, hy) || tooClose(gx, gy)) continue;
-          fcells.push({ x: gx, y: gy, ch: pick(CODE), swapAt: 0, ph: Math.random() * 6.283 }); added++;
+        // per-cluster TARGET size — uniform `per` for WORK; a SEEDED varied draw for CONTACT (big clumps +
+        // singletons). Radius links to the target so a big clump gets room without going sparse. Both are pulled
+        // from the fixed-seed rnd, so scroll/resize round-trips reproduce the exact same layout.
+        var target = cfg.clusterSize ? Math.max(1, cfg.clusterSize(rnd)) : per;
+        var R = cfg.clusterRFn ? cfg.clusterRFn(target) : CLUSTER_R;
+        // attempt cap scales with the TARGET (a big clump needs more tries to seat against tooClose); accepting
+        // at most `target` keeps each cluster distinct instead of the first clusters draining the whole budget.
+        var attempts = cfg.clusterSize ? (target * 12 + 16) : per * 6;
+        // RESEED-on-empty: a cluster whose centre lands fully inside a keep-out (e.g. under the top bar) would
+        // otherwise place 0 and the whole clump — often a big one — silently vanishes. If nothing seated, re-roll
+        // the centre (same grid cell, new random point) a few times. CONTACT only; WORK keeps its single seed.
+        var added = 0, seatTries = cfg.clusterSize ? 5 : 1;
+        for (var st = 0; st < seatTries && added === 0 && fcells.length < GLYPHS; st++) {
+          var s = cfg.seedFn(W, H, rnd, ci, CLUSTERS);
+          for (var k = 0; k < attempts && added < target && fcells.length < GLYPHS; k++) {
+            if (guard++ > GLYPHS * 120) break;
+            var gx = s.x + (rnd() * 2 - 1) * R, gy = s.y + (rnd() * 2 - 1) * R;
+            if (gx < margin || gx > W - margin || gy < margin || gy > H - margin) continue;
+            if (boxHits(ex, gx, gy, hx, hy) || tooClose(gx, gy)) continue;
+            fcells.push({ x: gx, y: gy, ch: pick(CODE), swapAt: 0, ph: Math.random() * 6.283 }); added++;
+          }
         }
+        placed.push([target, added]);
       }
+      if (cfg.dbg && window.console) console.log("[" + cfg.cls + "] clusters target/placed:", JSON.stringify(placed), "total:", fcells.length);
     }
     function draw(t) {
       if (!fcells.length) return;
@@ -220,9 +247,15 @@
     churnMin: WORK_CHURN_MIN, churnMax: WORK_CHURN_MAX, shim: WORK_SHIM_SPEED, keep: workKeep });
   var contactField = makeField({ on: CONTACT_FIELD_ON, section: contact, cls: "contact-fx", color: BONE, seed: 9271,
     fsScale: CONTACT_FS_SCALE, glyphs: CONTACT_GLYPHS, clusters: CONTACT_CLUSTERS, clusterR: CONTACT_CLUSTER_R, seedFn: seedContact,
+    gapRatio: CONTACT_GAP_RATIO,
+    // varied cluster sizes → big clumps + singletons; radius links to size so clumps aren't cramped
+    clusterSize: function (rnd) { return CONTACT_SIZE_MIN + Math.floor(Math.pow(rnd(), CONTACT_SIZE_POW) * (CONTACT_SIZE_MAX - CONTACT_SIZE_MIN + 1)); },
+    clusterRFn: function (size) { return CONTACT_CLUSTER_R_MIN + CONTACT_CLUSTER_R_K * Math.sqrt(size); },
     blink: CONTACT_BLINK, blinkSpeed: CONTACT_BLINK_SPEED, blinkDuty: CONTACT_BLINK_DUTY, blinkFade: CONTACT_BLINK_FADE,
-    aBase: CONTACT_ALPHA_BASE, aPeak: CONTACT_ALPHA_PEAK, aMax: CONTACT_ALPHA_PEAK,
-    churnMin: CONTACT_CHURN_MIN, churnMax: CONTACT_CHURN_MAX, keep: contactKeep });
+    aBase: CONTACT_ALPHA_BASE, aAmp: CONTACT_ALPHA_AMP, shim: CONTACT_SHIM_SPEED,
+    aPeak: CONTACT_ALPHA_PEAK, aMax: CONTACT_BLINK ? CONTACT_ALPHA_PEAK : CONTACT_ALPHA_MAX,
+    churnMin: CONTACT_CHURN_MIN, churnMax: CONTACT_CHURN_MAX, keep: contactKeep,
+    dbg: (typeof location !== "undefined" && /fielddbg/.test(location.search)) });
 
   // ---- header (the word "WORK") -------------------------------------------
   function build() {
