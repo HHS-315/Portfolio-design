@@ -77,9 +77,14 @@
   var CONTACT_PAD       = 26;      // keep-out pad around .wish__lead (was 22) — a touch more room now that the
                                    //   field is denser (always-on) so the statement doesn't feel crowded
   // --- shimmer (ALWAYS-ON alpha, like the strip/header) ---
-  //   alpha = aBase ± aAmp, never touching 0. Range 0.26..0.54 — dimmer than the strip (0.68..1.0) and the
-  //   header (0.46..0.78) so it clearly reads as the BACKGROUND layer on black.
-  var CONTACT_ALPHA_BASE = 0.40, CONTACT_ALPHA_AMP = 0.14, CONTACT_ALPHA_MAX = 0.60;
+  //   alpha = aBase ± aAmp, never touching 0. Range 0.40..0.80 (MAX = the real peak, so it is actually reached).
+  //   These glyphs are ~5px (FS_SCALE 0.60) vs the strip's ~8.5px — thin strokes scatter more ink under AA, so
+  //   the same alpha reads fainter. Pitched at/above the strip (0.68..1.0) & header (0.46..0.78) numerically so
+  //   that OPTICALLY it lands as a legible background, not the palest layer.
+  var CONTACT_ALPHA_BASE = 0.60, CONTACT_ALPHA_AMP = 0.20, CONTACT_ALPHA_MAX = 0.80;
+  var CONTACT_BOLD       = 0.18;   // synthetic-bold: a thin same-colour strokeText over each glyph (screen px,
+                                   //   like dandelion's STRIP_BOLD 0.3 but thinner for the ~5px glyphs) so the
+                                   //   hairline strokes read solid instead of washing out under AA. 0 = off.
   var CONTACT_SHIM_SPEED = 0.004;  // gentle alpha wobble — below the header (0.006) / strip (0.012); the churn,
                                    //   not the alpha, carries the sparkle so this stays subtle
   var CONTACT_CHURN_MIN  = 150, CONTACT_CHURN_MAX = 600;    // FAST char-swap (was 320..1400) — between the strip
@@ -94,6 +99,20 @@
   var CONTACT_CLUSTER_R_MIN = 7;   // floor radius (px) so even small clusters have a little scatter
   var CONTACT_GAP_RATIO  = 0.82;   // tooClose reject radius = fs × this (CONTACT-only; shared FIELD_GAP_RATIO is
                                    //   1.1). Lower → glyphs in a clump sit nearly touching, as in the reference
+  // --- cluster LIFECYCLE (CONTACT only) — each clump independently fades IN, HOLDS, fades OUT, then respawns at
+  //     a new spot with a new size / radius / char set. Runs on TIME inside the existing paint loop (no new rAF).
+  //     Slow on purpose: hold ≫ fade so it reads as "a clump occasionally drifts to a new place", never a blink.
+  //     env(cluster) multiplies the per-glyph shimmer alpha; churn (char swap) is independent and unchanged. ---
+  var CONTACT_LIFE       = true;
+  var CONTACT_LIFE_HOLD_MIN = 14000, CONTACT_LIFE_HOLD_MAX = 28000;  // ms fully-present per clump (staggered). Long
+                                   //   so hold ≫ fade: at any instant only ~2-3 of 13 clumps are mid-fade, the
+                                   //   rest sit fully lit → the field stays dense and a clump only "occasionally"
+                                   //   drifts. (Shorter holds left too many clumps dim at once — the field thinned.)
+  var CONTACT_LIFE_FADE_MIN = 1600, CONTACT_LIFE_FADE_MAX = 2600;    // ms fade-in and fade-out (each side); slow
+                                   //   enough (>1.5s) to read as drift, not flicker
+  var CONTACT_LIFE_REST   = 1600;  // ms a clump waits before retrying if it can't find a clear spawn spot
+  var CONTACT_LIFE_RESUME_SPREAD = 3000;  // on loop resume, overdue clumps respawn spread over this window (ms)
+                                   //   so they don't all pop back at once after the field was off-screen/hidden
   // --- blink — DISABLED, kept for future. When CONTACT_BLINK=true, draw() takes the duty-cycle path instead
   //     of the shimmer path above. All constants preserved so a single flag flip restores it. ---
   var CONTACT_BLINK      = false;
@@ -164,7 +183,76 @@
     var canvas = document.createElement("canvas"); canvas.className = cfg.cls; canvas.setAttribute("aria-hidden", "true");
     document.body.appendChild(canvas);
     var g = canvas.getContext("2d");
-    var fcells = [], W = 0, H = 0, fs = 12, hx = 0, hy = 0;
+    var fcells = [], clusters = [], W = 0, H = 0, fs = 12, hx = 0, hy = 0, margin = FIELD_MARGIN, gap2 = 0;
+    var lastT = 0, started = false;
+    // a SEPARATE, persistent PRNG for the CONTACT lifecycle: it keeps advancing across respawns, so clumps get
+    // fresh positions/sizes/chars OVER TIME. (WORK's static build still uses a fixed mulberry32(cfg.seed) below,
+    // so WORK stays reproducible.) Only advanced by time-driven respawns, never by scroll → no scroll-jump.
+    var lifeRnd = mulberry32((cfg.seed ^ 0x9e3779b1) >>> 0);
+
+    // ---- lifecycle helpers (CONTACT only) ----
+    function occupied(x, y, skip, extra) {   // tooClose against every OTHER cluster's glyphs + the new ones so far
+      for (var i = 0; i < clusters.length; i++) { if (clusters[i] === skip) continue; var gl = clusters[i].glyphs;
+        for (var j = 0; j < gl.length; j++) { var dx = gl[j].x - x, dy = gl[j].y - y; if (dx * dx + dy * dy < gap2) return true; } }
+      for (var e = 0; e < extra.length; e++) { var ex2 = extra[e].x - x, ey2 = extra[e].y - y; if (ex2 * ex2 + ey2 * ey2 < gap2) return true; }
+      return false;
+    }
+    function totalExcept(skip) { var n = 0; for (var i = 0; i < clusters.length; i++) if (clusters[i] !== skip) n += clusters[i].glyphs.length; return n; }
+    function tryPlace(cx, cy, size, R, ex, clu) {   // seat up to `size` glyphs in R around (cx,cy), clearing keep-out + neighbours
+      var out = [], attempts = size * 12 + 16;
+      for (var k = 0; k < attempts && out.length < size; k++) {
+        var gx = cx + (lifeRnd() * 2 - 1) * R, gy = cy + (lifeRnd() * 2 - 1) * R;
+        if (gx < margin || gx > W - margin || gy < margin || gy > H - margin) continue;
+        if (boxHits(ex, gx, gy, hx, hy) || occupied(gx, gy, clu, out)) continue;
+        out.push({ x: gx, y: gy, ch: pick(CODE), swapAt: 0, ph: Math.random() * 6.283 });
+      }
+      return out;
+    }
+    // (re)spawn one clump: new centre (its grid cell), new size (budget-capped), new radius, new glyphs. `phase`:
+    //   "stagger" = random initial age (build); "fresh" = start a fade-in now (respawn); "keep" = leave timers
+    //   as-is (resize → same lifecycle phase, only the positions move).
+    function spawnCluster(clu, ex, t, phase) {
+      var avail = Math.max(1, cfg.glyphs - totalExcept(clu));               // keep the whole field under CONTACT_GLYPHS
+      var size = Math.min(avail, Math.max(1, cfg.clusterSize(lifeRnd)));
+      var R = cfg.clusterRFn(size), best = [], bestX = 0, bestY = 0;
+      // try several centres and keep the one that seats the MOST glyphs — NOT just the first non-empty spot (that
+      // would let a clump collapse to 1-2 near the statement / screen edge). First tries stay in the clump's grid
+      // cell (screen coverage); if that cell is blocked (e.g. sits under .wish__lead), later tries fall back to
+      // ANY open spot so the clump relocates instead of dying — keeps the field from thinning out over the text.
+      for (var st = 0; st < 6 && best.length < size; st++) {
+        var s = (st < 3) ? cfg.seedFn(W, H, lifeRnd, clu.ci, cfg.clusters)
+                         : { x: margin + lifeRnd() * (W - 2 * margin), y: margin + lifeRnd() * (H - 2 * margin) };
+        var gg = tryPlace(s.x, s.y, size, R, ex, clu);
+        if (gg.length > best.length) { best = gg; bestX = s.x; bestY = s.y; }
+      }
+      if (!best.length) { clu.resting = true; clu.glyphs = []; clu.rest = t + CONTACT_LIFE_REST; return false; }
+      var glyphs = best; clu.cx = bestX; clu.cy = bestY;
+      clu.resting = false; clu.glyphs = glyphs; clu.size = glyphs.length; clu.R = R;
+      if (phase !== "keep") {
+        clu.hold = CONTACT_LIFE_HOLD_MIN + lifeRnd() * (CONTACT_LIFE_HOLD_MAX - CONTACT_LIFE_HOLD_MIN);
+        clu.fade = CONTACT_LIFE_FADE_MIN + lifeRnd() * (CONTACT_LIFE_FADE_MAX - CONTACT_LIFE_FADE_MIN);
+        clu.cycle = clu.hold + clu.fade * 2;
+        clu.t0 = (phase === "stagger") ? t - lifeRnd() * clu.cycle : t;    // stagger → clumps start out of phase
+      }
+      return true;
+    }
+    function envelope(age, fade, hold) {   // 0→1 fade-in, 1 hold, 1→0 fade-out
+      if (age <= 0) return 0;
+      if (age < fade) return age / fade;
+      if (age < fade + hold) return 1;
+      var o = age - fade - hold;
+      return o < fade ? 1 - o / fade : 0;
+    }
+    // Loop resumed after a pause (field scrolled off-screen, tab hidden): every clump whose cycle expired during
+    // the gap would otherwise respawn on the SAME frame → one big pop. Re-stagger the overdue ones across a fresh
+    // window, and desync churn deadlines. Mirrors dandelion.js reseedOnResume.
+    function resumeReseed(t) {
+      for (var i = 0; i < clusters.length; i++) { var c = clusters[i];
+        if (c.resting) { c.rest = t + Math.random() * CONTACT_LIFE_RESUME_SPREAD; }
+        else if (t - c.t0 >= c.cycle - 1) { c.t0 = t - c.cycle + Math.random() * CONTACT_LIFE_RESUME_SPREAD; }  // becomes due, spread out
+        for (var j = 0; j < c.glyphs.length; j++) c.glyphs[j].swapAt = t + Math.random() * cfg.churnMax;
+      }
+    }
 
     function build() {
       W = window.innerWidth; H = window.innerHeight;
@@ -172,28 +260,36 @@
       canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
       g.setTransform(DPR, 0, 0, DPR, 0, 0); g.textAlign = "center"; g.textBaseline = "middle"; g.font = fs.toFixed(1) + "px " + MONO;
       var ex = cfg.keep();
-      var gap = fs * (cfg.gapRatio || FIELD_GAP_RATIO), gap2 = gap * gap;
+      var gap = fs * (cfg.gapRatio || FIELD_GAP_RATIO); gap2 = gap * gap;
+      var GLYPHS = cfg.glyphs, CLUSTERS = cfg.clusters, CLUSTER_R = cfg.clusterR;
+
+      if (cfg.life) {
+        // CONTACT: cluster lifecycle. On a FRESH build, create clumps with staggered phases; on a REBUILD
+        // (resize), keep each clump's lifecycle phase (so they don't all fade in together) and only re-place its
+        // glyphs for the new canvas size.
+        var t = (typeof performance !== "undefined") ? performance.now() : 0;
+        var fresh = clusters.length !== CLUSTERS;
+        if (fresh) { clusters = []; for (var ci = 0; ci < CLUSTERS; ci++) clusters.push({ ci: ci, glyphs: [], size: 0, cx: 0, cy: 0, R: 0, t0: 0, hold: 0, fade: 0, cycle: 0, resting: false, rest: 0 }); }
+        for (var c2 = 0; c2 < CLUSTERS; c2++) clusters[c2].glyphs = [];      // clear so occupied() only sees re-placed clumps
+        var placed = [];
+        for (var c = 0; c < CLUSTERS; c++) { spawnCluster(clusters[c], ex, t, fresh ? "stagger" : "keep"); placed.push([clusters[c].size, clusters[c].glyphs.length]); }
+        started = false;   // next draw re-baselines lastT so the build→first-frame gap isn't seen as a resume
+        if (cfg.dbg && window.console) console.log("[" + cfg.cls + "] life clusters sizes:", JSON.stringify(clusters.map(function (q) { return q.glyphs.length; })), "total:", clusters.reduce(function (a, q) { return a + q.glyphs.length; }, 0));
+        return;
+      }
+
+      // WORK (and any non-lifecycle field): static, fixed-seed flat layout — UNCHANGED.
       function tooClose(x, y) { for (var i = 0; i < fcells.length; i++) { var dx = fcells[i].x - x, dy = fcells[i].y - y; if (dx * dx + dy * dy < gap2) return true; } return false; }
       fcells = [];
-      var GLYPHS = cfg.glyphs, CLUSTERS = cfg.clusters, CLUSTER_R = cfg.clusterR;
       var rnd = mulberry32(cfg.seed);   // fixed seed → identical layout every build (scroll/resize stable)
-      var margin = FIELD_MARGIN, per = Math.max(2, Math.round(GLYPHS / CLUSTERS)), guard = 0;
-      var placed = [];   // debug: [targetSize, actuallyPlaced] per cluster
-      for (var ci = 0; ci < CLUSTERS && fcells.length < GLYPHS; ci++) {
-        // per-cluster TARGET size — uniform `per` for WORK; a SEEDED varied draw for CONTACT (big clumps +
-        // singletons). Radius links to the target so a big clump gets room without going sparse. Both are pulled
-        // from the fixed-seed rnd, so scroll/resize round-trips reproduce the exact same layout.
+      var per = Math.max(2, Math.round(GLYPHS / CLUSTERS)), guard = 0, sp = [];
+      for (var wi = 0; wi < CLUSTERS && fcells.length < GLYPHS; wi++) {
         var target = cfg.clusterSize ? Math.max(1, cfg.clusterSize(rnd)) : per;
         var R = cfg.clusterRFn ? cfg.clusterRFn(target) : CLUSTER_R;
-        // attempt cap scales with the TARGET (a big clump needs more tries to seat against tooClose); accepting
-        // at most `target` keeps each cluster distinct instead of the first clusters draining the whole budget.
         var attempts = cfg.clusterSize ? (target * 12 + 16) : per * 6;
-        // RESEED-on-empty: a cluster whose centre lands fully inside a keep-out (e.g. under the top bar) would
-        // otherwise place 0 and the whole clump — often a big one — silently vanishes. If nothing seated, re-roll
-        // the centre (same grid cell, new random point) a few times. CONTACT only; WORK keeps its single seed.
         var added = 0, seatTries = cfg.clusterSize ? 5 : 1;
         for (var st = 0; st < seatTries && added === 0 && fcells.length < GLYPHS; st++) {
-          var s = cfg.seedFn(W, H, rnd, ci, CLUSTERS);
+          var s = cfg.seedFn(W, H, rnd, wi, CLUSTERS);
           for (var k = 0; k < attempts && added < target && fcells.length < GLYPHS; k++) {
             if (guard++ > GLYPHS * 120) break;
             var gx = s.x + (rnd() * 2 - 1) * R, gy = s.y + (rnd() * 2 - 1) * R;
@@ -202,38 +298,75 @@
             fcells.push({ x: gx, y: gy, ch: pick(CODE), swapAt: 0, ph: Math.random() * 6.283 }); added++;
           }
         }
-        placed.push([target, added]);
+        sp.push([target, added]);
       }
-      if (cfg.dbg && window.console) console.log("[" + cfg.cls + "] clusters target/placed:", JSON.stringify(placed), "total:", fcells.length);
+      if (cfg.dbg && window.console) console.log("[" + cfg.cls + "] clusters target/placed:", JSON.stringify(sp), "total:", fcells.length);
     }
+
     function draw(t) {
-      if (!fcells.length) return;
       var _tp = window.HeroPerf ? HeroPerf.t() : 0;
       g.clearRect(0, 0, W, H);
-      var live = cfg.keep();   // rects move as content scrolls → re-test each glyph against the CURRENT rects (box)
+      var live = cfg.keep();   // ONE keep-out read per frame — reused for both drawing AND respawn placement
       g.fillStyle = cfg.color;
+
+      if (cfg.life) {
+        var bold = cfg.bold || 0;
+        if (bold) { g.strokeStyle = cfg.color; g.lineJoin = "round"; g.lineWidth = bold; }
+        // reduced motion → fully static: current clumps at base alpha, no churn, no lifecycle.
+        if (reduce) {
+          for (var ri = 0; ri < clusters.length; ri++) { var rg = clusters[ri].glyphs;
+            for (var rj = 0; rj < rg.length; rj++) { var rc = rg[rj]; if (boxHits(live, rc.x, rc.y, hx, hy)) continue; g.globalAlpha = cfg.aBase; g.fillText(rc.ch, rc.x, rc.y); if (bold) g.strokeText(rc.ch, rc.x, rc.y); } }
+          g.globalAlpha = 1; if (window.HeroPerf) HeroPerf.add("workfx", _tp); return;
+        }
+        var dt = t - lastT; lastT = t;
+        if (started && dt > 500) resumeReseed(t);   // returned from off-screen/hidden → stagger the backlog
+        started = true;
+        for (var ci = 0; ci < clusters.length; ci++) {
+          var clu = clusters[ci];
+          if (clu.resting) { if (t >= clu.rest) spawnCluster(clu, live, t, "fresh"); if (clu.resting) continue; }
+          var age = t - clu.t0;
+          if (age >= clu.cycle) { spawnCluster(clu, live, t, "fresh"); if (clu.resting) continue; age = t - clu.t0; }
+          var cenv = envelope(age, clu.fade, clu.hold);
+          if (cenv <= 0) continue;
+          var gl = clu.glyphs;
+          for (var gi = 0; gi < gl.length; gi++) {
+            var c = gl[gi];
+            if (boxHits(live, c.x, c.y, hx, hy)) continue;
+            if (t > c.swapAt) { c.ch = pick(CODE); c.swapAt = t + cfg.churnMin + Math.random() * (cfg.churnMax - cfg.churnMin); }
+            var a = (cfg.aBase + Math.sin(t * cfg.shim + c.ph) * cfg.aAmp) * cenv;   // shimmer × clump envelope
+            if (a < 0.02) continue; if (a > cfg.aMax) a = cfg.aMax;
+            g.globalAlpha = a;
+            g.fillText(c.ch, c.x, c.y);
+            if (bold) g.strokeText(c.ch, c.x, c.y);
+          }
+        }
+        g.globalAlpha = 1;
+        if (window.HeroPerf) HeroPerf.add("workfx", _tp);
+        return;
+      }
+
+      // WORK / non-lifecycle flat draw — UNCHANGED (shimmer or blink path).
+      if (!fcells.length) { if (window.HeroPerf) HeroPerf.add("workfx", _tp); return; }
       for (var i = 0; i < fcells.length; i++) {
-        var c = fcells[i];
-        if (boxHits(live, c.x, c.y, hx, hy)) continue;
-        if (!reduce && t > c.swapAt) { c.ch = pick(CODE); c.swapAt = t + cfg.churnMin + Math.random() * (cfg.churnMax - cfg.churnMin); }
-        var a;
+        var fc = fcells[i];
+        if (boxHits(live, fc.x, fc.y, hx, hy)) continue;
+        if (!reduce && t > fc.swapAt) { fc.ch = pick(CODE); fc.swapAt = t + cfg.churnMin + Math.random() * (cfg.churnMax - cfg.churnMin); }
+        var fa;
         if (cfg.blink) {
-          // individual OFF→ON blink: each glyph on its own phase (c.ph). Only the DUTY window of each cycle is
-          // lit; outside it the glyph is fully OFF (skipped). A short FADE at each edge softens the on/off.
-          if (reduce) { a = cfg.aBase; }                                   // reduced motion → static, no blink
+          if (reduce) { fa = cfg.aBase; }
           else {
-            var cyc = ((t * cfg.blinkSpeed + c.ph) % 1 + 1) % 1;           // 0..1 within this glyph's cycle
-            if (cyc >= cfg.blinkDuty) continue;                            // OFF window → draw nothing
-            var u = cyc / cfg.blinkDuty;                                   // 0..1 across the ON window
-            var env = cfg.blinkFade > 0 ? Math.min(1, Math.min(u, 1 - u) / cfg.blinkFade) : 1;
-            a = env * cfg.aPeak;
+            var cyc = ((t * cfg.blinkSpeed + fc.ph) % 1 + 1) % 1;
+            if (cyc >= cfg.blinkDuty) continue;
+            var u = cyc / cfg.blinkDuty;
+            var benv = cfg.blinkFade > 0 ? Math.min(1, Math.min(u, 1 - u) / cfg.blinkFade) : 1;
+            fa = benv * cfg.aPeak;
           }
         } else {
-          a = reduce ? cfg.aBase : cfg.aBase + Math.sin(t * cfg.shim + c.ph) * cfg.aAmp;
+          fa = reduce ? cfg.aBase : cfg.aBase + Math.sin(t * cfg.shim + fc.ph) * cfg.aAmp;
         }
-        if (a < 0.02) continue; if (a > cfg.aMax) a = cfg.aMax;
-        g.globalAlpha = a;
-        g.fillText(c.ch, c.x, c.y);
+        if (fa < 0.02) continue; if (fa > cfg.aMax) fa = cfg.aMax;
+        g.globalAlpha = fa;
+        g.fillText(fc.ch, fc.x, fc.y);
       }
       g.globalAlpha = 1;
       if (window.HeroPerf) HeroPerf.add("workfx", _tp);
@@ -254,6 +387,7 @@
     blink: CONTACT_BLINK, blinkSpeed: CONTACT_BLINK_SPEED, blinkDuty: CONTACT_BLINK_DUTY, blinkFade: CONTACT_BLINK_FADE,
     aBase: CONTACT_ALPHA_BASE, aAmp: CONTACT_ALPHA_AMP, shim: CONTACT_SHIM_SPEED,
     aPeak: CONTACT_ALPHA_PEAK, aMax: CONTACT_BLINK ? CONTACT_ALPHA_PEAK : CONTACT_ALPHA_MAX,
+    life: CONTACT_LIFE, bold: CONTACT_BOLD,
     churnMin: CONTACT_CHURN_MIN, churnMax: CONTACT_CHURN_MAX, keep: contactKeep,
     dbg: (typeof location !== "undefined" && /fielddbg/.test(location.search)) });
 
