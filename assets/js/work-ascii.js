@@ -99,24 +99,24 @@
   var CONTACT_CLUSTER_R_MIN = 7;   // floor radius (px) so even small clusters have a little scatter
   var CONTACT_GAP_RATIO  = 0.82;   // tooClose reject radius = fs × this (CONTACT-only; shared FIELD_GAP_RATIO is
                                    //   1.1). Lower → glyphs in a clump sit nearly touching, as in the reference
-  // --- cluster LIFECYCLE (CONTACT only) — each clump independently fades IN, HOLDS, fades OUT, then respawns at
-  //     a DIFFERENT spot with a new size / radius / char set. Runs on TIME inside the existing paint loop (no new
-  //     rAF). The point is visible FLOW: over a few seconds several clumps should hand off. hold is only a few ×
-  //     fade — long enough that a clump reads as "resting then moving", short enough to keep the field alive; the
-  //     fade is kept ≥0.7s so it's a smooth dissolve, never the opacity blink we removed. env(cluster) multiplies
-  //     the per-glyph shimmer alpha; churn (char swap) is independent and unchanged. ---
+  // --- cluster LIFECYCLE (CONTACT only) — each clump POPS IN, HOLDS briefly, fades OUT, then respawns at a
+  //     DIFFERENT spot with a new size / radius / char set. Runs on TIME inside the existing paint loop (no new
+  //     rAF). Goal: brisk, light hand-offs — "pop in, linger, gone", not a slow opacity crossfade. Fade-in is
+  //     near-instant and fade-out only a touch longer; that asymmetry + short holds keep only ~1-2 clumps
+  //     visibly dimming at any instant (was ~1/3 of them). env(cluster) multiplies the per-glyph shimmer alpha;
+  //     churn (char swap) is independent and unchanged. Fade-in/out are SEPARATE so they tune independently. ---
   var CONTACT_LIFE       = true;
-  var CONTACT_LIFE_HOLD_MIN = 2600, CONTACT_LIFE_HOLD_MAX = 6000;    // ms fully-present per clump (staggered) — was
-                                   //   14000-28000 (near-static). Short enough that many clumps hand off within a
-                                   //   few seconds; still a few × the fade so each clump clearly rests before moving.
-  var CONTACT_LIFE_FADE_MIN = 900, CONTACT_LIFE_FADE_MAX = 1500;     // ms fade-in and fade-out (each side). ≥0.9s
-                                   //   so the dissolve is smooth flow, not a flicker; ≪ hold so it's a transition,
-                                   //   not the whole life. cycle = hold + 2·fade ≈ 4.4-9.0s.
-  var CONTACT_LIFE_REST   = 700;   // ms a clump waits before retrying if it can't find a clear spawn spot (scaled
+  var CONTACT_LIFE_HOLD_MIN = 1800, CONTACT_LIFE_HOLD_MAX = 3600;    // ms fully-present per clump (staggered) — was
+                                   //   2600-6000. Shorter so the field changes briskly ("확확"), but still the
+                                   //   dominant part of the cycle so the fades stay a small fraction.
+  var CONTACT_LIFE_IN_MIN  = 90,  CONTACT_LIFE_IN_MAX  = 200;        // ms fade-IN — near-instant pop (eased fast-rise)
+  var CONTACT_LIFE_OUT_MIN = 280, CONTACT_LIFE_OUT_MAX = 460;        // ms fade-OUT — a touch longer than the pop-in;
+                                   //   the in≪out asymmetry is what reads as "brisk". cycle = in + hold + out
+                                   //   ≈ 2.17-4.26s; fades are only ~16% of it (was 33-41%).
+  var CONTACT_LIFE_REST   = 350;   // ms a clump waits before retrying if it can't find a clear spawn spot (scaled
                                    //   down with the shorter cycle so a blocked clump rejoins quickly)
-  var CONTACT_LIFE_RESUME_SPREAD = 2200;  // on loop resume, overdue clumps respawn spread over this window (ms) —
-                                   //   kept < the min cycle (~4.4s) so the catch-up itself doesn't look like a
-                                   //   slow wave, but wide enough that the backlog fades in over ~2s, not at once
+  var CONTACT_LIFE_RESUME_SPREAD = 1200;  // on loop resume, overdue clumps respawn spread over this window (ms) —
+                                   //   kept < the min cycle (~2.17s) so the catch-up itself never looks like a wave
   // --- blink — DISABLED, kept for future. When CONTACT_BLINK=true, draw() takes the duty-cycle path instead
   //     of the shimmer path above. All constants preserved so a single flag flip restores it. ---
   var CONTACT_BLINK      = false;
@@ -253,18 +253,24 @@
       clu.resting = false; clu.glyphs = glyphs; clu.size = glyphs.length; clu.R = R;
       if (phase !== "keep") {
         clu.hold = CONTACT_LIFE_HOLD_MIN + lifeRnd() * (CONTACT_LIFE_HOLD_MAX - CONTACT_LIFE_HOLD_MIN);
-        clu.fade = CONTACT_LIFE_FADE_MIN + lifeRnd() * (CONTACT_LIFE_FADE_MAX - CONTACT_LIFE_FADE_MIN);
-        clu.cycle = clu.hold + clu.fade * 2;
+        clu.fadeIn = CONTACT_LIFE_IN_MIN + lifeRnd() * (CONTACT_LIFE_IN_MAX - CONTACT_LIFE_IN_MIN);
+        clu.fadeOut = CONTACT_LIFE_OUT_MIN + lifeRnd() * (CONTACT_LIFE_OUT_MAX - CONTACT_LIFE_OUT_MIN);
+        clu.cycle = clu.fadeIn + clu.hold + clu.fadeOut;
         clu.t0 = (phase === "stagger") ? t - lifeRnd() * clu.cycle : t;    // stagger → clumps start out of phase
       }
       return true;
     }
-    function envelope(age, fade, hold) {   // 0→1 fade-in, 1 hold, 1→0 fade-out
+    // clump envelope 0→1→0 with SEPARATE in/out durations and EASING (was linear both sides — a flat, mushy
+    // dissolve). Pop-IN uses ease-out (u·(2−u)): brightness shoots up fast then settles → a crisp "툭". Fade-OUT
+    // uses 1−p² : it lingers near full, then drops off at the end → "머물다 사라진다", keeping clumps legible for
+    // most of the (short) fade instead of sitting half-dim.
+    function envelope(age, fadeIn, fadeOut, hold) {
       if (age <= 0) return 0;
-      if (age < fade) return age / fade;
-      if (age < fade + hold) return 1;
-      var o = age - fade - hold;
-      return o < fade ? 1 - o / fade : 0;
+      if (age < fadeIn) { var u = age / fadeIn; return u * (2 - u); }        // ease-out fast rise
+      if (age < fadeIn + hold) return 1;
+      var o = age - fadeIn - hold;
+      if (o < fadeOut) { var p = o / fadeOut; return 1 - p * p; }            // linger, then drop
+      return 0;
     }
     // Loop resumed after a pause (field scrolled off-screen, tab hidden): every clump whose cycle expired during
     // the gap would otherwise respawn on the SAME frame → one big pop. Re-stagger the overdue ones across a fresh
@@ -349,7 +355,7 @@
           if (clu.resting) { if (t >= clu.rest) spawnCluster(clu, live, t, "fresh"); if (clu.resting) continue; }
           var age = t - clu.t0;
           if (age >= clu.cycle) { spawnCluster(clu, live, t, "fresh"); if (clu.resting) continue; age = t - clu.t0; }
-          var cenv = envelope(age, clu.fade, clu.hold);
+          var cenv = envelope(age, clu.fadeIn, clu.fadeOut, clu.hold);
           if (cenv <= 0) continue;
           var gl = clu.glyphs;
           for (var gi = 0; gi < gl.length; gi++) {
