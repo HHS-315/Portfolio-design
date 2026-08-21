@@ -100,19 +100,23 @@
   var CONTACT_GAP_RATIO  = 0.82;   // tooClose reject radius = fs × this (CONTACT-only; shared FIELD_GAP_RATIO is
                                    //   1.1). Lower → glyphs in a clump sit nearly touching, as in the reference
   // --- cluster LIFECYCLE (CONTACT only) — each clump independently fades IN, HOLDS, fades OUT, then respawns at
-  //     a new spot with a new size / radius / char set. Runs on TIME inside the existing paint loop (no new rAF).
-  //     Slow on purpose: hold ≫ fade so it reads as "a clump occasionally drifts to a new place", never a blink.
-  //     env(cluster) multiplies the per-glyph shimmer alpha; churn (char swap) is independent and unchanged. ---
+  //     a DIFFERENT spot with a new size / radius / char set. Runs on TIME inside the existing paint loop (no new
+  //     rAF). The point is visible FLOW: over a few seconds several clumps should hand off. hold is only a few ×
+  //     fade — long enough that a clump reads as "resting then moving", short enough to keep the field alive; the
+  //     fade is kept ≥0.7s so it's a smooth dissolve, never the opacity blink we removed. env(cluster) multiplies
+  //     the per-glyph shimmer alpha; churn (char swap) is independent and unchanged. ---
   var CONTACT_LIFE       = true;
-  var CONTACT_LIFE_HOLD_MIN = 14000, CONTACT_LIFE_HOLD_MAX = 28000;  // ms fully-present per clump (staggered). Long
-                                   //   so hold ≫ fade: at any instant only ~2-3 of 13 clumps are mid-fade, the
-                                   //   rest sit fully lit → the field stays dense and a clump only "occasionally"
-                                   //   drifts. (Shorter holds left too many clumps dim at once — the field thinned.)
-  var CONTACT_LIFE_FADE_MIN = 1600, CONTACT_LIFE_FADE_MAX = 2600;    // ms fade-in and fade-out (each side); slow
-                                   //   enough (>1.5s) to read as drift, not flicker
-  var CONTACT_LIFE_REST   = 1600;  // ms a clump waits before retrying if it can't find a clear spawn spot
-  var CONTACT_LIFE_RESUME_SPREAD = 3000;  // on loop resume, overdue clumps respawn spread over this window (ms)
-                                   //   so they don't all pop back at once after the field was off-screen/hidden
+  var CONTACT_LIFE_HOLD_MIN = 2600, CONTACT_LIFE_HOLD_MAX = 6000;    // ms fully-present per clump (staggered) — was
+                                   //   14000-28000 (near-static). Short enough that many clumps hand off within a
+                                   //   few seconds; still a few × the fade so each clump clearly rests before moving.
+  var CONTACT_LIFE_FADE_MIN = 900, CONTACT_LIFE_FADE_MAX = 1500;     // ms fade-in and fade-out (each side). ≥0.9s
+                                   //   so the dissolve is smooth flow, not a flicker; ≪ hold so it's a transition,
+                                   //   not the whole life. cycle = hold + 2·fade ≈ 4.4-9.0s.
+  var CONTACT_LIFE_REST   = 700;   // ms a clump waits before retrying if it can't find a clear spawn spot (scaled
+                                   //   down with the shorter cycle so a blocked clump rejoins quickly)
+  var CONTACT_LIFE_RESUME_SPREAD = 2200;  // on loop resume, overdue clumps respawn spread over this window (ms) —
+                                   //   kept < the min cycle (~4.4s) so the catch-up itself doesn't look like a
+                                   //   slow wave, but wide enough that the backlog fades in over ~2s, not at once
   // --- blink — DISABLED, kept for future. When CONTACT_BLINK=true, draw() takes the duty-cycle path instead
   //     of the shimmer path above. All constants preserved so a single flag flip restores it. ---
   var CONTACT_BLINK      = false;
@@ -198,6 +202,25 @@
       return false;
     }
     function totalExcept(skip) { var n = 0; for (var i = 0; i < clusters.length; i++) if (clusters[i] !== skip) n += clusters[i].glyphs.length; return n; }
+    // ROAMING seed: a respawning clump is NOT pinned to a fixed grid cell (that made clumps look frozen). Each
+    // respawn it lands in whichever coarse-grid cell is currently EMPTIEST (of the OTHER clumps), preferring a
+    // cell other than the one it just left — so it visibly relocates while the field still covers the whole
+    // screen (clumps flow into the gaps). Grid = seedContact's aspect-fit grid; jitter within the chosen cell.
+    function gridDims() { var n = cfg.clusters; var cols = Math.max(1, Math.round(Math.sqrt(n * W / H))); return { cols: cols, rows: Math.ceil(n / cols) }; }
+    function cellOf(x, y, cols, rows) { var cx = Math.min(cols - 1, Math.max(0, Math.floor(x / W * cols))), cy = Math.min(rows - 1, Math.max(0, Math.floor(y / H * rows))); return cy * cols + cx; }
+    function roamSeed(skip) {
+      var d = gridDims(), cols = d.cols, rows = d.rows, ncells = cols * rows;
+      var count = []; for (var i = 0; i < ncells; i++) count[i] = 0;
+      for (var c = 0; c < clusters.length; c++) { var cl = clusters[c]; if (cl === skip || !cl.glyphs.length) continue; var ci = cellOf(cl.cx, cl.cy, cols, rows); if (ci >= 0) count[ci]++; }
+      var min = Infinity; for (i = 0; i < ncells; i++) if (count[i] < min) min = count[i];
+      var cand = []; for (i = 0; i < ncells; i++) if (count[i] === min) cand.push(i);
+      var myCell = (skip && skip.glyphs.length) ? cellOf(skip.cx, skip.cy, cols, rows) : -1;   // prefer to leave the current cell
+      var noSelf = []; for (i = 0; i < cand.length; i++) if (cand[i] !== myCell) noSelf.push(cand[i]);
+      var pool = noSelf.length ? noSelf : cand;
+      var cell = pool[Math.floor(lifeRnd() * pool.length)];
+      var col = cell % cols, row = Math.floor(cell / cols), cw = W / cols, ch = H / rows, mx = W * 0.03, my = H * 0.03;
+      return { x: col * cw + mx + lifeRnd() * (cw - 2 * mx), y: row * ch + my + lifeRnd() * (ch - 2 * my) };
+    }
     function tryPlace(cx, cy, size, R, ex, clu) {   // seat up to `size` glyphs in R around (cx,cy), clearing keep-out + neighbours
       var out = [], attempts = size * 12 + 16;
       for (var k = 0; k < attempts && out.length < size; k++) {
@@ -216,11 +239,11 @@
       var size = Math.min(avail, Math.max(1, cfg.clusterSize(lifeRnd)));
       var R = cfg.clusterRFn(size), best = [], bestX = 0, bestY = 0;
       // try several centres and keep the one that seats the MOST glyphs — NOT just the first non-empty spot (that
-      // would let a clump collapse to 1-2 near the statement / screen edge). First tries stay in the clump's grid
-      // cell (screen coverage); if that cell is blocked (e.g. sits under .wish__lead), later tries fall back to
-      // ANY open spot so the clump relocates instead of dying — keeps the field from thinning out over the text.
+      // would let a clump collapse to 1-2 near the statement / screen edge). First tries roam to the emptiest grid
+      // cell (relocates the clump while holding coverage); if that is blocked (e.g. under .wish__lead), later tries
+      // fall back to ANY open spot so the clump relocates instead of dying — keeps the field from thinning out.
       for (var st = 0; st < 6 && best.length < size; st++) {
-        var s = (st < 3) ? cfg.seedFn(W, H, lifeRnd, clu.ci, cfg.clusters)
+        var s = (st < 3) ? roamSeed(clu)
                          : { x: margin + lifeRnd() * (W - 2 * margin), y: margin + lifeRnd() * (H - 2 * margin) };
         var gg = tryPlace(s.x, s.y, size, R, ex, clu);
         if (gg.length > best.length) { best = gg; bestX = s.x; bestY = s.y; }

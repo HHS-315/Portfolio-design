@@ -226,9 +226,13 @@ a{color:inherit;text-decoration:none}
    the glyphs appear once the cells fill and fade out again as the grid falls into CONTACT. */
 .work-fx{position:fixed;inset:0;z-index:3;display:block;pointer-events:none;opacity:var(--work-reveal)}
 /* CONTACT ambient field (work-ascii.js): light glyphs on the dark CONTACT bg. Same fixed viewport canvas as
-   .work-fx; opacity rides --contact-reveal so it fades in as the WORK blocks clear into CONTACT. z3 keeps it
-   above the shader/blocks and below the .shell content (the left statement / email / links stay on top). */
-.contact-fx{position:fixed;inset:0;z-index:3;display:block;pointer-events:none;opacity:var(--contact-reveal)}
+   .work-fx; opacity rides --contact-reveal so it fades in as the WORK blocks clear into CONTACT. z1 keeps it
+   BEHIND the white cells (#blocks z2) — unlike .work-fx (z3, meant to sit ON the cells) — so the CONTACT
+   glyphs are physically hidden while the WORK grid still stands and are uncovered from the bottom up exactly
+   as the cells fall (and re-covered on scroll-up, since the fall is reversible). Above #shaderbg (z0)/#field
+   (z1, earlier in DOM) so it reads on the dark ground; below #strip (z3) so the bottom strip stays on top;
+   below .shell (z4) so the left statement stays on top. */
+.contact-fx{position:fixed;inset:0;z-index:1;display:block;pointer-events:none;opacity:var(--contact-reveal)}
 /* "Click" chip trailing the cursor over a WORK list row (work-list.js). Outer div = JS-driven position
    (translate, no transition — the follow is lerped in JS); inner = the glass pill. Show/hide is scale+tilt
    ONLY (no opacity fade — that muddied the pop); visibility (stepped) does the appear/vanish. Plain pill
