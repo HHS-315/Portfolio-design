@@ -55,7 +55,7 @@ a{color:inherit;text-decoration:none}
    the effect is live (.refract-active), so no-WebGL / touch / reduced-motion keeps
    the normal DOM text. */
 #refract{position:fixed;inset:0;width:100%;height:100%;z-index:4;display:block;pointer-events:none}
-.hero__quote.refract-active{color:transparent}
+.hero__quote.refract-active,.wish__lead.refract-active{color:transparent}
 
 .shell{position:relative;z-index:4;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
@@ -385,10 +385,9 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 @media(prefers-reduced-motion:reduce){.wd__logo{transition:none}}
 
 
-/* contact / wish — LEFT-aligned closing block (was a centred say_hello() input frame; the frame + its
-   blink/input/hint CSS were removed). The whole .wish reads as one left column: big statement, then email +
-   links flow left under it (kept cohesive rather than mixing left title with centred links). */
-.wish{width:100%;margin-inline:auto;padding-inline:var(--gutter);text-align:left}
+/* contact / wish — CENTRED closing block: the big statement is horizontally centred in the section (which is
+   already vertically centred via .sec justify-content:center) and its lines are centre-aligned. */
+.wish{width:100%;margin-inline:auto;padding-inline:var(--gutter);text-align:center}
 /* closing statement — Pretendard Bold, large, left, on the dark CONTACT bg (--bone). .reveal drives the
    fade-up (dandelion.js IntersectionObserver). word-break:keep-all breaks Korean at spaces only; the nbsp in
    the markup keeps "작은 것에서부터." together and max-width shapes the wrap to "모든 시작은" / "작은 것에서부터.". */
@@ -396,7 +395,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    "작은 것에서부터." + --gutter fits a 375px viewport; the vw term (8.4 = 5.6×1.5) still reaches 99 by ~1180px.
    max-width:12ch keeps the "모든 시작은" / "작은 것에서부터." two-line wrap at every size (ch scales with font). */
 .wish__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;color:var(--bone);
-  font-size:clamp(40px,8.4vw,99px);line-height:1.22;letter-spacing:-.01em;word-break:keep-all;max-width:12ch;margin:0}
+  font-size:clamp(40px,8.4vw,99px);line-height:1.22;letter-spacing:-.01em;word-break:keep-all;max-width:12ch;margin:0 auto;text-align:center}
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
@@ -491,7 +490,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <!-- CONTACT -->
   <section id="contact" class="sec sec--tint">
     <div class="wish">
-      <p class="wish__lead reveal">모든 시작은 작은&nbsp;것에서부터.</p>
+      <p class="wish__lead reveal" id="wishLead">모든 시작은 작은&nbsp;것에서부터.</p>
     </div>
   </section>
 </div>

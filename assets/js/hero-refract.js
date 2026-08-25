@@ -51,7 +51,8 @@
 
   var canvas = document.getElementById("refract");
   if (!canvas) return;
-  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2")].filter(Boolean);
+  // The two hero taglines PLUS the CONTACT closing statement (#wishLead) all get the same glass lens.
+  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2"), document.getElementById("wishLead")].filter(Boolean);
   if (!els.length) return;
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true });
@@ -188,7 +189,10 @@
     c.textAlign = alignRight ? "right" : alignCenter ? "center" : "left";
 
     var text = (cs.textTransform === "uppercase" ? el.textContent.toUpperCase() : el.textContent).trim();
-    var words = text.split(/\s+/), lines = [], cur = "";
+    // split on ordinary whitespace only — NOT the non-breaking space ( ). The CONTACT statement uses an
+    // nbsp to keep "작은 것에서부터." on one line (with word-break:keep-all), so treating the nbsp as part of a
+    // single "word" reproduces the DOM's two-line wrap instead of breaking there.
+    var words = text.split(/[ \t\r\n]+/), lines = [], cur = "";
     for (var i = 0; i < words.length; i++) {
       var test = cur ? cur + " " + words[i] : words[i];
       if (cur && c.measureText(test).width > rect.width) { lines.push(cur); cur = words[i]; }
@@ -321,11 +325,18 @@
     window.addEventListener("scroll", function () { refreshRects(); schedule(); }, { passive: true });
     window.addEventListener("resize", rebuild);
 
-    var hero = document.querySelector(".hero") || canvas;
-    new IntersectionObserver(function (es) {
-      inView = es[0] ? es[0].isIntersecting : true;
+    // Keep the loop alive while EITHER the hero OR the CONTACT section is on screen — the lens now also draws
+    // #wishLead, which lives in #contact (the hero is long gone by then). If we only watched the hero, the loop
+    // would idle at CONTACT and the transparent #wishLead would vanish. inView = any watched target intersecting.
+    var watch = [document.querySelector(".hero"), document.getElementById("contact")].filter(Boolean);
+    if (!watch.length) watch = [canvas];
+    var seen = watch.map(function () { return false; });
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { var i = watch.indexOf(e.target); if (i >= 0) seen[i] = e.isIntersecting; });
+      inView = seen.some(Boolean);
       if (inView) schedule(); else if (raf) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
-    }).observe(hero);
+    });
+    watch.forEach(function (el) { io.observe(el); });
     document.addEventListener("visibilitychange", function () {
       visible = document.visibilityState === "visible";
       if (visible) schedule(); else if (raf) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
