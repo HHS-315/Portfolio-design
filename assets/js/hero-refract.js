@@ -188,17 +188,24 @@
     var alignCenter = cs.textAlign === "center";
     c.textAlign = alignRight ? "right" : alignCenter ? "center" : "left";
 
-    var text = (cs.textTransform === "uppercase" ? el.textContent.toUpperCase() : el.textContent).trim();
-    // split on ordinary whitespace only — NOT the non-breaking space ( ). The CONTACT statement uses an
+    // Honor HARD <br> breaks first (textContent drops them, fusing the two lines into one word), then word-wrap
+    // each segment to the box width. Split on ordinary whitespace only — NOT the non-breaking space ( ). The CONTACT statement uses an
     // nbsp to keep "작은 것에서부터." on one line (with word-break:keep-all), so treating the nbsp as part of a
     // single "word" reproduces the DOM's two-line wrap instead of breaking there.
-    var words = text.split(/[ \t\r\n]+/), lines = [], cur = "";
-    for (var i = 0; i < words.length; i++) {
-      var test = cur ? cur + " " + words[i] : words[i];
-      if (cur && c.measureText(test).width > rect.width) { lines.push(cur); cur = words[i]; }
-      else cur = test;
+    var rawSegs = el.innerHTML.split(/<br\s*\/?>/i).map(function (h) {
+      var d = document.createElement("div"); d.innerHTML = h; var tt = d.textContent || "";
+      return (cs.textTransform === "uppercase" ? tt.toUpperCase() : tt).trim();
+    });
+    var lines = [];
+    for (var si = 0; si < rawSegs.length; si++) {
+      var words = rawSegs[si].split(/[ \t\r\n]+/).filter(Boolean), cur = "";
+      for (var i = 0; i < words.length; i++) {
+        var test = cur ? cur + " " + words[i] : words[i];
+        if (cur && c.measureText(test).width > rect.width) { lines.push(cur); cur = words[i]; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
     }
-    if (cur) lines.push(cur);
 
     // draw offset by PAD so the text sits inside the transparent margin
     var x = PAD + (alignRight ? rect.width : alignCenter ? rect.width / 2 : 0);

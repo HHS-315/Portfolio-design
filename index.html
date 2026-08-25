@@ -395,7 +395,9 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    "작은 것에서부터." + --gutter fits a 375px viewport; the vw term (8.4 = 5.6×1.5) still reaches 99 by ~1180px.
    max-width:12ch keeps the "모든 시작은" / "작은 것에서부터." two-line wrap at every size (ch scales with font). */
 .wish__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;color:var(--bone);
-  font-size:clamp(40px,8.4vw,99px);line-height:1.22;letter-spacing:-.01em;word-break:keep-all;max-width:12ch;margin:0 auto;text-align:center}
+  font-size:clamp(40px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
+  width:max-content;max-width:100%}   /* two hard lines via <br> ("EVERYTHING" / "STARTS SMALL."); max-content
+                                          hugs the wider line so it never mid-wraps, max-width:100% guards overflow */
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
@@ -490,7 +492,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <!-- CONTACT -->
   <section id="contact" class="sec sec--tint">
     <div class="wish">
-      <p class="wish__lead reveal" id="wishLead">모든 시작은 작은&nbsp;것에서부터.</p>
+      <p class="wish__lead reveal" id="wishLead">EVERYTHING<br>STARTS SMALL.</p>
     </div>
   </section>
 </div>
