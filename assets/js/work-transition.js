@@ -51,12 +51,16 @@
   // fades in with the reveal of the dark background. Starts almost immediately (bottom clears first).
   var CONTACT_REVEAL_START = 0.02, CONTACT_REVEAL_END = 0.25;
   // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
-  // Gate ON only DEEP in CONTACT: the WORK list text finishes fading at REVEAL_FALL_END (0.30), so raising the
-  // strip above .shell before then would cover that text and difference-blend WORK's dark-on-light strip. We also
-  // want the flying/decompose glyphs to have essentially landed (they'd otherwise blend mid-fall). 0.85 clears
-  // both with margin, and the strip is already fully whitened (STRIP_CONTACT_END 0.07) so flipping doesn't pop a
-  // colour. Pure function of bpFall → fully reversible on scroll-up.
-  var STRIP_INVERT_ON = 0.85;
+  // The statement (vertically centred in #contact) SWEEPS DOWN THROUGH the strip glyphs as CONTACT scrolls in;
+  // measured, the .wish__lead rect overlaps the ACTUAL lit strip pixels over bpFall ≈ 0.69–0.86 (1920/1440) and
+  // ≈ 0.80–0.83 (375). The blend must be ON before the earliest start (0.69), so 0.85 (the old value) missed the
+  // whole window — the strip only lit up after the text had already passed. 0.60 turns it on with margin before
+  // the overlap, yet stays above the two hard floors: REVEAL_FALL_END 0.30 (WORK list text fully faded → the
+  // raised strip can't cover it and WORK's dark-on-light strip is never blended) and STRIP_CONTACT_END 0.07
+  // (strip already whitened → no colour pop). At 0.60 the strip canvas is still empty (glyphs land ~0.69), so
+  // flipping the blend on is invisible until the glyphs arrive → no pop. Single threshold, held on afterwards
+  // (strip over dark bg = |233−10|=223 ≈ unchanged). Pure function of bpFall → fully reversible on scroll-up.
+  var STRIP_INVERT_ON = 0.60;
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
