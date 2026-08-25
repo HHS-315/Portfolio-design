@@ -107,10 +107,14 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
    Because there's only ONE backdrop-filter over the whole silhouette, the tail frosts the backdrop at
    the exact same density as the body — no nested-filter double-blur, no seam over the shader/glyphs,
    no border line at the tail base (structural fix; verified against a multi-colour striped backdrop).
-   mask (unlike clip-path/filter) keeps backdrop-filter alive. No CSS border/box-shadow: a mask can't
-   outline the carved silhouette and box-shadow would leak the rectangular box around the tail notches;
-   the glass edge alone reads on the dark hero. Per-breakpoint viewBox keeps the corner/tail proportions
-   right at each width (mask-size:100% 100% stretches the SVG to the element). */
+   mask (unlike clip-path/filter) keeps backdrop-filter alive. A plain CSS border can't outline the carved
+   silhouette (the mask clips it) and box-shadow would leak the rectangular box around the tail notches, so
+   the outline (matching the WORK chip's 1px var(--dimmer) line) is drawn as ::after: the SAME silhouette
+   path STROKED (--tip-stroke). Because the element's mask also clips its ::after, the stroke's outer half is
+   masked away and a uniform ~1px INNER line remains, hugging the silhouette (tail included) — no variable-
+   width/alignment issues since it rides the very same mask. vector-effect:non-scaling-stroke keeps it even
+   despite the non-uniform mask-size stretch. Per-breakpoint viewBox keeps the corner/tail proportions right
+   at each width (mask-size:100% 100% stretches the SVG to the element). */
 .flower-tip{position:fixed;left:calc(50vw + 16vmin);top:56svh;transform:translate(6px,-50%);z-index:4;pointer-events:none;
   box-sizing:border-box;height:34px;
   display:inline-flex;align-items:center;padding:0 15px 0 22px;white-space:nowrap;
@@ -120,11 +124,18 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
   /* viewBox height 34 == element height 34 → NO vertical stretch (tail keeps its shape, tip stays at
      y17 = exact centre). Vertical padding is 0 and symmetric; align-items:center does the centring. */
   --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 34' preserveAspectRatio='none'><path d='M18 0 L133 0 Q140 0 140 7 L140 27 Q140 34 133 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='%23000'/></svg>");
+  /* outline: same path, STROKED (fill:none). The element mask clips this ::after too, keeping only the inner
+     half → a ~1px inner line following the silhouette. stroke-width 2 → ~1px after the mask halves it; #333
+     matches the WORK chip's var(--dimmer). */
+  --tip-stroke:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 34' preserveAspectRatio='none'><path d='M18 0 L133 0 Q140 0 140 7 L140 27 Q140 34 133 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='none' stroke='%23333' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>");
   -webkit-mask:var(--tip-mask) center/100% 100% no-repeat;mask:var(--tip-mask) center/100% 100% no-repeat;
   opacity:0;visibility:hidden;transition:opacity .55s ease,transform .55s ease}
+.flower-tip::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:var(--tip-stroke) center/100% 100% no-repeat}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(0,-50%)}
 @media(max-width:640px){.flower-tip{left:calc(50vw + 15vmin);top:48svh;font-size:12px;
-  --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 34' preserveAspectRatio='none'><path d='M18 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='%23000'/></svg>")}}
+  --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 34' preserveAspectRatio='none'><path d='M18 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='%23000'/></svg>");
+  --tip-stroke:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 34' preserveAspectRatio='none'><path d='M18 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='none' stroke='%23333' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>")}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
 
 /* sections — full-bleed opaque panels, alternating colour only (no divider lines) */
