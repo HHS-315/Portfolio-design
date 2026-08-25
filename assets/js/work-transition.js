@@ -51,16 +51,22 @@
   // fades in with the reveal of the dark background. Starts almost immediately (bottom clears first).
   var CONTACT_REVEAL_START = 0.02, CONTACT_REVEAL_END = 0.25;
   // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
-  // The statement (vertically centred in #contact) SWEEPS DOWN THROUGH the strip glyphs as CONTACT scrolls in;
-  // measured, the .wish__lead rect overlaps the ACTUAL lit strip pixels over bpFall ≈ 0.69–0.86 (1920/1440) and
-  // ≈ 0.80–0.83 (375). The blend must be ON before the earliest start (0.69), so 0.85 (the old value) missed the
-  // whole window — the strip only lit up after the text had already passed. 0.60 turns it on with margin before
-  // the overlap, yet stays above the two hard floors: REVEAL_FALL_END 0.30 (WORK list text fully faded → the
-  // raised strip can't cover it and WORK's dark-on-light strip is never blended) and STRIP_CONTACT_END 0.07
-  // (strip already whitened → no colour pop). At 0.60 the strip canvas is still empty (glyphs land ~0.69), so
-  // flipping the blend on is invisible until the glyphs arrive → no pop. Single threshold, held on afterwards
-  // (strip over dark bg = |233−10|=223 ≈ unchanged). Pure function of bpFall → fully reversible on scroll-up.
-  var STRIP_INVERT_ON = 0.60;
+  // .wish__lead is TWO lines ("LET'S MAKE" / "SOMETHING GOOD.") and, as the block rises, each is swept by the
+  // falling glyph cloud at a DIFFERENT bpFall — so the threshold must clear the EARLIEST line's start, or one
+  // line inverts and the other doesn't. Measured by COUNTING the actual lit #strip pixels that fall INSIDE each
+  // text-line's rect (Range-per-text-node; a bounding-band of min/max lit-y is misleading — stray outliers make
+  // it look like the overlap starts ~0.50 when the DENSE, visible overlap is later). Real dense-overlap windows:
+  //     desktop 1920/1440:  LINE1 ~0.66–0.78   LINE2 ~0.72–0.84
+  //     mobile  375:        LINE1 ~0.57–0.63   LINE2 ~0.60–0.66
+  // Earliest start ≈ 0.57 (mobile top line). The old 0.60 sat INSIDE the mobile top-line window (0.57–0.63) so it
+  // clipped that line's first half → "only one line inverts" on mobile. 0.46 clears the earliest start by ~0.11
+  // so BOTH lines invert fully on every viewport, yet stays well above the two hard floors: REVEAL_FALL_END 0.30
+  // (WORK list text fully faded → the raised z5 strip can't cover it and WORK's dark-on-light strip is never
+  // blended; ~0.16 margin off 0.30) and STRIP_CONTACT_END 0.07 (strip already whitened). No pop: at 0.46 there
+  // are ZERO strip pixels inside either line (dense overlap only begins ~0.57), and any glyph elsewhere is bone-
+  // over-dark = |233−10|=223 ≈ unchanged, so flipping the blend on is imperceptible. Single threshold, held on
+  // afterwards. Pure function of bpFall → fully reversible on scroll-up.
+  var STRIP_INVERT_ON = 0.46;
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
