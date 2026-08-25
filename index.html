@@ -394,7 +394,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* 1.5× the previous size (30/5.6vw/66 → the max is 99 = 66×1.5). The MIN is 40 (not 45) so the longest line
    "작은 것에서부터." + --gutter fits a 375px viewport; the vw term (8.4 = 5.6×1.5) still reaches 99 by ~1180px.
    max-width:12ch keeps the "모든 시작은" / "작은 것에서부터." two-line wrap at every size (ch scales with font). */
-.wish__lead{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;color:var(--bone);
+.wish__lead{font-family:var(--hero-font);font-weight:700;color:var(--bone);
   font-size:clamp(40px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
   width:max-content;max-width:100%}   /* two hard lines via <br> ("EVERYTHING" / "STARTS SMALL."); max-content
                                           hugs the wider line so it never mid-wraps, max-width:100% guards overflow */
