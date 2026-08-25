@@ -433,6 +433,14 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wish__lead{font-family:var(--hero-font);font-weight:700;color:var(--bone);
   font-size:clamp(34px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
   width:max-content;max-width:100%;opacity:var(--contact-reveal)}
+/* small pixel-flower "Thank you" mark, tucked into the CONTACT bottom-right corner. Decorative: white
+   line-art on the dark section, transparent PNG. position:absolute in the (position:relative) .sec, sitting
+   ABOVE the bottom ASCII strip (bottom offset clears it) and out of the way of the centred statement. Rides
+   --contact-reveal so it fades in with the rest of CONTACT and stays reversible. pointer-events:none. */
+.contact-thanks{position:absolute;right:clamp(14px,4vw,60px);bottom:clamp(70px,13vh,140px);
+  width:clamp(92px,12vw,152px);height:auto;z-index:2;pointer-events:none;user-select:none;
+  opacity:calc(var(--contact-reveal) * .95)}
+@media(max-width:640px){.contact-thanks{width:clamp(78px,22vw,110px);bottom:clamp(56px,10vh,96px);right:clamp(12px,5vw,28px)}}
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
@@ -529,6 +537,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
     <div class="wish">
       <p class="wish__lead" id="wishLead">LET’S MAKE<br>SOMETHING GOOD.</p>
     </div>
+    <img class="contact-thanks" src="assets/img/thank-you.png" alt="Thank you" width="460" height="523">
   </section>
 </div>
 
