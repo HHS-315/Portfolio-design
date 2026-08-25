@@ -51,22 +51,27 @@
   // fades in with the reveal of the dark background. Starts almost immediately (bottom clears first).
   var CONTACT_REVEAL_START = 0.02, CONTACT_REVEAL_END = 0.25;
   // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
-  // .wish__lead is TWO lines ("LET'S MAKE" / "SOMETHING GOOD.") and, as the block rises, each is swept by the
-  // falling glyph cloud at a DIFFERENT bpFall — so the threshold must clear the EARLIEST line's start, or one
-  // line inverts and the other doesn't. Measured by COUNTING the actual lit #strip pixels that fall INSIDE each
-  // text-line's rect (Range-per-text-node; a bounding-band of min/max lit-y is misleading — stray outliers make
-  // it look like the overlap starts ~0.50 when the DENSE, visible overlap is later). Real dense-overlap windows:
-  //     desktop 1920/1440:  LINE1 ~0.66–0.78   LINE2 ~0.72–0.84
-  //     mobile  375:        LINE1 ~0.57–0.63   LINE2 ~0.60–0.66
-  // Earliest start ≈ 0.57 (mobile top line). The old 0.60 sat INSIDE the mobile top-line window (0.57–0.63) so it
-  // clipped that line's first half → "only one line inverts" on mobile. 0.46 clears the earliest start by ~0.11
-  // so BOTH lines invert fully on every viewport, yet stays well above the two hard floors: REVEAL_FALL_END 0.30
-  // (WORK list text fully faded → the raised z5 strip can't cover it and WORK's dark-on-light strip is never
-  // blended; ~0.16 margin off 0.30) and STRIP_CONTACT_END 0.07 (strip already whitened). No pop: at 0.46 there
-  // are ZERO strip pixels inside either line (dense overlap only begins ~0.57), and any glyph elsewhere is bone-
-  // over-dark = |233−10|=223 ≈ unchanged, so flipping the blend on is imperceptible. Single threshold, held on
-  // afterwards. Pure function of bpFall → fully reversible on scroll-up.
-  var STRIP_INVERT_ON = 0.46;
+  // #strip is a FIXED thin row pinned to the viewport bottom (lit from bp 0; it does NOT move or "form late"),
+  // so .wish__lead's two lines ("LET'S MAKE" / "SOMETHING GOOD.") each sweep DOWN through that one row at a
+  // DIFFERENT bpFall as the block rises — the top line first, the bottom line later. The threshold must clear the
+  // EARLIER (top) line's start, or that line crosses with the blend still off and only the second line inverts.
+  // Measured by COUNTING lit #strip pixels INSIDE each line's Range rect via getImageData on a slow scroll
+  // (per-line canvas pixel count — the only reliable method; rect/landY estimates and min/max lit-y bands both
+  // mislead). DENSE overlap = the thousands-of-pixels window where the letter STROKES sit on the row (the ~10–30
+  // baseline counts before/after are antialiasing, not real overlap):
+  //     1920×1080:  LINE1 0.37–0.50   LINE2 0.51–0.64
+  //     1440×900:   LINE1 0.34–0.50   LINE2 0.52–0.67
+  //     375×667:    LINE1 0.44–0.50   LINE2 0.53–0.59
+  // Earliest top-line start ≈ 0.34 (1440; true start bounded to 0.318–0.34 between samples). The old 0.46 sat at
+  // the END of every LINE1 window, so the top line crossed 0.34→0.46 with the blend OFF and only LINE2 (0.51+)
+  // inverted — exactly the "one line only" symptom. 0.31 turns on BELOW the earliest top-line start (covers LINE1
+  // from its true start on all three viewports) while staying above the binding floor REVEAL_FALL_END 0.30, where
+  // --work-reveal reaches 0: the raised z5 strip therefore can't cover the (now fully-faded, opacity-0) WORK list
+  // text, and WORK's dark-glyph-on-light-cell strip is long gone anyway (STRIP_CONTACT_END 0.07 already whitened
+  // it to bone). The window (0.30, 0.318] is narrow, so 0.31 is deliberate. No pop: at turn-on the strip is bone
+  // over the dark bg = |233−10|=223 ≈ unchanged everywhere except the thin sliver where LINE1 is just entering at
+  // the screen bottom. Single threshold, held on afterwards. Pure function of bpFall → fully reversible on scroll-up.
+  var STRIP_INVERT_ON = 0.31;
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
