@@ -50,6 +50,13 @@
   // --contact-reveal rises 0→1 as the blocks CLEAR (bpFall up) → the CONTACT ambient field (work-ascii.js)
   // fades in with the reveal of the dark background. Starts almost immediately (bottom clears first).
   var CONTACT_REVEAL_START = 0.02, CONTACT_REVEAL_END = 0.25;
+  // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
+  // Gate ON only DEEP in CONTACT: the WORK list text finishes fading at REVEAL_FALL_END (0.30), so raising the
+  // strip above .shell before then would cover that text and difference-blend WORK's dark-on-light strip. We also
+  // want the flying/decompose glyphs to have essentially landed (they'd otherwise blend mid-fall). 0.85 clears
+  // both with margin, and the strip is already fully whitened (STRIP_CONTACT_END 0.07) so flipping doesn't pop a
+  // colour. Pure function of bpFall → fully reversible on scroll-up.
+  var STRIP_INVERT_ON = 0.85;
   // -------------------------------------------------------------------------
 
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -165,7 +172,7 @@
 
   // WORK text/rule reveal: opacity 0→1 as the cells fill behind them (fixed dark ink, no colour muddle).
   // Fully reversible — bp is scroll-linked, so scrolling back up fades the text out symmetrically.
-  var lastReveal = -1, lastContactReveal = -1;
+  var lastReveal = -1, lastContactReveal = -1, lastInvert = false;
   function updateReveal(bpFill, bpFall) {
     var vIn = clamp01((bpFill - REVEAL_START) / (REVEAL_END - REVEAL_START));
     var vOut = clamp01((bpFall - REVEAL_FALL_START) / (REVEAL_FALL_END - REVEAL_FALL_START));
@@ -175,6 +182,9 @@
     // guarded separately so it still updates while --work-reveal sits at 0 through the CONTACT range.
     var cv = clamp01((bpFall - CONTACT_REVEAL_START) / (CONTACT_REVEAL_END - CONTACT_REVEAL_START));
     if (Math.abs(cv - lastContactReveal) >= 0.004) { lastContactReveal = cv; root.style.setProperty("--contact-reveal", cv.toFixed(3)); }
+    // text×strip inversion: lift + difference-blend #strip only deep in CONTACT (same pass, no new listener).
+    var inv = bpFall >= STRIP_INVERT_ON;
+    if (inv !== lastInvert) { lastInvert = inv; root.classList.toggle("strip-invert", inv); }
   }
 
   var dbg = null;

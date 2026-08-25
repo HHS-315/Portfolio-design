@@ -49,6 +49,16 @@ a{color:inherit;text-decoration:none}
 #field{position:fixed;inset:0;z-index:1;display:block;cursor:crosshair}
 #blocks{position:fixed;inset:0;width:100%;height:100%;z-index:2;display:block;pointer-events:none}
 #strip{position:fixed;inset:0;width:100%;height:100%;z-index:3;display:block;pointer-events:none}
+/* CONTACT text × strip colour-inversion. Deep in CONTACT, LIFT #strip above the text layers (.shell / #refract,
+   both z4) and difference-blend it against the root backdrop. #strip's parent chain is only body → html (no
+   stacking context between it and the root), so the blend reaches every layer below it. Because the CONTACT
+   strip ink and the statement are the SAME token (--bone ≈233): a strip glyph over the text → |233−233|=0 →
+   punches BLACK (inverted); over the dark bg (≈10) → |233−10|=223 → reads ~unchanged. Blending #strip (not the
+   text) keeps the statement pristine except under a glyph, and covers BOTH refract paths (DOM text in .shell
+   AND WebGL text on #refract are below #strip). Toggled by work-transition.js on bpFall — only once the WORK
+   list text has fully faded (bpFall past REVEAL_FALL_END) so WORK's dark-on-light strip is never blended and the
+   raised strip never covers the WORK list. z5 clears .shell/#refract(4); .bar(5) is the top nav (no overlap). */
+html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 /* hero tagline refraction overlay (hero-refract.js) — draws the two taglines as a
    cursor-following glass lens. Transparent elsewhere; pointer-events:none so the
    flower's window-level hover is untouched. The <p>s become transparent only while
