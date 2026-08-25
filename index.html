@@ -401,12 +401,27 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* closing statement — hero font (--hero-font, Plus Jakarta Sans), bold, large, centred, --bone on the dark
    CONTACT bg. TWO hard lines via <br> in the markup ("LET'S MAKE" / "SOMETHING GOOD."). The refraction lens
    (hero-refract.js) redraws it as a cursor-following glass distortion — its buildTexture honours the <br>; when
-   refract is inactive (no-WebGL / touch / reduced-motion) the plain DOM text shows and .reveal fades it up.
+   refract is inactive (no-WebGL / touch / reduced-motion) the plain DOM text shows.
    width:max-content hugs the wider line so neither line mid-wraps; max-width:100% guards overflow; the clamp MIN
-   (34px) keeps the longer line "SOMETHING GOOD." to two lines on a 375px viewport, the 99px cap is hit by ~1180px. */
+   (34px) keeps the longer line "SOMETHING GOOD." to two lines on a 375px viewport, the 99px cap is hit by ~1180px.
+
+   REVEAL is SCROLL-DRIVEN, not a one-shot timed fade. This element used to carry .reveal (dandelion.js's
+   IntersectionObserver: opacity 0→1 + translateY over a 0.9s CSS transition, then io.unobserve). That fade was
+   still mid-animation exactly when the block scrolls DOWN through the bottom ASCII strip: the top line
+   "LET'S MAKE" reaches the strip first (bpFall ~0.5) while opacity was only ~0.67, so the strip's
+   mix-blend-mode:difference inversion (strip 233 over a half-faded 233 text ≈ |233−159|=74) barely darkened
+   the FIRST line, while the second line crossed ~0.9s later at opacity 1 and inverted fully — one line flipped,
+   the other didn't. Worse, the one-shot IO made pass 1 (mid-fade) differ from pass 2+ (locked opaque), breaking
+   the site's scroll-reversibility invariant. Fix: bind opacity to --contact-reveal (work-transition.js drives it
+   0→1 over bpFall 0.02→0.25, a PURE function of scroll position). It reaches full opacity by bpFall 0.25 — well
+   before either line reaches the strip (~0.5) — so BOTH lines invert fully, identically on every pass and in
+   both scroll directions. The ramp completes while the block is still below the viewport (it enters view ~0.43),
+   so there is no text bleeding over the standing WORK blocks. No transform, so on-screen position is scroll-pure
+   too (the old translateY shifted the refract-canvas text position mid-fade as well). refract-ON path was never
+   affected — #refract always rasterises the text at full alpha — but this keeps both paths consistent. */
 .wish__lead{font-family:var(--hero-font);font-weight:700;color:var(--bone);
   font-size:clamp(34px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
-  width:max-content;max-width:100%}
+  width:max-content;max-width:100%;opacity:var(--contact-reveal)}
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
@@ -501,7 +516,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <!-- CONTACT -->
   <section id="contact" class="sec sec--tint">
     <div class="wish">
-      <p class="wish__lead reveal" id="wishLead">LET’S MAKE<br>SOMETHING GOOD.</p>
+      <p class="wish__lead" id="wishLead">LET’S MAKE<br>SOMETHING GOOD.</p>
     </div>
   </section>
 </div>
