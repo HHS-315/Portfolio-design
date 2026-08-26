@@ -65,6 +65,14 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
    the effect is live (.refract-active), so no-WebGL / touch / reduced-motion keeps
    the normal DOM text. */
 #refract{position:fixed;inset:0;width:100%;height:100%;z-index:4;display:block;pointer-events:none}
+/* halftone-dot mouse trail (halftone-trail.js). z6 = above the content/#strip/.bar, below the menu overlay(55)
+   & toggle(63). mix-blend-mode:difference is the "색반전": the sparse dots auto-invert against WHATEVER is under
+   them (same trick as .bar), so they read on the dark hero AND the light WORK cells. Base colour is switched by
+   the local background darkness in JS (dark→hero-shader palette, light→menu-shader palette). Skipped on
+   touch/reduced-motion (a cursor trail needs a cursor + motion). pointer-events:none so it never blocks. */
+#halftone{position:fixed;inset:0;width:100%;height:100%;z-index:6;display:block;pointer-events:none;mix-blend-mode:difference}
+@media(hover:none){#halftone{display:none}}
+@media(prefers-reduced-motion:reduce){#halftone{display:none}}
 .hero__quote.refract-active,.wish__lead.refract-active{color:transparent}
 
 .shell{position:relative;z-index:4;pointer-events:none}
@@ -525,6 +533,15 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wish__lead{font-family:var(--hero-font);font-weight:700;color:var(--bone);
   font-size:clamp(34px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
   width:max-content;max-width:100%;opacity:var(--contact-reveal)}
+/* WORD-BY-WORD reveal (Magic-UI TextReveal ported to the site's scroll-pure model). Each word rides a STAGGERED
+   slice of the same --contact-reveal ramp (work-transition.js, a pure function of scroll): word i reaches full
+   at reveal = 0.15·i + 0.4, so the last word (i=3) is solid by reveal 0.85 — and --contact-reveal saturates to 1
+   by bpFall 0.25, still WELL before either line meets the bottom strip (~0.45), so the strip's difference
+   colour-inversion sees fully-opaque text on every pass (unchanged). Opacity outside [0,1] is auto-clamped by
+   the engine. No transform / no JS loop → reversible & scroll-position-pure. On the refract path the words
+   inherit color:transparent from .wish__lead.refract-active, so the #refract glass lens is unchanged and this
+   per-word fade only shows on the fallback (no-WebGL / touch / reduced-motion) path — as chosen. */
+.wl-w{opacity:calc((var(--contact-reveal) - var(--i) * 0.15) / 0.4)}
 /* fine-print copyright under the statement — SAME family as .wish__lead (var(--hero-font) = Plus Jakarta
    Sans), weight 400, uppercase, --dim, so it belongs to the statement rather than the mono meta system.
    letter-spacing .18em (was .2em for mono): measured — at 12px the proportional PJS line lands at 289px ink,
@@ -628,6 +645,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <canvas id="blocks"></canvas>
 <canvas id="strip"></canvas>
 <canvas id="refract"></canvas>
+<canvas id="halftone" aria-hidden="true"></canvas>   <!-- halftone-dot cursor trail (halftone-trail.js) -->
 
 <div class="bar">
   <b>HWANG HYESEON<span style="color:var(--hi)">*</span></b>
@@ -700,7 +718,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <!-- CONTACT -->
   <section id="contact" class="sec sec--tint">
     <div class="wish">
-      <p class="wish__lead" id="wishLead">LET’S MAKE<br>SOMETHING GOOD.</p>
+      <p class="wish__lead" id="wishLead"><span class="wl-w" style="--i:0">LET’S</span> <span class="wl-w" style="--i:1">MAKE</span><br><span class="wl-w" style="--i:2">SOMETHING</span> <span class="wl-w" style="--i:3">GOOD.</span></p>
       <p class="wish__copy">Copyright © HWANG HYESEON 2026</p>
     </div>
     <div class="contact-thanks">
@@ -743,5 +761,6 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/about-lines.js"></script>
 <!-- nav-menu.js AFTER work-transition.js (reads window.WorkTransition.grid) -->
 <script src="./assets/js/nav-menu.js"></script>
+<script src="./assets/js/halftone-trail.js"></script>   <!-- halftone-dot cursor trail (site-wide) -->
 </body>
 </html>
