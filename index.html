@@ -80,6 +80,62 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 .bar nav a{opacity:.7;transition:opacity .3s}
 .bar nav a:hover{opacity:1}
 @media(max-width:560px){.bar{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}.bar nav{gap:13px}}
+/* .bar keeps its mix-blend-mode:difference. While the menu is open it is lifted ABOVE the overlay so the logo
+   auto-inverts against the menu bg (light menu → dark logo, dark menu → light logo). Gated to html.nav-open,
+   which is mutually exclusive with the WORK subpage, so it never rises over #workOverlay's cloned logo. */
+html.nav-open .bar{z-index:62}
+html.nav-open #strip{display:none}   /* strip hidden while the menu covers the screen; pure CSS → restores on close */
+
+/* ===== GLASS MENU TOGGLE (body-level; NOT inside .bar's difference group) ===== */
+#navToggle{position:fixed;top:8px;right:var(--gutter);z-index:63;width:40px;height:40px;padding:0;border:0;
+  background:transparent;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;
+  transition:opacity .3s ease}
+/* glass recipe copied verbatim from .work-chip__i — do not diverge. border-radius only (no clip/mask, which
+   would kill backdrop-filter). backdrop-filter makes its own stacking context; harmless at body level. */
+.nav-toggle__glass{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+  border-radius:999px;background:rgba(20,20,20,.45);border:1px solid rgba(255,255,255,.22);
+  -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+#navToggle:hover .nav-toggle__glass,#navToggle:focus-visible .nav-toggle__glass{transform:scale(1.06)}
+#navToggle:focus-visible{outline:none}
+#navToggle:focus-visible .nav-toggle__glass{border-color:rgba(255,255,255,.5)}
+/* hamburger = a bar span + its two pseudo bars (REAL elements, not a mask). White reads over the dark glass on
+   all four backgrounds (dark site / bright WORK blocks / light menu / dark menu — the .45 glass self-darkens). */
+.nav-toggle__bars,.nav-toggle__bars::before,.nav-toggle__bars::after{content:"";display:block;width:17px;height:2px;
+  border-radius:2px;background:#fff;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .18s}
+.nav-toggle__bars{position:relative}
+.nav-toggle__bars::before{position:absolute;left:0;top:-6px}
+.nav-toggle__bars::after{position:absolute;left:0;top:6px}
+/* open → morph to X (JS toggles .is-active on the button so the morph plays immediately on close-click) */
+#navToggle.is-active .nav-toggle__bars{background:transparent}
+#navToggle.is-active .nav-toggle__bars::before{transform:translateY(6px) rotate(45deg)}
+#navToggle.is-active .nav-toggle__bars::after{transform:translateY(-6px) rotate(-45deg)}
+/* hidden + inert during the intro scroll-lock and while the WORK subpage overlay is open (body.nav-suppress, JS) */
+html.intro-lock #navToggle,body.nav-suppress #navToggle{opacity:0;pointer-events:none}
+@media(max-width:560px){#navToggle{top:5px;width:34px;height:34px}}
+@media(prefers-reduced-motion:reduce){
+  .nav-toggle__glass,.nav-toggle__bars,.nav-toggle__bars::before,.nav-toggle__bars::after{transition:none}}
+
+/* ===== FULL-SCREEN MENU OVERLAY (nav-menu.js) ===== */
+#navOverlay{position:fixed;inset:0;z-index:55;display:none;
+  --nav-ink:var(--work-ink);--nav-bg:var(--work-cell)}   /* DEFAULT theme = light menu (dark site backdrop) */
+#navOverlay.nav--dark{--nav-ink:var(--bone);--nav-bg:var(--bg)}   /* WORK bright blocks → dark menu */
+html.nav-open #navOverlay{display:block}
+.nav__blocks{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}   /* JS fills cells with --nav-bg */
+/* list — ABOUT typography (var(--hero-font)/700/uppercase/-.02em). Vertically centred, one item per line.
+   font-size clamp: 375 max before "CONTACT" wraps is 73.4px (measured), so 68px min; scales up, capped 150px.
+   opacity rides --nav-text (JS time-tween: rises after blocks fill, falls before they retract). */
+.nav__list{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(10px,2vh,28px);padding:0 var(--gutter);opacity:var(--nav-text,0);transition:opacity .3s ease}
+body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll-lock (top:-scrollY set by nav-menu.js) */
+.nav__link{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;
+  line-height:1.05;font-size:clamp(68px,13vw,150px);text-decoration:none;white-space:nowrap;color:var(--nav-ink);
+  pointer-events:auto;transition:opacity .28s ease}
+/* spotlight like the WORK list: hovering the list dims the rest, the hovered/focused stays full */
+@media(hover:hover){
+  .nav__list:hover .nav__link{opacity:.42}
+  .nav__list:hover .nav__link:hover,.nav__link:focus-visible{opacity:1}}
+.nav__link:focus-visible{outline:2px solid var(--nav-ink);outline-offset:6px;border-radius:2px}
 
 /* hero */
 .hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center;padding-top:6.5vh;position:relative}
@@ -539,10 +595,23 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 
 <div class="bar">
   <b>HWANG HYESEON<span style="color:var(--hi)">*</span></b>
-  <nav>
-    <a href="#work">work</a>
-    <a href="#about">about</a>
-    <a href="#contact">contact</a>
+</div>
+
+<!-- Glass menu toggle — body-level (NOT inside .bar, whose mix-blend-mode:difference would eat the glass).
+     Fixed top-right, optically centred on the .bar logo. Reuses the .work-chip glass recipe. Becomes the X
+     while the menu is open (it sits above the overlay). Built/driven by nav-menu.js. -->
+<button id="navToggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navOverlay">
+  <span class="nav-toggle__glass"><span class="nav-toggle__bars"></span></span>
+</button>
+
+<!-- Full-screen menu overlay — body-level (above canvases/.shell/.bar; below .work-chip). role=dialog.
+     Background = a dedicated block-grid canvas (nav-menu.js) that stacks like WORK; list uses ABOUT typo. -->
+<div id="navOverlay" role="dialog" aria-modal="true" aria-label="메뉴" aria-hidden="true">
+  <canvas id="navBlocks" class="nav__blocks" aria-hidden="true"></canvas>
+  <nav class="nav__list">
+    <a class="nav__link" href="#work">Work</a>
+    <a class="nav__link" href="#about">About</a>
+    <a class="nav__link" href="#contact">Contact</a>
   </nav>
 </div>
 
@@ -632,5 +701,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/work-list.js"></script>
 <script src="./assets/js/work-detail.js"></script>
 <script src="./assets/js/about-lines.js"></script>
+<!-- nav-menu.js AFTER work-transition.js (reads window.WorkTransition.grid) -->
+<script src="./assets/js/nav-menu.js"></script>
 </body>
 </html>

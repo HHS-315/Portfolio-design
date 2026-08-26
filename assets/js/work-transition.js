@@ -221,7 +221,12 @@
 
   // progress → dandelion.js (flower) / work-ascii.js (WORK field). fall/fallProgress → bpFall, read by
   // dandelion.js (strip colour) and work-ascii.js (CONTACT field). Two names for the one value.
-  window.WorkTransition = { progress: progress, fall: fallProgress, fallProgress: fallProgress };
+  // grid: READ-ONLY copy of the stacking-cell constants (PURE ADDITION — nothing above reads this back;
+  // the cell animation is unchanged). nav-menu.js reuses these so its full-screen menu blocks match the
+  // WORK grid exactly without duplicating the numbers. If any constant above changes, this literal must too.
+  window.WorkTransition = { progress: progress, fall: fallProgress, fallProgress: fallProgress,
+    grid: { COLS_DESKTOP: COLS_DESKTOP, COLS_MID: COLS_MID, COLS_MOBILE: COLS_MOBILE, COL_BP: COL_BP,
+      COL_MID_BP: COL_MID_BP, JIT_ROWS: JIT_ROWS, TH_TOP: TH_TOP, CELL_RISE: CELL_RISE, ALPHA_START: ALPHA_START } };
 
   resize();
   window.addEventListener("scroll", schedule, { passive: true });
