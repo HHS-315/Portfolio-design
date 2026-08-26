@@ -433,14 +433,18 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wish__lead{font-family:var(--hero-font);font-weight:700;color:var(--bone);
   font-size:clamp(34px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
   width:max-content;max-width:100%;opacity:var(--contact-reveal)}
-/* fine-print copyright under the statement — mono meta tone (matches .bar/.sec__head/.wd__caps: mono,
-   uppercase, wide tracking, --dim). opacity:var(--contact-reveal) = the SAME scroll-driven ramp as
-   .wish__lead (no separate transition/animation, no transform → scroll-position-pure, keeps refract text
-   from shifting). margin-top is optical spacing below the big line (its line-height is 1.14). NO optical
-   text-indent: measured (Range ink-centre vs container-centre) that the engine does NOT add the trailing
-   letter-spacing after the last glyph, so the centred text is already dead-centre at indent 0 (offset 0.0px);
-   a naive ls/2 indent would MIS-shift it +0.6px to the right, so it is omitted. */
-.wish__copy{font-family:var(--mono);font-weight:400;font-size:clamp(10px,1.05vw,12px);letter-spacing:.2em;
+/* fine-print copyright under the statement — SAME family as .wish__lead (var(--hero-font) = Plus Jakarta
+   Sans), weight 400, uppercase, --dim, so it belongs to the statement rather than the mono meta system.
+   letter-spacing .18em (was .2em for mono): measured — at 12px the proportional PJS line lands at 289px ink,
+   matching the old mono .2em width (288.8px) almost exactly, so swapping the family kept the footprint under
+   the big line; .18em also equals the nav's tracking. opacity:var(--contact-reveal) = the SAME scroll-driven
+   ramp as .wish__lead (no separate transition/animation, no transform → scroll-position-pure, keeps refract
+   text from shifting). margin-top is optical spacing below the big line (its line-height is 1.14). NO optical
+   text-indent: re-measured for PJS (Range ink-centre vs container-centre) — offset is 0.0px at indent 0 on
+   every viewport (the engine drops the trailing letter-spacing, and the solve gives solvedIndent ≈ 0px), so a
+   correction is unnecessary and a naive ls/2 indent would mis-shift it right. PJS 400 verified LOADED (not a
+   Helvetica/Arial fallback) when these numbers were taken. */
+.wish__copy{font-family:var(--hero-font);font-weight:400;font-size:clamp(10px,1.05vw,12px);letter-spacing:.18em;
   text-transform:uppercase;color:var(--dim);text-align:center;
   margin:clamp(22px,3.4vh,46px) 0 0;opacity:var(--contact-reveal)}
 /* clip the .contact-thanks slide-in start (it begins off-screen to the right). body{overflow-x:hidden}
@@ -462,16 +466,21 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    STACKING CONTEXT, and this mark lives inside it, so z-index:6 here is LOCAL to .shell and does NOT lift the
    mark above the root-level #strip canvas (which becomes z5 + mix-blend-mode:difference under
    html.strip-invert). The mark is NOT above the strip's blend backdrop. Colour-inversion is avoided instead by
-   (a) motion being HORIZONTAL only — no translateY — so the mark never descends into the strip's ~9px bottom
-   ink band, and (b) bottom clearing that band. (Previously this claimed z6 lifted it above #strip; that was
-   false — the overlap was merely latent.)
+   (a) the SLIDE being HORIZONTAL only — no translateY — so the mark never descends into the strip's ~9px
+   bottom ink band, and (b) bottom clearing that band. The WOBBLE does rotate about the bottom-centre, which
+   dips the lower corner by (imgW/2)·sinθ; at θ=±3.5° that is 2.5px (mobile) / 4.6px (desktop), leaving the
+   mark's lowest point at 12.7 / 24.0 / 25.1px from the viewport bottom on 375 / 1440 / 1920 — measured
+   clearance ABOVE the ~9px band of +3.7 / +15.0 / +16.1px (mobile is the binding case; its θ-limit before the
+   corner reaches the band is ≈8.6°, so 3.5° keeps ~5° of margin). The top corner sweeps sideways by imgH·sinθ
+   ≈ 5.7 / 10.6 / 10.6px, all inside the gutter (16 / 42 / 42px) so #contact's overflow-x:clip never crops it.
+   (Previously this claimed z6 lifted the mark above #strip; that was false — the overlap was merely latent.)
    SLIDE: driven by scroll position via a native view() timeline (CSS scroll-driven animation — NO JS, NO
    IntersectionObserver; fully reversible: same scroll position → same transform). --contact-reveal cannot
    drive a VISIBLE slide because it saturates to 1 at bpFall 0.25 while the section-bottom-anchored mark only
    scrolls into view near bpFall 1 — the ramp finishes off-screen (measured). view() ties the slide to THIS
    element entering the viewport instead. Fallback: where view() is unsupported the 0s time-based animation
    fills to the rest state (transform:none) → the mark just sits placed. opacity still rides --contact-reveal
-   (scroll-pure fade). WOBBLE: time-based @keyframes on the inner img (rotate ±1.1°, 6.5s) — a time-based
+   (scroll-pure fade). WOBBLE: time-based @keyframes on the inner img (rotate ±3.5°, 6.5s) — a time-based
    lifecycle deliberately allowed here (like the CONTACT ambient field); scroll never drives its phase.
    No filter/mix-blend/isolation/contain on the wrapper (each would spawn a stacking context and cut the
    surrounding blends). pointer-events/user-select off. */
@@ -483,7 +492,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .contact-thanks__img{display:block;width:100%;height:auto;transform-origin:50% 100%;
   animation:thanks-wobble 6.5s ease-in-out infinite}
 @keyframes thanks-slide{from{transform:translate3d(var(--thanks-D),0,0)}to{transform:translate3d(0,0,0)}}
-@keyframes thanks-wobble{0%,100%{transform:rotate(-1.1deg)}50%{transform:rotate(1.1deg)}}
+@keyframes thanks-wobble{0%,100%{transform:rotate(-3.5deg)}50%{transform:rotate(3.5deg)}}
 @media(max-width:640px){.contact-thanks{width:clamp(78px,22vw,110px);bottom:clamp(14px,4vw,22px)}}
 @media(prefers-reduced-motion:reduce){
   .contact-thanks{animation:none;transform:none}
