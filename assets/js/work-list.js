@@ -74,7 +74,11 @@
   // between rows never flickers (leave/enter of individual items don't toggle it).
   (function chip() {
     if (!hoverable) return;                          // touch: no cursor to trail
-    if (!document.querySelector(".wbig")) return;
+    // Chip hover targets: the WORK big list (.wbig) AND the menu-overlay item column (.nav__items). One shared
+    // pill trails the cursor over either. .nav__items exists at load but is display:none (inside #navOverlay)
+    // until the menu opens, so it can't spuriously trigger the chip while closed.
+    var CHIP_TARGETS = ".wbig,.nav__items";
+    if (!document.querySelector(CHIP_TARGETS)) return;
 
     var wrap = document.createElement("div"); wrap.className = "work-chip";
     var inner = document.createElement("span"); inner.className = "work-chip__i";
@@ -105,19 +109,23 @@
     // list (rows AND the gaps between them → no flicker) and null elsewhere. This also sidesteps the spurious
     // pointerleave the moving fixed/backdrop-filter chip would otherwise trigger on .wbig.
     document.addEventListener("pointermove", function (e) {
-      var over = e.target && e.target.closest && e.target.closest(".wbig");
+      var over = e.target && e.target.closest && e.target.closest(CHIP_TARGETS);
       if (!over) { hide(); return; }
       tx = e.clientX; ty = e.clientY;
       show();
       if (reduce) { cx = tx; cy = ty; place(cx, cy); }
       else if (!raf) raf = requestAnimationFrame(loop);
     }, { passive: true });
-    // Clear the chip when the subpage overlay opens or closes (work-detail.js already fires this), so no chip
+    // Clear the chip when the WORK subpage overlay opens or closes (work-detail.js fires this), so no chip
     // lingers over the FLIP or over the wrong page. A hover inside the open overlay re-shows it via pointermove.
-    window.addEventListener("work:overlay", hide);
+    // EXCEPT the menu's own signal (source:"nav") — the chip is MEANT to show over the menu, so ignore that one.
+    window.addEventListener("work:overlay", function (e) {
+      if (e.detail && e.detail.source === "nav") return;   // menu open/close → keep the chip live over .nav__items
+      hide();
+    });
     // A click on a .wbig row starts a navigation/expand (main → open, subpage → flipSwap, which fires no
     // overlay event). Hide on pointerdown so the pill doesn't sit on the expanding image mid-transition; the
     // next pointermove re-shows it if still over a list. pointerdown (press) beats the animation start.
-    document.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest(".wbig")) hide(); }, { passive: true });
+    document.addEventListener("pointerdown", function (e) { if (e.target && e.target.closest && e.target.closest(CHIP_TARGETS)) hide(); }, { passive: true });
   })();
 })();

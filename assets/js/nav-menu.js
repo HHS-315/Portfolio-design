@@ -28,12 +28,39 @@
   var ctx = canvas.getContext("2d");
   var reduce = matchMedia("(prefers-reduced-motion:reduce)");
 
+  // ---- menu WebGL background (window.ShaderBG). ONE context, lazy-created on first open and reused; the
+  //      palette/seed are swapped per theme via set(). autoPauseOnOverlay:false → the menu drives pause/resume
+  //      itself (it must NOT pause on its own "work:overlay" signal). Sits on the dedicated #navFx canvas
+  //      (layered above .nav__blocks, below .nav__items) and fades via CSS opacity (--nav-fx). If WebGL is
+  //      missing, ShaderBG.create returns an inert stub and the menu just keeps its solid --nav-bg block fill. ----
+  var navFxCanvas = document.getElementById("navFx");
+  var navFx = null, navFxTried = false;
+  //  DARK menu (bright WORK backdrop): the HERO gray-on-black palette, seed shifted so it isn't a carbon copy.
+  var FX_DARK = { colors: [[0, 0, 0], [0.14, 0.14, 0.155], [0.28, 0.28, 0.30], [0.46, 0.46, 0.49]], colorCount: 4, seed: 7.0, grain: 0.06, saturation: 1.0, vignette: 0.0 };
+  //  LIGHT menu (dark site backdrop): base = #ccd2d8 (0.800,0.824,0.847); filaments a touch darker & cooler
+  //  (B−R ≈ +0.05→+0.06, a slight blue bias), subtle Δluma (~0.08). Grain lowered (0.06→0.04, less speckle on a
+  //  light field), vignette 0, saturation 1.0 — per the light-palette brief.
+  var FX_LIGHT = { colors: [[0.800, 0.824, 0.847], [0.770, 0.796, 0.822], [0.740, 0.768, 0.797], [0.712, 0.742, 0.773]], colorCount: 4, seed: 3.0, grain: 0.04, saturation: 1.0, vignette: 0.0 };
+  function ensureFx() {
+    if (navFxTried) return navFx;
+    navFxTried = true;
+    if (navFxCanvas && window.ShaderBG) {
+      navFx = window.ShaderBG.create(navFxCanvas, {
+        autoPauseOnOverlay: false, perfLabel: "navfx",
+        colors: FX_DARK.colors, colorCount: FX_DARK.colorCount, seed: FX_DARK.seed, grain: FX_DARK.grain
+      });
+      navFx.pause();   // created paused; open() resumes it
+    }
+    return navFx;
+  }
+  function setFx(v) { overlay.style.setProperty("--nav-fx", v); }
+
   var G = (window.WorkTransition && window.WorkTransition.grid) ||
     { COLS_DESKTOP: 16, COLS_MID: 12, COLS_MOBILE: 7, COL_BP: 1000, COL_MID_BP: 640, JIT_ROWS: 1.6, TH_TOP: 0.94, CELL_RISE: 0.045, ALPHA_START: 0.3 };
 
   var OPEN_MS = 540, CLOSE_MS = 460;                 // block fill / retract durations (WORK-detail tone)
   var TEXT_IN_AT = 0.66;                             // list fades in once the fill passes this progress
-  var TEXT_OUT_MS = 150;                             // list fades out before the retract begins (close)
+  var TEXT_OUT_MS = 360;                             // on close, the list AND the WebGL fade out fully (both ≤ .35s) BEFORE the blocks retract — so the shader "exits before the blocks retract"
 
   // ---- grid (same algorithm/geometry as work-transition.js) ----------------
   var W = 0, H = 0, DPR = 1, cols = 0, colW = 0, rows = 0, thresh = [];
@@ -110,7 +137,9 @@
       }
       cov = lit / tot;
     } catch (e) { cov = 0; }
-    overlay.classList.toggle("nav--dark", cov >= 0.5);   // bright backdrop → dark menu
+    var dark = cov >= 0.5;
+    overlay.classList.toggle("nav--dark", dark);         // bright backdrop → dark menu
+    root.classList.toggle("nav-dark", dark);             // mirror onto <html> so the body-level "Click" chip can re-glass for the dark backdrop (scoped by html.nav-open.nav-dark)
     return cov;
   }
 
@@ -136,7 +165,7 @@
 
   // ---- background-canvas pause (reuse the shared event; self-signal so our own listener ignores it) ----
   var selfSignal = false;
-  function signalBg(open) { selfSignal = true; try { window.dispatchEvent(new CustomEvent("work:overlay", { detail: { open: open } })); } catch (e) {} selfSignal = false; }
+  function signalBg(open) { selfSignal = true; try { window.dispatchEvent(new CustomEvent("work:overlay", { detail: { open: open, source: "nav" } })); } catch (e) {} selfSignal = false; }   // source:"nav" → the WORK "Click" chip's hide listener ignores this one (it should SHOW over the menu); every other pause listener still fires
   window.addEventListener("work:overlay", function (e) {
     if (selfSignal) return;                            // our own dispatch → ignore
     var open = !!(e.detail && e.detail.open);
@@ -174,30 +203,36 @@
     lastFocus = document.activeElement;
     pickTheme();
     build();
-    setText(0); draw(0);
+    setText(0); draw(0); setFx(0);                       // shader hidden until the blocks have filled
     lockScroll();
-    root.classList.add("nav-open");
+    root.classList.add("nav-open");                      // display:block → #navFx canvas now has layout
     setLabel("CLOSE");                                   // visible text (= accessible name); pill min-width holds size
     toggle.setAttribute("aria-expanded", "true");
     overlay.setAttribute("aria-hidden", "false");
     document.addEventListener("keydown", onKeydown);
     signalBg(true);
+    // menu WebGL: pick the palette for this open's theme, then resume (resume() also relayouts, fixing the
+    // display:none → clientWidth 0 case). It renders behind --nav-fx:0 until the fill completes.
+    var fx = ensureFx();
+    if (fx) { fx.set(overlay.classList.contains("nav--dark") ? FX_DARK : FX_LIGHT); fx.resume(); }
     var textShown = false;
     tween(0, 1, OPEN_MS, function (p) {
       draw(p);
       if (!textShown && p >= TEXT_IN_AT) { textShown = true; setText(1); }
-    }, function () { setText(1); });
+    }, function () { setText(1); setFx(1); });            // blocks full → shader fades in (CSS opacity)
     // focus the first link (fallback: toggle) once open
     (links[0] || toggle).focus();
   }
 
   function finishClose() {
     root.classList.remove("nav-open");
+    root.classList.remove("nav-dark");
     overlay.setAttribute("aria-hidden", "true");
     document.removeEventListener("keydown", onKeydown);
     signalBg(false);
     unlockScroll();
     ctx.clearRect(0, 0, W, H);
+    if (navFx) navFx.pause();                          // shader is invisible by now (--nav-fx 0) → stop the GPU loop
     menuOpen = false;
   }
 
@@ -205,7 +240,7 @@
     if (!menuOpen) { if (afterRestore) afterRestore(); return; }
     setLabel("MENU");
     toggle.setAttribute("aria-expanded", "false");
-    setText(0);                                        // list fades out FIRST (CSS opacity transition)
+    setText(0); setFx(0);                              // list + WebGL fade out FIRST (CSS opacity), THEN blocks retract
     var startRetract = function () {
       tween(1, 0, CLOSE_MS, function (p) { draw(p); }, function () {
         finishClose();
@@ -223,7 +258,7 @@
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
     setLabel("MENU");
     toggle.setAttribute("aria-expanded", "false");
-    setText(0);
+    setText(0); setFx(0);
     finishClose();
   }
 
@@ -235,6 +270,7 @@
       if (!href || href.charAt(0) !== "#") return;
       e.preventDefault();
       close(function () {                              // close → unlock+restore → THEN scroll to target
+        if (href === "#hero") { window.scrollTo(0, 0); return; }   // HOME = page top (hero has no scroll-margin); intro never replays (load-only lock)
         var el = document.querySelector(href);
         if (el) el.scrollIntoView();                   // native smooth + .sec scroll-margin-top
       });
