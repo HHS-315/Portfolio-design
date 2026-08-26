@@ -17,9 +17,9 @@
  *    are canvas-painted, so the --work-reveal / nav-open signals are used instead. Colour is lerped so opening
  *    an overlay cross-fades. Because the canvas is composited with difference, on dark backdrops the dots come
  *    out AS the hero colour (|c−~0| = c), and on light backdrops they invert to a dark, menu-tinted dot.
- *  · Dot SIZE / INK: cellSize 5 + shader radius 0.32 → 3.2px dots at 0.32 peak coverage (was 9.4px / 0.69), and
- *    opacity 0.55 so the difference over light --bone text resolves to ~160 (was 100) — no longer "carving" it,
- *    while staying visible (~72) over the dark background.
+ *  · Dot SIZE / INK: full-size dots (cellSize 10, shader radius 0.47 → 9.4px, 0.69 peak coverage) for presence —
+ *    the smaller 5/0.32 build read too faint. Text relief is opacity-only: 0.6, so difference over light --bone
+ *    text resolves to ~153 (was 100 at opacity 1.0 — less "carving") while staying strong (~78) over dark bg.
  *  · Perf: no permanent loop. The rAF self-pauses IDLE_MS after the last pointer move (by then the trail has
  *    decayed below the dot threshold) and resumes on the next move; also pauses when the tab is hidden.
  *  · Guarded off on touch (no cursor) and prefers-reduced-motion (both also hide #halftone in CSS), and a
@@ -72,7 +72,7 @@
     "  vec2 cellCenterUv=cellCenter/uResolution;",
     "  float density=texture2D(uTrailTexture,cellCenterUv).r;",
     "  float dist=length(fract(pixel/uCellSize)-0.5);",
-    "  float radius=density*0.32;",   /* COVERAGE lever, 0.47→0.32 (peak π·0.32²=0.32, was 0.69) — stops carving text */
+    "  float radius=density*0.47;",   /* original coverage (peak π·0.47²=0.69) — the earlier 0.32 read too faint; text relief comes from opacity instead */
     "  float aa=fwidth(dist);",
     "  float inDot=1.0-smoothstep(radius-aa,radius,dist);",
     "  float alpha=inDot*smoothstep(0.05,0.2,density);",
@@ -111,13 +111,13 @@
   }
 
   // ---- config (source defaults, tuned) ----
-  // cellSize 10→5: dot DIAMETER = 2·radius·cellSize = 2·0.32·5 = 3.2px (was 9.4px, ~66% smaller — the "절반 이상"
-  //   size cut) and 4× denser. opacity 1.0→0.55: difference over --bone text(233) resolves to (1−α)·233+α·|233−133|
-  //   = 160 (was 100 — far less "carve"), while over the dark bg(10) it is 72 — still clearly visible. Coverage
-  //   (radius const, in the shader) does the rest. hoverSelector is deliberately UNCHANGED: the global size/ink
-  //   cut already relieves the big statements uniformly, and adding .wish__lead etc. would slam the trail down to
-  //   hoverOpacity 0.2 whenever it crosses them — an abrupt "the trail died on the headline" glitch.
-  var CFG = { decay: 0.965, brushSize: 0.045, hoverBrushSize: 0.012, opacity: 0.55, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 5, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
+  // Dot size/coverage kept at the ORIGINAL (cellSize 10, shader radius 0.47 → 9.4px dots, 0.69 peak coverage):
+  //   shrinking them (5 / 0.32) read "too faint", so presence comes from the full-size dots. The text relief is
+  //   done with OPACITY ONLY — 1.0→0.6: difference over --bone text(233) resolves to (1−α)·233+α·|233−133| = 153
+  //   (was 100, clearly less "carve") while the dark bg(10) stays 78 — strong. hoverSelector is deliberately
+  //   UNCHANGED: adding .wish__lead etc. would slam the trail down to hoverOpacity 0.2 whenever it crosses the big
+  //   statements — an abrupt "the trail died on the headline" glitch.
+  var CFG = { decay: 0.965, brushSize: 0.045, hoverBrushSize: 0.012, opacity: 0.6, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 10, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
   var IDLE_MS = 1800;   // self-pause this long after the last pointer move (trail has decayed below the dot threshold by then)
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false });
