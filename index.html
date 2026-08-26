@@ -160,11 +160,11 @@ html.nav-open #navOverlay{display:block}
 /* content-sized column wrapping the links — the chip hover target (work-list.js). .nav__list stays the full-screen
    centring container; .nav__items hugs the text so hovering it (not the whole screen) is what the chip keys on.
    The list gap lives here now. */
-.nav__items{display:flex;flex-direction:column;align-items:center;gap:clamp(12px,2.6vh,32px);position:relative}
+.nav__items{display:flex;flex-direction:column;align-items:center;gap:clamp(12px,2.6vh,32px);position:relative;cursor:crosshair}   /* crosshair over the list (matches the WORK list; pairs with the "Click" chip) */
 body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll-lock (top:-scrollY set by nav-menu.js) */
 .nav__link{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;
   line-height:1.14;font-size:clamp(64px,11vw,98px);text-decoration:none;white-space:nowrap;color:var(--nav-ink);
-  pointer-events:auto;transition:opacity .28s ease;
+  pointer-events:auto;cursor:crosshair;transition:opacity .28s ease;   /* crosshair (not the <a> default pointer), like the WORK list */
   /* overflow:hidden = the hover-curtain MASK (work-list.js builds a 2-copy .wr__track inside the <a> and rolls
      it up one line once per hover-enter). line-height RAISED 1.05→1.14 for TWO reasons: (1) at 1.05 the glyph
      ink box exceeds the line box (measured topCut 4 / botCut 3.1px at 98px) so overflow:hidden would clip the
