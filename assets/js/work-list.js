@@ -30,11 +30,18 @@
 
   function easeInOut(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
 
-  // Wire one .wbig__item: rebuild its .wbig__en as a 2-copy track and roll it once per hover-enter.
-  // No-op under reduced-motion / touch, or if the item is missing/already wired (idempotent).
-  function wire(item) {
+  // Wire one row: rebuild its TEXT element as a 2-copy track and roll it once per hover-enter.
+  // `textSel` picks the text element inside `item`; it DEFAULTS to ".wbig__en" so every existing WORK caller
+  // (WorkListCurtain(item)) behaves byte-for-byte as before. Pass null when the row IS its own text container
+  // (e.g. a menu .nav__link, whose text sits directly in the <a> with no child) → the item itself is rebuilt.
+  // No-op under reduced-motion / touch, or if the target is missing/already wired (idempotent).
+  function wire(item, textSel) {
     if (reduce || !hoverable) return;
-    var en = item.querySelector(".wbig__en");
+    // Accept a selector STRING, or explicit null = "the item itself is the text container". Anything else —
+    // notably the index arg leaked by Array.prototype.forEach(wire) — falls back to the WORK default, so every
+    // existing caller (forEach(wire), WorkListCurtain(node)) is byte-for-byte unchanged.
+    if (typeof textSel !== "string" && textSel !== null) textSel = ".wbig__en";
+    var en = textSel ? item.querySelector(textSel) : item;
     if (!en || en.querySelector(".wr__track")) return;
     var text = en.textContent;
 

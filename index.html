@@ -135,21 +135,31 @@ html.nav-open #navOverlay{display:block}
 .nav__fx{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;
   opacity:var(--nav-fx,0);transition:opacity .35s ease}   /* ≤ nav-menu.js TEXT_OUT_MS(360) so it fully clears before the blocks retract */
 /* list — ABOUT typography (var(--hero-font)/700/uppercase/-.02em). Vertically centred, one item per line.
-   Item count is now 4 (HOME/ABOUT/WORK/CONTACT). With 4 lines the old 138px cap put the block at 0.58/0.69 of
-   the viewport height (1920/1440) — over the ~0.42–0.55 target — and the requested WIDER gap adds more. So the
-   gap was raised (1.6vh→2.2vh) and the font cap LOWERED to 98px to compensate: block height = 4·1.05·fs + 3·gap
-   → 0.45/0.52 (1920/1440), back inside the band. 375 stays at the 64px floor — under the "CONTACT wraps at
-   73.4px" limit, so no wrap. opacity rides --nav-text (JS time-tween: rises after fill, falls before retract). */
+   Item count is 4 (HOME/ABOUT/WORK/CONTACT). Block height = 4·(lh·fs) + 3·gap, lh=1.14 (raised from 1.05 for the
+   hover-curtain mask on .nav__link — see there). The curtain's line-height bump alone lifts the block to
+   0.48/0.56 (1920/1440); the requested WIDER gap (2.2vh→2.6vh) brings it to ~0.49/0.57. The 1440 case sits above
+   the old 0.55 ceiling, so the ACCEPTABLE band was relaxed to ~0.58 here (deliberate): the font cap is held at
+   98px — it was already lowered 138→98 last round for "too large", and dropping below ~92 would over-shrink the
+   words — so the extra height from lh 1.14 + wider gap is absorbed by a looser ceiling rather than smaller type.
+   375 stays at the 64px floor (widest word 299px < 375 − gutters → no wrap). opacity rides --nav-text. */
 .nav__list{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:0 var(--gutter);opacity:var(--nav-text,0);transition:opacity .3s ease}
 /* content-sized column wrapping the links — the chip hover target (work-list.js). .nav__list stays the full-screen
    centring container; .nav__items hugs the text so hovering it (not the whole screen) is what the chip keys on.
    The list gap lives here now. */
-.nav__items{display:flex;flex-direction:column;align-items:center;gap:clamp(11px,2.2vh,28px);position:relative}
+.nav__items{display:flex;flex-direction:column;align-items:center;gap:clamp(12px,2.6vh,32px);position:relative}
 body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll-lock (top:-scrollY set by nav-menu.js) */
 .nav__link{font-family:var(--hero-font);font-weight:700;text-transform:uppercase;letter-spacing:-.02em;
-  line-height:1.05;font-size:clamp(64px,11vw,98px);text-decoration:none;white-space:nowrap;color:var(--nav-ink);
-  pointer-events:auto;transition:opacity .28s ease}
+  line-height:1.14;font-size:clamp(64px,11vw,98px);text-decoration:none;white-space:nowrap;color:var(--nav-ink);
+  pointer-events:auto;transition:opacity .28s ease;
+  /* overflow:hidden = the hover-curtain MASK (work-list.js builds a 2-copy .wr__track inside the <a> and rolls
+     it up one line once per hover-enter). line-height RAISED 1.05→1.14 for TWO reasons: (1) at 1.05 the glyph
+     ink box exceeds the line box (measured topCut 4 / botCut 3.1px at 98px) so overflow:hidden would clip the
+     caps; 1.14 (=WORK's .wr__copy line-height) contains the ink → no clip. (2) it MATCHES the global
+     .wr__copy{line-height:1.14} so the mask height and the dup's top:100% roll distance align exactly — no
+     separate nav-scoped copy override needed. Raising line-height enlarges the block, so the gap/ratio below
+     were re-tuned AFTER this. */
+  overflow:hidden}
 /* spotlight like the WORK list: hovering the list dims the rest, the hovered/focused stays full */
 @media(hover:hover){
   .nav__list:hover .nav__link{opacity:.42}

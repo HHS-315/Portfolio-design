@@ -24,6 +24,15 @@
   function setLabel(t) { if (label) label.textContent = t; }
   var list = overlay.querySelector(".nav__list");
   var links = [].slice.call(overlay.querySelectorAll(".nav__link"));
+
+  // Hover curtain (mask-flip) on each link — REUSE work-list.js's WorkListCurtain (the site-standard rAF roll,
+  // same as ABOUT/WORK), not a new mechanism. A .nav__link holds its text directly (no .wbig__en child), so we
+  // pass null → wire() rebuilds the <a>'s own text into the 2-copy track. Wired at LOAD (not first open): the
+  // links are already in the DOM (only #navOverlay is display:none), wire() is idempotent AND a no-op under
+  // reduce/hover:none, and WorkListCurtain is already defined (work-list.js loads first) — so load-time wiring
+  // needs no per-open flag and attaches nothing on touch/reduced-motion. The <a> identity is preserved (only its
+  // children change), so the click handler + href below are unaffected.
+  if (window.WorkListCurtain) links.forEach(function (a) { window.WorkListCurtain(a, null); });
   var root = document.documentElement, body = document.body;
   var ctx = canvas.getContext("2d");
   var reduce = matchMedia("(prefers-reduced-motion:reduce)");
@@ -37,10 +46,13 @@
   var navFx = null, navFxTried = false;
   //  DARK menu (bright WORK backdrop): the HERO gray-on-black palette, seed shifted so it isn't a carbon copy.
   var FX_DARK = { colors: [[0, 0, 0], [0.14, 0.14, 0.155], [0.28, 0.28, 0.30], [0.46, 0.46, 0.49]], colorCount: 4, seed: 7.0, grain: 0.06, saturation: 1.0, vignette: 0.0 };
-  //  LIGHT menu (dark site backdrop): base = #ccd2d8 (0.800,0.824,0.847); filaments a touch darker & cooler
-  //  (B−R ≈ +0.05→+0.06, a slight blue bias), subtle Δluma (~0.08). Grain lowered (0.06→0.04, less speckle on a
-  //  light field), vignette 0, saturation 1.0 — per the light-palette brief.
-  var FX_LIGHT = { colors: [[0.800, 0.824, 0.847], [0.770, 0.796, 0.822], [0.740, 0.768, 0.797], [0.712, 0.742, 0.773]], colorCount: 4, seed: 3.0, grain: 0.04, saturation: 1.0, vignette: 0.0 };
+  //  LIGHT menu (dark site backdrop): base = #ccd2d8 (0.800,0.824,0.847) — FIXED so the --nav-fx 0→1 fade has
+  //  no seam. Earlier ramp read "too faint": palette(glow) with paramA 0.28 (coeff 0.0292) keeps glow low, so the
+  //  whole field hovered near c0/c1 and the streaks barely showed. FIX = widen the palette RANGE only (no
+  //  contrast/paramA touch): c1..c3 deepened ~2.1× in Δluma-vs-bg (7/14/21 → 15/29/44). Deepest #9fa6ae is Δ44
+  //  below bg (recommended 35–50) yet Δ145 above the dark list ink (--work-ink #141414) → text stays crisp.
+  //  Cool bias kept/slightly raised (B−R +15 vs base +12). grain 0.04 / vignette 0 / saturation 1.0 unchanged.
+  var FX_LIGHT = { colors: [[0.800, 0.824, 0.847], [0.737, 0.765, 0.796], [0.682, 0.710, 0.741], [0.624, 0.651, 0.682]], colorCount: 4, seed: 3.0, grain: 0.04, saturation: 1.0, vignette: 0.0 };
   function ensureFx() {
     if (navFxTried) return navFx;
     navFxTried = true;
