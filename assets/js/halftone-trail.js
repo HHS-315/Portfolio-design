@@ -7,11 +7,19 @@
  *  · Two-pass GPU sim: pass 1 accumulates a decaying trail into a ping-pong 512² FBO around the pointer
  *    (elongated along the motion direction by velocity); pass 2 renders that density field as halftone dots
  *    whose radius grows with density. Both fragment shaders are copied verbatim from the source component.
+ *  · The canvas sits at z61 — ABOVE the menu(55) and WORK subpage(60) overlays so the trail shows over them,
+ *    but BELOW the toggle(63) and Click chip(70) glass pills (a difference layer over them would wreck the
+ *    backdrop-filter glass). See the #halftone CSS note.
  *  · Base dot COLOUR is chosen by the LOCAL background darkness (JS): over a DARK backdrop it uses the HERO
- *    shader palette; over a LIGHT backdrop (WORK cells up / light menu) it uses the MENU shader palette
- *    (assets/js/nav-menu.js FX_LIGHT). The colour is lerped so section changes cross-fade. Because the canvas
- *    is composited with difference, on the dark sections the dots come out AS the hero colour (|c−~0| = c),
- *    while on the light sections they invert to a dark, menu-tinted dot — visible either way.
+ *    shader palette; over a LIGHT backdrop it uses the MENU shader palette (assets/js/nav-menu.js FX_LIGHT).
+ *    Detection is per-context: the WORK subpage is a real DOM overlay (dark cover + light .wd__page article),
+ *    so its bg is sampled straight from the DOM under the cursor (bgLumaAt); on the main page the WORK cells
+ *    are canvas-painted, so the --work-reveal / nav-open signals are used instead. Colour is lerped so opening
+ *    an overlay cross-fades. Because the canvas is composited with difference, on dark backdrops the dots come
+ *    out AS the hero colour (|c−~0| = c), and on light backdrops they invert to a dark, menu-tinted dot.
+ *  · Dot SIZE / INK: cellSize 5 + shader radius 0.32 → 3.2px dots at 0.32 peak coverage (was 9.4px / 0.69), and
+ *    opacity 0.55 so the difference over light --bone text resolves to ~160 (was 100) — no longer "carving" it,
+ *    while staying visible (~72) over the dark background.
  *  · Perf: no permanent loop. The rAF self-pauses IDLE_MS after the last pointer move (by then the trail has
  *    decayed below the dot threshold) and resumes on the next move; also pauses when the tab is hidden.
  *  · Guarded off on touch (no cursor) and prefers-reduced-motion (both also hide #halftone in CSS), and a
@@ -64,7 +72,7 @@
     "  vec2 cellCenterUv=cellCenter/uResolution;",
     "  float density=texture2D(uTrailTexture,cellCenterUv).r;",
     "  float dist=length(fract(pixel/uCellSize)-0.5);",
-    "  float radius=density*0.47;",
+    "  float radius=density*0.32;",   /* COVERAGE lever, 0.47→0.32 (peak π·0.32²=0.32, was 0.69) — stops carving text */
     "  float aa=fwidth(dist);",
     "  float inDot=1.0-smoothstep(radius-aa,radius,dist);",
     "  float alpha=inDot*smoothstep(0.05,0.2,density);",
@@ -103,7 +111,13 @@
   }
 
   // ---- config (source defaults, tuned) ----
-  var CFG = { decay: 0.965, brushSize: 0.045, hoverBrushSize: 0.012, opacity: 1.0, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 10, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
+  // cellSize 10→5: dot DIAMETER = 2·radius·cellSize = 2·0.32·5 = 3.2px (was 9.4px, ~66% smaller — the "절반 이상"
+  //   size cut) and 4× denser. opacity 1.0→0.55: difference over --bone text(233) resolves to (1−α)·233+α·|233−133|
+  //   = 160 (was 100 — far less "carve"), while over the dark bg(10) it is 72 — still clearly visible. Coverage
+  //   (radius const, in the shader) does the rest. hoverSelector is deliberately UNCHANGED: the global size/ink
+  //   cut already relieves the big statements uniformly, and adding .wish__lead etc. would slam the trail down to
+  //   hoverOpacity 0.2 whenever it crosses them — an abrupt "the trail died on the headline" glitch.
+  var CFG = { decay: 0.965, brushSize: 0.045, hoverBrushSize: 0.012, opacity: 0.55, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 5, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
   var IDLE_MS = 1800;   // self-pause this long after the last pointer move (trail has decayed below the dot threshold by then)
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false });
@@ -154,13 +168,28 @@
     canvas.height = Math.max(1, Math.round(height * dpr));
   }
 
-  // Local background darkness → which shader palette the dots take. The site is dark by default; the only LIGHT
-  // regions are the WORK white cells (--work-reveal rises as they fill) and the light menu overlay (nav-open
-  // without nav-dark). Cheap read of the same CSS var / classes the rest of the site already maintains.
-  function pickTarget() {
-    var wr = parseFloat(getComputedStyle(root).getPropertyValue("--work-reveal")) || 0;
-    var lightMenu = root.classList.contains("nav-open") && !root.classList.contains("nav-dark");
-    targetRGB = (wr > 0.5 || lightMenu) ? MENU_RGB : HERO_RGB;
+  // Local background darkness → which shader palette the dots take.
+  //  · WORK subpage open (#workOverlay.is-active): a real DOM overlay = a DARK cover (.wd__surface #0e0e0e /
+  //    .wd__hero2 #14161a) at the top and a LIGHT article (.wd__page var(--work-cell) #ccd2d8) below it, so
+  //    --work-reveal (frozen at 1 from the WORK section behind it) is meaningless here. The article is the ONLY
+  //    light region, so we key on whether the cursor Y is inside .wd__page's live rect — robust against the
+  //    fixed full-viewport .wd__surface backdrop that would otherwise fool an elementFromPoint hit test.
+  //  · Menu open: the overlay COVERS the WORK cells, so its OWN theme decides, not --work-reveal — a DARK menu
+  //    (nav-dark, opened over filled WORK blocks where --work-reveal is ~1) must still be HERO, so the menu
+  //    branch is checked BEFORE the --work-reveal fallback (which would otherwise wrongly report MENU there).
+  //  · Main page: the WORK white cells are painted on a CANVAS (no DOM bg to sample), so use --work-reveal.
+  var wo = document.getElementById("workOverlay");
+  function pickTarget(x, y) {
+    var light;
+    if (wo && wo.classList.contains("is-active")) {
+      var pg = wo.querySelector(".wd__page"), r = pg && pg.getBoundingClientRect();
+      light = !!(r && y >= r.top && y < r.bottom);          // over the light article → MENU, else dark cover → HERO
+    } else if (root.classList.contains("nav-open")) {
+      light = !root.classList.contains("nav-dark");         // menu theme (covers the cells): light menu → MENU, dark → HERO
+    } else {
+      light = (parseFloat(getComputedStyle(root).getPropertyValue("--work-reveal")) || 0) > 0.5;
+    }
+    targetRGB = light ? MENU_RGB : HERO_RGB;               // lerped toward in draw() so overlay opens cross-fade
   }
 
   function onPointerMove(e) {
@@ -174,7 +203,7 @@
     if (dist > 1e-4) { dirX = dx / dist; dirY = dy / dist; }
     var el = document.elementFromPoint(e.clientX, e.clientY);
     hovering = !!(el && el.closest && el.closest(CFG.hoverSelector));
-    pickTarget();
+    pickTarget(e.clientX, e.clientY);
     lastMove = performance.now();
     resume();
   }

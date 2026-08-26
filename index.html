@@ -65,12 +65,17 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
    the effect is live (.refract-active), so no-WebGL / touch / reduced-motion keeps
    the normal DOM text. */
 #refract{position:fixed;inset:0;width:100%;height:100%;z-index:4;display:block;pointer-events:none}
-/* halftone-dot mouse trail (halftone-trail.js). z6 = above the content/#strip/.bar, below the menu overlay(55)
-   & toggle(63). mix-blend-mode:difference is the "색반전": the sparse dots auto-invert against WHATEVER is under
-   them (same trick as .bar), so they read on the dark hero AND the light WORK cells. Base colour is switched by
-   the local background darkness in JS (dark→hero-shader palette, light→menu-shader palette). Skipped on
-   touch/reduced-motion (a cursor trail needs a cursor + motion). pointer-events:none so it never blocks. */
-#halftone{position:fixed;inset:0;width:100%;height:100%;z-index:6;display:block;pointer-events:none;mix-blend-mode:difference}
+/* halftone-dot mouse trail (halftone-trail.js). z61 = ABOVE the menu overlay(55) AND the WORK subpage(60) so
+   the trail shows over them too, yet BELOW the toggle(63) and the Click chip(70) — both backdrop-filter glass
+   pills that sit near the cursor and would be wrecked if this difference canvas inverted them. It is also below
+   html.nav-open .bar(62): when the menu is open the .bar logo stays on top of the trail (clean), while on the
+   main page .bar is z5 (below) — unchanged from before. All of #halftone / #navOverlay / #workOverlay are
+   <body>-direct children (one root stacking context), so the z ordering and the difference blend both hold.
+   mix-blend-mode:difference is the "색반전": the sparse dots auto-invert against WHATEVER is under them (same
+   trick as .bar), so they read on the dark hero AND the light WORK cells / subpage article. Base colour is
+   switched by the LOCAL background darkness in JS (dark→hero-shader palette, light→menu-shader palette). Skipped
+   on touch/reduced-motion (a cursor trail needs a cursor + motion). pointer-events:none so it never blocks. */
+#halftone{position:fixed;inset:0;width:100%;height:100%;z-index:61;display:block;pointer-events:none;mix-blend-mode:difference}
 @media(hover:none){#halftone{display:none}}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
 .hero__quote.refract-active,.wish__lead.refract-active{color:transparent}
