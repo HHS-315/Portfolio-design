@@ -433,21 +433,61 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wish__lead{font-family:var(--hero-font);font-weight:700;color:var(--bone);
   font-size:clamp(34px,8.4vw,99px);line-height:1.14;letter-spacing:-.01em;margin:0 auto;text-align:center;
   width:max-content;max-width:100%;opacity:var(--contact-reveal)}
-/* small pixel-flower "Thank you" mark, grounded in the CONTACT bottom-right corner. Decorative: white
-   line-art on the dark section, transparent PNG. position:absolute in the (position:relative, 100svh) .sec —
-   at max scroll the section bottom coincides with the viewport bottom (measured ≈0px), so the section corner
-   IS the screen corner. right:var(--gutter) aligns it with the nav's right edge; bottom is a small width-linked
-   margin (NOT vh — the old 13vh=140px left a ~130px gap floating it) so it sits just above the very bottom.
-   The measured bottom ASCII strip is only a ~9px band at the screen bottom, lit only WHILE scrolling and
-   cleared at rest. Because this mark is section-anchored it rises in from the bottom, so its stem tip must
-   sweep up through that 9px band as it appears — and #strip goes z5+mix-blend-mode:difference when
-   html.strip-invert is on (bpFall≥0.31, true through the whole approach). z-index:6 (ABOVE that z5) keeps the
-   mark OUT of the strip's blend backdrop, so it is never colour-inverted even at that instant; it simply sits
-   on top. Rides --contact-reveal so it fades in with CONTACT and stays reversible. pointer-events:none. */
+/* fine-print copyright under the statement — mono meta tone (matches .bar/.sec__head/.wd__caps: mono,
+   uppercase, wide tracking, --dim). opacity:var(--contact-reveal) = the SAME scroll-driven ramp as
+   .wish__lead (no separate transition/animation, no transform → scroll-position-pure, keeps refract text
+   from shifting). margin-top is optical spacing below the big line (its line-height is 1.14). NO optical
+   text-indent: measured (Range ink-centre vs container-centre) that the engine does NOT add the trailing
+   letter-spacing after the last glyph, so the centred text is already dead-centre at indent 0 (offset 0.0px);
+   a naive ls/2 indent would MIS-shift it +0.6px to the right, so it is omitted. */
+.wish__copy{font-family:var(--mono);font-weight:400;font-size:clamp(10px,1.05vw,12px);letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);text-align:center;
+  margin:clamp(22px,3.4vh,46px) 0 0;opacity:var(--contact-reveal)}
+/* clip the .contact-thanks slide-in start (it begins off-screen to the right). body{overflow-x:hidden}
+   does NOT reach the viewport here — the viewport takes its overflow from html, whose overflow-x is visible —
+   so without this the off-screen mark would add a horizontal scrollbar (measured: page scrolled to x≈133).
+   overflow-x:CLIP (not hidden) clips the X axis only and leaves overflow-y visible, so the section lays out
+   and scrolls normally; clip also creates no scroll container and no stacking context (won't disturb the
+   #strip / .bar difference blends). Scoped to #contact so no other section is affected. */
+#contact{overflow-x:clip}
+/* small pixel-flower "Thank you" mark, grounded bottom-right of CONTACT. Decorative white line-art on the
+   dark section (transparent PNG). TWO layers so each carries ONE transform (a single element can't hold both
+   a slide and a wobble — they'd overwrite each other):
+     .contact-thanks       (outer) — placement + a horizontal SLIDE-IN as it scrolls into view.
+     .contact-thanks__img  (inner) — a slow WOBBLE (rotate only).
+   PLACEMENT: position:absolute in the (position:relative,100svh) .sec; at max scroll the section bottom meets
+   the viewport bottom (~0px), so the corner IS the screen corner. right:var(--gutter) aligns to the nav's
+   right edge; bottom is a small width-linked margin (NOT vh).
+   z-index NOTE (corrected — the old note here was wrong): .shell is position:relative;z-index:4, i.e. a
+   STACKING CONTEXT, and this mark lives inside it, so z-index:6 here is LOCAL to .shell and does NOT lift the
+   mark above the root-level #strip canvas (which becomes z5 + mix-blend-mode:difference under
+   html.strip-invert). The mark is NOT above the strip's blend backdrop. Colour-inversion is avoided instead by
+   (a) motion being HORIZONTAL only — no translateY — so the mark never descends into the strip's ~9px bottom
+   ink band, and (b) bottom clearing that band. (Previously this claimed z6 lifted it above #strip; that was
+   false — the overlap was merely latent.)
+   SLIDE: driven by scroll position via a native view() timeline (CSS scroll-driven animation — NO JS, NO
+   IntersectionObserver; fully reversible: same scroll position → same transform). --contact-reveal cannot
+   drive a VISIBLE slide because it saturates to 1 at bpFall 0.25 while the section-bottom-anchored mark only
+   scrolls into view near bpFall 1 — the ramp finishes off-screen (measured). view() ties the slide to THIS
+   element entering the viewport instead. Fallback: where view() is unsupported the 0s time-based animation
+   fills to the rest state (transform:none) → the mark just sits placed. opacity still rides --contact-reveal
+   (scroll-pure fade). WOBBLE: time-based @keyframes on the inner img (rotate ±1.1°, 6.5s) — a time-based
+   lifecycle deliberately allowed here (like the CONTACT ambient field); scroll never drives its phase.
+   No filter/mix-blend/isolation/contain on the wrapper (each would spawn a stacking context and cut the
+   surrounding blends). pointer-events/user-select off. */
 .contact-thanks{position:absolute;right:var(--gutter);bottom:clamp(16px,2vw,30px);
   width:clamp(92px,12vw,152px);height:auto;z-index:6;pointer-events:none;user-select:none;
-  opacity:calc(var(--contact-reveal) * .95)}
+  opacity:calc(var(--contact-reveal) * .95);
+  --thanks-D:180%;                                   /* slide starts off-screen right by 1.8× own width */
+  animation:thanks-slide both linear;animation-timeline:view();animation-range:entry 0% entry 100%}
+.contact-thanks__img{display:block;width:100%;height:auto;transform-origin:50% 100%;
+  animation:thanks-wobble 6.5s ease-in-out infinite}
+@keyframes thanks-slide{from{transform:translate3d(var(--thanks-D),0,0)}to{transform:translate3d(0,0,0)}}
+@keyframes thanks-wobble{0%,100%{transform:rotate(-1.1deg)}50%{transform:rotate(1.1deg)}}
 @media(max-width:640px){.contact-thanks{width:clamp(78px,22vw,110px);bottom:clamp(14px,4vw,22px)}}
+@media(prefers-reduced-motion:reduce){
+  .contact-thanks{animation:none;transform:none}
+  .contact-thanks__img{animation:none}}
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
 body.intro-lock{position:fixed;top:0;left:0;width:100%;overflow:hidden}
@@ -543,8 +583,11 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   <section id="contact" class="sec sec--tint">
     <div class="wish">
       <p class="wish__lead" id="wishLead">LET’S MAKE<br>SOMETHING GOOD.</p>
+      <p class="wish__copy">Copyright © HWANG HYESEON 2026</p>
     </div>
-    <img class="contact-thanks" src="assets/img/thank-you.png" alt="Thank you" width="460" height="523">
+    <div class="contact-thanks">
+      <img class="contact-thanks__img" src="assets/img/thank-you.png" alt="Thank you" width="460" height="523">
+    </div>
   </section>
 </div>
 
