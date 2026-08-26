@@ -20,6 +20,8 @@
   var overlay = document.getElementById("navOverlay");
   var canvas = document.getElementById("navBlocks");
   if (!toggle || !overlay || !canvas) return;
+  var label = toggle.querySelector(".nav-toggle__label");   // the button's visible text = its accessible name
+  function setLabel(t) { if (label) label.textContent = t; }
   var list = overlay.querySelector(".nav__list");
   var links = [].slice.call(overlay.querySelectorAll(".nav__link"));
   var root = document.documentElement, body = document.body;
@@ -175,9 +177,8 @@
     setText(0); draw(0);
     lockScroll();
     root.classList.add("nav-open");
-    toggle.classList.add("is-active");
+    setLabel("CLOSE");                                   // visible text (= accessible name); pill min-width holds size
     toggle.setAttribute("aria-expanded", "true");
-    toggle.setAttribute("aria-label", "메뉴 닫기");
     overlay.setAttribute("aria-hidden", "false");
     document.addEventListener("keydown", onKeydown);
     signalBg(true);
@@ -202,9 +203,8 @@
 
   function close(afterRestore) {
     if (!menuOpen) { if (afterRestore) afterRestore(); return; }
-    toggle.classList.remove("is-active");
+    setLabel("MENU");
     toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-label", "메뉴 열기");
     setText(0);                                        // list fades out FIRST (CSS opacity transition)
     var startRetract = function () {
       tween(1, 0, CLOSE_MS, function (p) { draw(p); }, function () {
@@ -221,9 +221,8 @@
   function forceClose() {                              // immediate close (no animation) for mutual-exclusion races
     if (!menuOpen) return;
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    toggle.classList.remove("is-active");
+    setLabel("MENU");
     toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-label", "메뉴 열기");
     setText(0);
     finishClose();
   }
