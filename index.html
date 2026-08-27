@@ -133,7 +133,7 @@ html.nav-open #strip{display:none}   /* strip hidden while the menu covers the s
 #navToggle:focus-visible .nav-toggle__glass{border-color:rgba(255,255,255,.55)}
 /* hidden + inert during the intro scroll-lock and while the WORK subpage overlay is open (body.nav-suppress, JS) */
 html.intro-lock #navToggle,body.nav-suppress #navToggle{opacity:0;pointer-events:none}
-@media(max-width:560px){#navToggle{top:8px}.nav-toggle__glass{height:28px;width:74px}}
+@media(max-width:560px){#navToggle{top:8px}.nav-toggle__glass{height:28px;width:74px}.nav-toggle__label{font-size:10px}}   /* label 12→10px to match .bar's 10px at the SAME 560px breakpoint (only font-size; tracking/weight unchanged). Pill width is fixed, so MENU/CLOSE still don't jump. */
 @media(prefers-reduced-motion:reduce){.nav-toggle__glass{transition:none}}
 
 /* ===== FULL-SCREEN MENU OVERLAY (nav-menu.js) ===== */
@@ -215,7 +215,7 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
    at each width (mask-size:100% 100% stretches the SVG to the element). */
 .flower-tip{position:fixed;left:calc(50vw + 16vmin);top:56svh;transform:translate(6px,-50%);z-index:4;pointer-events:none;
   box-sizing:border-box;height:34px;
-  display:inline-flex;align-items:center;padding:0 15px 0 22px;white-space:nowrap;
+  display:inline-flex;align-items:center;padding:0 13px 0 24px;white-space:nowrap;   /* asymmetric: L−R = 11px ≈ tail-fraction(11/140)·W(138.6) so the text centres in the VISIBLE pill body, not the whole box (the left tail steals 7.9% of the width). Mobile overrides this to symmetric (tailless). */
   font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:12.5px;letter-spacing:.01em;line-height:1;
   color:rgba(242,242,240,.94);background:rgba(255,255,255,.08);
   -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
@@ -231,9 +231,16 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 .flower-tip::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:var(--tip-stroke) center/100% 100% no-repeat}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(0,-50%)}
-@media(max-width:640px){.flower-tip{left:calc(50vw + 15vmin);top:48svh;font-size:12px;
-  --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 34' preserveAspectRatio='none'><path d='M18 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='%23000'/></svg>");
-  --tip-stroke:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 34' preserveAspectRatio='none'><path d='M18 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L18 34 Q11 34 11 27 L11 21.5 L3 19 Q0 17 3 15 L11 12.5 L11 7 Q11 0 18 0 Z' fill='none' stroke='%23333' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>")}}
+/* MOBILE: centre the bubble ON the flower head. dandelion.js puts the head at cx=50vw, cy=0.48·innerH, so
+   left:50vw / top:48svh + translate(-50%,-50%) sits it there. TAILLESS → drop the SVG mask and round with
+   border-radius: unlike mask, border-radius does NOT kill backdrop-filter, so the busy flower glyphs behind the
+   bubble actually blur and the light label reads. Symmetric padding (no tail to compensate). The ::after outline
+   was mask-based, so replace it with a plain border. */
+@media(max-width:640px){
+  .flower-tip{left:50vw;top:48svh;transform:translate(-50%,-50%);font-size:12px;padding:0 16px;
+    -webkit-mask:none;mask:none;border-radius:17px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22)}
+  .flower-tip::after{content:none}
+  .flower-tip.is-visible{transform:translate(-50%,-50%)}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
 
 /* sections — full-bleed opaque panels, alternating colour only (no divider lines) */

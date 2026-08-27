@@ -20,8 +20,10 @@
  *  · Dot SIZE / INK: full-size dots (cellSize 10, shader radius 0.47 → 9.4px, 0.69 peak coverage) for presence —
  *    the smaller 5/0.32 build read too faint. Text relief is opacity-only: 0.6, so difference over light --bone
  *    text resolves to ~153 (was 100 at opacity 1.0 — less "carving") while staying strong (~78) over dark bg.
- *  · Perf: no permanent loop. The rAF self-pauses IDLE_MS after the last pointer move (by then the trail has
- *    decayed below the dot threshold) and resumes on the next move; also pauses when the tab is hidden.
+ *  · Perf: no permanent loop. Injection is tied to pointer MOVEMENT; when the pointer stops or leaves the window
+ *    (pointerleave/blur/pointercancel → away) injection stops, the trail decays, and after FADE_FRAMES draws the
+ *    canvas + FBOs are cleared and the rAF halts. It resumes on the next move; hide/show wipes it so no frozen
+ *    frame is left behind and no old trail pops back on return.
  *  · Guarded off on touch (no cursor) and prefers-reduced-motion (both also hide #halftone in CSS), and a
  *    no-op if WebGL is unavailable — the page just keeps its normal background.
  */
@@ -124,7 +126,13 @@
   //   (0.020 = 10 texels, safe) and hoverBrushSize ≥ 0.008 (=4 texels, the sanctioned floor — proportional 0.005
   //   would alias). This is the BLOB size only; per-dot size (cellSize/radius) and ink (opacity) are unchanged.
   var CFG = { decay: 0.965, brushSize: 0.020, hoverBrushSize: 0.008, opacity: 0.6, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 10, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
-  var IDLE_MS = 1800;   // self-pause this long after the last pointer move (trail has decayed below the dot threshold by then)
+  // Injection is tied to MOVEMENT (not a fixed idle timer). While the pointer is moving, a blob is injected at
+  // the cursor each frame; once it stops (no move within MOVE_GRACE) or leaves the window (`away`), injection
+  // stops (reveal→0) and the existing trail just decays. FADE_FRAMES = how many DRAWS to keep rendering after
+  // injection stops before clearing + halting — decay 0.965 takes ln(0.05)/ln(0.965) ≈ 84 draws to fall from
+  // 1.0 below the 0.05 dot threshold, +margin. This is what stops the trail freezing at the last point.
+  var MOVE_GRACE = 100;     // ms after the last pointermove that injection still counts as "moving"
+  var FADE_FRAMES = 110;    // draws to run after injection stops, then clear the canvas/FBOs and halt the rAF
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false });
   if (!gl) return;                                     // graceful no-op
@@ -165,7 +173,17 @@
   var hovering = false, reveal = 0, currentBrush = CFG.brushSize, currentOpacity = CFG.opacity;
   var colorRGB = HERO_RGB.slice(), targetRGB = HERO_RGB.slice();
   var raf = 0, running = false, lastMove = 0, visible = document.visibilityState === "visible";
+  var away = false, injecting = false, fadeFrames = 0;   // away = pointer outside the window; fade bookkeeping
   var root = document.documentElement;
+
+  // Wipe both trail FBOs and the visible canvas → no frozen frame, and a re-entry starts clean.
+  function clearTrail() {
+    gl.clearColor(0, 0, 0, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboA.fb); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboB.fb); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height); gl.clear(gl.COLOR_BUFFER_BIT);
+    reveal = 0; fadeFrames = 0;
+  }
 
   function resize() {
     width = window.innerWidth; height = window.innerHeight;
@@ -210,13 +228,20 @@
     var el = document.elementFromPoint(e.clientX, e.clientY);
     hovering = !!(el && el.closest && el.closest(CFG.hoverSelector));
     pickTarget(e.clientX, e.clientY);
+    away = false;                           // pointer is inside → injecting again
     lastMove = performance.now();
     resume();
   }
+  // Pointer left the window / lost focus → stop injecting; the running loop fades the trail out and clears.
+  function onPointerAway() { away = true; }
 
   function draw() {
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    reveal = lerp(reveal, 1.0, 0.04);
+    // Inject only while the pointer is present AND was moving recently. Otherwise ramp reveal to 0 (faster than
+    // it rises, but not a one-frame cut) so no new ink is added at the resting/last point — the trail then just
+    // decays instead of saturating and freezing there.
+    injecting = !away && (performance.now() - lastMove < MOVE_GRACE);
+    reveal = lerp(reveal, injecting ? 1.0 : 0.0, injecting ? 0.04 : 0.12);
     currentBrush = lerp(currentBrush, hovering ? CFG.hoverBrushSize : CFG.brushSize, 0.08);
     currentOpacity = lerp(currentOpacity, hovering ? CFG.hoverOpacity : CFG.opacity, 0.08);
     for (var i = 0; i < 3; i++) colorRGB[i] = lerp(colorRGB[i], targetRGB[i], 0.05);
@@ -270,7 +295,8 @@
     var _t = window.HeroPerf ? HeroPerf.t() : 0;
     draw();
     if (window.HeroPerf) HeroPerf.add("halftone", _t);
-    if (performance.now() - lastMove > IDLE_MS) { running = false; return; }   // idle → self-pause (trail already faded)
+    fadeFrames = injecting ? 0 : fadeFrames + 1;
+    if (fadeFrames > FADE_FRAMES) { clearTrail(); running = false; return; }   // trail fully decayed → wipe & halt (no frozen frame, no permanent loop)
     raf = requestAnimationFrame(tick);
   }
   function resume() {
@@ -283,11 +309,18 @@
   resize();
   window.addEventListener("resize", resize);
   window.addEventListener("pointermove", onPointerMove, { passive: true });
+  // pointer leaving the window / losing focus → mark away so the running loop fades + clears (same idea as
+  // shader-bg.js's onPointerLeave). No resume(): if the loop already halted there is nothing to fade.
+  document.documentElement.addEventListener("pointerleave", onPointerAway);
+  window.addEventListener("pointercancel", onPointerAway);
+  window.addEventListener("blur", onPointerAway);
   document.addEventListener("visibilitychange", function () {
     visible = document.visibilityState === "visible";
-    if (visible) { lastMove = performance.now(); resume(); }
-    else if (raf) { cancelAnimationFrame(raf); raf = 0; running = false; }
+    away = true;                                  // treat a tab switch as "pointer gone" until the next move
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    running = false;
+    clearTrail();                                 // wipe on BOTH hide and show → no frozen frame, no old trail popping back on return
   });
-  // one warm-up frame so the FBOs/first paint are ready; it self-pauses immediately (lastMove stays 0).
-  raf = requestAnimationFrame(tick);
+  // No warm-up frame: the canvas starts blank (correct — no trail before the pointer moves) and the FBOs were
+  // cleared at init. The first pointermove calls resume() and everything starts.
 })();
