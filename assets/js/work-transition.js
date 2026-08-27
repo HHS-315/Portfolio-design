@@ -58,7 +58,9 @@
   // at T1=0.50 (blockProgress), the tighter bound. So the fade ENDS at 0.48 (< 0.50 snap, < 0.562 overlap) — one
   // uniform range for all three right lines (staggering can't beat the reduced-motion snap anyway). T1-bound →
   // fully reversible, no new listener.
-  var ABOUT_FADE_START = 0.38, ABOUT_FADE_END = 0.48;   // T1 range over which the mobile ABOUT right-lines go 1→0
+  var ABOUT_FADE_START = 0.44, ABOUT_FADE_END = 0.49;   // T1 range over which the mobile ABOUT right-lines go 1→0
+  // (delayed from 0.38/0.48: the lines now hold full opacity until T1=0.44 and only clear at 0.49, still < the
+  //  0.50 reduced-motion block snap and the 0.562 earliest real overlap — so nothing overlaps the WORK ink.)
   // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
   // #strip is a FIXED thin row pinned to the viewport bottom (lit from bp 0; it does NOT move or "form late"),
   // so .wish__lead's two lines ("LET'S MAKE" / "SOMETHING GOOD.") each sweep DOWN through that one row at a
