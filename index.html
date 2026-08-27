@@ -231,16 +231,17 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 .flower-tip::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:var(--tip-stroke) center/100% 100% no-repeat}
 .flower-tip.is-visible{opacity:1;visibility:visible;transform:translate(0,-50%)}
-/* MOBILE: centre the bubble ON the flower head. dandelion.js puts the head at cx=50vw, cy=0.48·innerH, so
-   left:50vw / top:48svh + translate(-50%,-50%) sits it there. TAILLESS → drop the SVG mask and round with
-   border-radius: unlike mask, border-radius does NOT kill backdrop-filter, so the busy flower glyphs behind the
-   bubble actually blur and the light label reads. Symmetric padding (no tail to compensate). The ::after outline
-   was mask-based, so replace it with a plain border. */
+/* MOBILE: same bubble form as PC (rounded rect + pointy tail via the SVG mask), but the tail is moved to the
+   BOTTOM-CENTRE pointing DOWN at the flower below. Only --tip-mask/--tip-stroke are swapped (the base rule still
+   applies the mask + ::after outline). 34px body + 8px tail = 42px height; symmetric L/R padding + 8px bottom
+   padding pushes the flex-centred text up into the body. Positioned so the tail TIP (element bottom-centre) sits
+   near the flower head: left:50vw + top:43svh + translate(-50%,-100%) puts the bottom edge (tail tip) at 43svh,
+   ≈17px into the head (top ~40svh) while the body + text sit just clear above it over the dark hero, so it reads. */
 @media(max-width:640px){
-  .flower-tip{left:50vw;top:48svh;transform:translate(-50%,-50%);font-size:12px;padding:0 16px;
-    -webkit-mask:none;mask:none;border-radius:17px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22)}
-  .flower-tip::after{content:none}
-  .flower-tip.is-visible{transform:translate(-50%,-50%)}}
+  .flower-tip{left:50vw;top:43svh;transform:translate(-50%,-100%);font-size:12px;height:42px;padding:0 16px 8px;
+    --tip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 42' preserveAspectRatio='none'><path d='M7 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L50 34 L43 42 L36 34 L7 34 Q0 34 0 27 L0 7 Q0 0 7 0 Z' fill='%23000'/></svg>");
+    --tip-stroke:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86 42' preserveAspectRatio='none'><path d='M7 0 L79 0 Q86 0 86 7 L86 27 Q86 34 79 34 L50 34 L43 42 L36 34 L7 34 Q0 34 0 27 L0 7 Q0 0 7 0 Z' fill='none' stroke='%23333' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>")}
+  .flower-tip.is-visible{transform:translate(-50%,-100%)}}
 @media(prefers-reduced-motion:reduce){.flower-tip{transition:none}}
 
 /* sections — full-bleed opaque panels, alternating colour only (no divider lines) */

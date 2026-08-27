@@ -316,7 +316,8 @@
     var fam=INTRO_FAM;                              // Montserrat Bold letterforms
     o.font='700 200px '+fam;
     var w0=o.measureText(str).width || (str.length*120);
-    var fs=Math.min((W*0.76)/w0*200, H*0.42);      // fit ~76% width; cap height (mobile auto-shrinks)
+    var widthFrac = W <= 640 ? 0.86 : 0.76;          // mobile: fill more of the (narrow) width → larger PORTFOLIO
+    var fs=Math.min((W*widthFrac)/w0*200, H*0.42);   // fit the width fraction; cap height (mobile auto-shrinks)
     fs=Math.max(18, fs);
     o.font='700 '+fs+'px '+fam;
     var tw=Math.ceil(o.measureText(str).width)+6, th=Math.ceil(fs*1.28)+6;
