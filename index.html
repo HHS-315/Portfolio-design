@@ -78,7 +78,7 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 #halftone{position:fixed;inset:0;width:100%;height:100%;z-index:61;display:block;pointer-events:none;mix-blend-mode:difference}
 @media(hover:none){#halftone{display:none}}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
-.hero__quote.refract-active{color:transparent}
+.hero__quote.refract-active,.wish__lead.refract-active{color:transparent}
 
 .shell{position:relative;z-index:4;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
@@ -543,9 +543,10 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    at reveal = 0.15·i + 0.4, so the last word (i=3) is solid by reveal 0.85 — and --contact-reveal saturates to 1
    by bpFall 0.25, still WELL before either line meets the bottom strip (~0.45), so the strip's difference
    colour-inversion sees fully-opaque text on every pass (unchanged). Opacity outside [0,1] is auto-clamped by
-   the engine. No transform / no JS loop → reversible & scroll-position-pure. The statement was REMOVED from the
-   #refract glass lens (hero-refract.js) so this per-word reveal now shows on ALL platforms (previously the lens's
-   color:transparent hid it on desktop). */
+   the engine. No transform / no JS loop → reversible & scroll-position-pure. This DOM fade is the FALLBACK only:
+   with WebGL the #refract glass lens (hero-refract.js) rasterises #wishLead with its OWN per-word white fill
+   (scroll-driven) and sets the DOM color:transparent — so on desktop the lens+fill shows, and this .wl-w fade
+   shows only on the no-WebGL / touch / reduced-motion path. */
 .wl-w{opacity:calc((var(--contact-reveal) - var(--i) * 0.15) / 0.4)}
 /* fine-print copyright under the statement — SAME family as .wish__lead (var(--hero-font) = Plus Jakarta
    Sans), weight 400, uppercase, --dim, so it belongs to the statement rather than the mono meta system.

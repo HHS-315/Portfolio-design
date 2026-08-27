@@ -51,10 +51,10 @@
 
   var canvas = document.getElementById("refract");
   if (!canvas) return;
-  // The two hero taglines get the glass lens. #wishLead was REMOVED so the CONTACT closing statement can show
-  // its word-by-word reveal (the DOM .wl-w spans) — the lens rasterises the whole line at once and sets the DOM
-  // text color:transparent, which would hide the per-word fade. Refract stays on the hero quotes only.
-  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2")].filter(Boolean);
+  // The two hero taglines PLUS the CONTACT closing statement (#wishLead) get the glass lens. #wishLead is special:
+  // its texture is rasterised with a PER-WORD alpha (a scroll-driven white "fill", Magic-UI style) — see
+  // buildTexture's isWish branch and the tick() re-raster — so it keeps the WebGL lens AND fills word-by-word.
+  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2"), document.getElementById("wishLead")].filter(Boolean);
   if (!els.length) return;
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true });
@@ -155,6 +155,8 @@
       // capture the REAL text colour ONCE here — buildTexture runs after we add
       // .refract-active (color:transparent), so reading it later would give black.
       color: parseColor(getComputedStyle(el).color),
+      isWish: el.id === "wishLead",   // gets the per-word scroll fill
+      reveal: 1,                      // 0..1 scroll progress of the word fill (only used when isWish; tick() drives it)
       tCur: [0, 0], cur: [0, 0],   // cursor target / smoothed (box-local px, y-up)
       tPres: 0, pres: 0            // presence target / smoothed
     };
@@ -210,9 +212,31 @@
     }
 
     // draw offset by PAD so the text sits inside the transparent margin
-    var x = PAD + (alignRight ? rect.width : alignCenter ? rect.width / 2 : 0);
     var yPad = (lh - fsz) / 2;             // centre each line within its line-box (approx DOM leading)
-    for (var li = 0; li < lines.length; li++) c.fillText(lines[li], x, PAD + li * lh + yPad);
+    if (q.isWish) {
+      // PER-WORD white fill: word k of N ramps its alpha 0.22→1 as the scroll progress q.reveal crosses
+      // [k/N, (k+1)/N]. fillStyle stays white; the per-word alpha is baked into the texture, so the lens shows
+      // faint words filling to full white left-to-right as you scroll into CONTACT. Centre each line manually
+      // (textAlign left + measured half-gap) so the words keep the DOM's centred layout.
+      var total = 0, li2; for (li2 = 0; li2 < lines.length; li2++) total += lines[li2].split(" ").length;
+      var gw = 0; c.textAlign = "left";
+      for (li2 = 0; li2 < lines.length; li2++) {
+        var ws = lines[li2].split(" ");
+        var wx = PAD + (rect.width - c.measureText(lines[li2]).width) / 2;
+        var yy = PAD + li2 * lh + yPad;
+        for (var wi = 0; wi < ws.length; wi++) {
+          var tt = q.reveal * total - gw;
+          c.globalAlpha = 0.22 + 0.78 * (tt < 0 ? 0 : tt > 1 ? 1 : tt);
+          c.fillText(ws[wi], wx, yy);
+          wx += c.measureText(ws[wi] + " ").width;
+          gw++;
+        }
+      }
+      c.globalAlpha = 1;
+    } else {
+      var x = PAD + (alignRight ? rect.width : alignCenter ? rect.width / 2 : 0);
+      for (var li = 0; li < lines.length; li++) c.fillText(lines[li], x, PAD + li * lh + yPad);
+    }
 
     gl.bindTexture(gl.TEXTURE_2D, q.tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, o);
@@ -279,6 +303,13 @@
     var moving = false;
     for (var i = 0; i < quotes.length; i++) {
       var q = quotes[i], r = q.rect; if (!r) continue;
+      // #wishLead: scroll-driven word fill. progress 0 when the statement sits low (entering from the bottom),
+      // 1 by the time it has risen into the upper-middle — so the words fill as you scroll INTO contact. Re-raster
+      // the (small) texture only when progress shifts enough; on scroll the loop already ticks (refreshRects).
+      if (q.isWish) {
+        var prog = (H - r.top) / (0.72 * H); prog = prog < 0 ? 0 : prog > 1 ? 1 : prog;
+        if (Math.abs(prog - q.reveal) > 0.012) { q.reveal = prog; buildTexture(q); moving = true; }
+      }
       q.cur[0] += (q.tCur[0] - q.cur[0]) * followK;
       q.cur[1] += (q.tCur[1] - q.cur[1]) * followK;
       q.pres += (q.tPres - q.pres) * presK;
@@ -334,9 +365,10 @@
     window.addEventListener("scroll", function () { refreshRects(); schedule(); }, { passive: true });
     window.addEventListener("resize", rebuild);
 
-    // Keep the loop alive while the hero is on screen — the only refract targets now live there (#wishLead was
-    // dropped so the CONTACT statement shows its word-reveal). inView = any watched target intersecting.
-    var watch = [document.querySelector(".hero")].filter(Boolean);
+    // Keep the loop alive while EITHER the hero OR the CONTACT section is on screen — the lens draws #wishLead in
+    // #contact (the hero is long gone by then), and its word fill must keep re-rastering as CONTACT scrolls.
+    // inView = any watched target intersecting.
+    var watch = [document.querySelector(".hero"), document.getElementById("contact")].filter(Boolean);
     if (!watch.length) watch = [canvas];
     var seen = watch.map(function () { return false; });
     var io = new IntersectionObserver(function (es) {
