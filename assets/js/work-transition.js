@@ -50,17 +50,20 @@
   // --contact-reveal rises 0→1 as the blocks CLEAR (bpFall up) → the CONTACT ambient field (work-ascii.js)
   // fades in with the reveal of the dark background. Starts almost immediately (bottom clears first).
   var CONTACT_REVEAL_START = 0.02, CONTACT_REVEAL_END = 0.25;
-  // MOBILE ABOUT text fade (consumed only by the ≤820px CSS via --about-fade; desktop keeps opacity 1). The right
-  // couplet (I BUILD / THINGS / THAT WORK) sits at the BOTTOM of the mobile stack, where the rising WORK cells
-  // would otherwise show through the white text. Fade those lines out on T1 (progress) BEFORE the cells reach
-  // them. Measured first-overlap T1 (block-ink top hits the line, via getImageData): 375×667 → R3 0.562, R2 0.711,
-  // R1 0.797 ; 414×896 → R3 0.722, R2/R1 0.797. Earliest = 0.562. AND reduced-motion snaps the whole grid to full
-  // at T1=0.50 (blockProgress), the tighter bound. So the fade ENDS at 0.48 (< 0.50 snap, < 0.562 overlap) — one
-  // uniform range for all three right lines (staggering can't beat the reduced-motion snap anyway). T1-bound →
-  // fully reversible, no new listener.
-  var ABOUT_FADE_START = 0.44, ABOUT_FADE_END = 0.49;   // T1 range over which the mobile ABOUT right-lines go 1→0
-  // (delayed from 0.38/0.48: the lines now hold full opacity until T1=0.44 and only clear at 0.49, still < the
-  //  0.50 reduced-motion block snap and the 0.562 earliest real overlap — so nothing overlaps the WORK ink.)
+  // MOBILE ABOUT right-line CLIP-WIPE (replaces the old opacity fade). The right couplet (I BUILD / THINGS /
+  // THAT WORK) sits at the BOTTOM of the mobile stack and LINGERS near the top through the transition (unlike
+  // desktop, where the lines exit the top before the cells arrive). Rather than FADE them (which ghosts the text
+  // over the grey) or RAISE #blocks over them (which would bury the WORK list — the WORK text sits just BELOW the
+  // trio, so the rising cells reach it FIRST; measured: trio overlaps cells only at bpFill ~0.85+, where
+  // --work-reveal is already 1), we CLIP each line to just above the rising cell front. The block fill then
+  // visibly CONSUMES the text bottom→up, with no ghosting and NO z-change, so WORK is untouched. Pure function of
+  // bpFill + each line's rect → fully reversible; runs in updateReveal's existing pass, no new listener.
+  var ABOUT_CLIP_BP = 820;      // ≤ this width → clip-wipe the ABOUT right-lines (mobile). Above it: lines exit the
+                                //   top before the front reaches them, so clip stays 0 (desktop unaffected).
+  var ABOUT_CLIP_LEAD_ROWS = 0.9;  // clip AHEAD of the AVERAGE cell front by ~this many cell-rows. Cells scatter in
+                                   //   ±JIT_ROWS (1.6) rows, so individual tops poke above the average front; leading
+                                   //   the clip by ~1 cell keeps those pokes from touching the text. Text vanishes a
+                                   //   cell early (a thin dark gap on the dark ground) — strictly safer than a poke.
   // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
   // #strip is a FIXED thin row pinned to the viewport bottom (lit from bp 0; it does NOT move or "form late"),
   // so .wish__lead's two lines ("LET'S MAKE" / "SOMETHING GOOD.") each sweep DOWN through that one row at a
@@ -91,6 +94,8 @@
   var work = document.getElementById("work"); if (!work) return;
   var contact = document.getElementById("contact");   // WORK → CONTACT fall reference (optional)
   var root = document.documentElement;
+  var rightLines = document.querySelectorAll(".about__line--r");   // mobile clip-wipe targets (static markup)
+  var lastClip = [];                                                // per-line last clip fraction (dedup guard)
 
   var W = 0, H = 0, DPR = 1, cols = 0, colW = 0, rows = 0, thresh = [];   // thresh[c*rows+r] = bp at which the cell appears
   function ease(x) { return 1 - Math.pow(1 - x, 3); }
@@ -198,7 +203,7 @@
 
   // WORK text/rule reveal: opacity 0→1 as the cells fill behind them (fixed dark ink, no colour muddle).
   // Fully reversible — bp is scroll-linked, so scrolling back up fades the text out symmetrically.
-  var lastReveal = -1, lastContactReveal = -1, lastInvert = false, lastAboutFade = -1;
+  var lastReveal = -1, lastContactReveal = -1, lastInvert = false;
   function updateReveal(bpFill, bpFall) {
     var vIn = clamp01((bpFill - REVEAL_START) / (REVEAL_END - REVEAL_START));
     var vOut = clamp01((bpFall - REVEAL_FALL_START) / (REVEAL_FALL_END - REVEAL_FALL_START));
@@ -208,11 +213,26 @@
     // guarded separately so it still updates while --work-reveal sits at 0 through the CONTACT range.
     var cv = clamp01((bpFall - CONTACT_REVEAL_START) / (CONTACT_REVEAL_END - CONTACT_REVEAL_START));
     if (Math.abs(cv - lastContactReveal) >= 0.004) { lastContactReveal = cv; root.style.setProperty("--contact-reveal", cv.toFixed(3)); }
-    // mobile ABOUT right-line fade — opacity 1→0 over T1 [ABOUT_FADE_START, ABOUT_FADE_END], consumed only by the
-    // ≤820px CSS. Uses progress() (T1), NOT bpFill/bpFall, so it clears before the cells rise (and before the
-    // reduced-motion snap). Same pass, no new listener; fully reversible.
-    var af = clamp01((ABOUT_FADE_END - progress()) / (ABOUT_FADE_END - ABOUT_FADE_START));
-    if (Math.abs(af - lastAboutFade) >= 0.004) { lastAboutFade = af; root.style.setProperty("--about-fade", af.toFixed(3)); }
+    // mobile ABOUT right-line CLIP-WIPE — clip each line to just above the rising cell front so the block fill
+    // appears to CONSUME the text bottom→up (no ghosting, no z-change → WORK untouched). ≤820px only; on desktop
+    // the lines exit the top before the front reaches them, so clip resolves to 0. inset(...) clips from the
+    // BOTTOM (cells rise from the bottom). Same pass, no new listener; pure function of bpFill + rect → reversible.
+    if (rightLines.length) {
+      var mobile = W <= ABOUT_CLIP_BP;
+      // ~top edge of the filled cells (they fill up by TH_TOP), raised so the clip leads the jittery front. The
+      // lead SCALES with the fill (fillFrac) so it is 0 at bpFill 0 — otherwise low-sitting lines would be clipped
+      // before any cell exists (and the clip wouldn't be reversible at the bottom of the range).
+      var fillFrac = clamp01(bpFill / TH_TOP);
+      var frontY = H * (1 - fillFrac) - colW * ABOUT_CLIP_LEAD_ROWS * fillFrac;
+      for (var li = 0; li < rightLines.length; li++) {
+        var el = rightLines[li], clip = 0;
+        if (mobile) { var b = el.getBoundingClientRect(); if (b.height > 0) clip = clamp01((b.bottom - frontY) / b.height); }
+        if (lastClip[li] === undefined || Math.abs(clip - lastClip[li]) >= 0.01 || (clip <= 0.001) !== (lastClip[li] <= 0.001)) {
+          lastClip[li] = clip;
+          el.style.clipPath = clip <= 0.001 ? "" : "inset(-2px 0 " + (clip * 100).toFixed(1) + "% 0)";
+        }
+      }
+    }
     // text×strip inversion: lift + difference-blend #strip only deep in CONTACT (same pass, no new listener).
     var inv = bpFall >= STRIP_INVERT_ON;
     if (inv !== lastInvert) { lastInvert = inv; root.classList.toggle("strip-invert", inv); }

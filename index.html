@@ -298,15 +298,13 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
   .about__grid{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:left;gap:6px}
   .about__center{display:none}
   .about__line{white-space:normal;font-size:clamp(24px,7.2vw,38px);text-align:left}   /* match the hero size */
-  /* right trio → bottom-RIGHT. It sits low in the mobile stack, so fade it out (opacity on the .about__line MASK,
-     not the curtain track) before the rising WORK cells reach it — driven by --about-fade (work-transition.js,
-     T1-bound → reversible). Mobile-only binding, so desktop keeps opacity 1. Left trio scrolls off the top before
-     the cells arrive, so it needs no fade.
-     (A grey COVER — raising the WORK cells' colour over the text instead of fading — was tried and reverted: the
-      text is pinned high in the viewport while the real cells rise from the bottom, so a local grey cover floats
-      as disconnected bars in black space. The real #blocks canvas can't be raised globally either, since the WORK
-      list paints ON those same cells. Opacity is the clean occlusion here.) */
-  .about__line--r{text-align:right;opacity:var(--about-fade,1)}
+  /* right trio → bottom-RIGHT. It lingers near the top through the ABOUT→WORK transition, so the rising WORK cells
+     would show through the white text. Instead of fading opacity (ghosting) or raising #blocks over it (which buries
+     the WORK list — WORK text sits just below the trio and the cells reach it first), work-transition.js CLIPS each
+     line to just above the rising cell front (inline clip-path, bottom-up) so the block fill visibly consumes the
+     text. Mobile-only (≤820px) and driven purely by scroll → fully reversible; desktop lines exit the top first so
+     they never get clipped. No opacity, no z-change, WORK untouched. */
+  .about__line--r{text-align:right}
   .about__line--r[data-row="1"]{margin-top:auto}   /* pushes the right trio to the bottom */
 }
 
