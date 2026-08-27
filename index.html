@@ -298,7 +298,11 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
   .about__grid{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:left;gap:6px}
   .about__center{display:none}
   .about__line{white-space:normal;font-size:clamp(24px,7.2vw,38px);text-align:left}   /* match the hero size */
-  .about__line--r{text-align:right}                /* right trio → bottom-RIGHT */
+  /* right trio → bottom-RIGHT. It sits low in the mobile stack, so fade it out (opacity on the .about__line MASK,
+     not the curtain track) before the rising WORK cells reach it — driven by --about-fade (work-transition.js,
+     T1-bound → reversible). Mobile-only binding, so desktop keeps opacity 1. Left trio scrolls off the top before
+     the cells arrive, so it needs no fade. */
+  .about__line--r{text-align:right;opacity:var(--about-fade,1)}
   .about__line--r[data-row="1"]{margin-top:auto}   /* pushes the right trio to the bottom */
 }
 
