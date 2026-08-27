@@ -60,10 +60,10 @@
   // bpFill + each line's rect → fully reversible; runs in updateReveal's existing pass, no new listener.
   var ABOUT_CLIP_BP = 820;      // ≤ this width → clip-wipe the ABOUT right-lines (mobile). Above it: lines exit the
                                 //   top before the front reaches them, so clip stays 0 (desktop unaffected).
-  var ABOUT_CLIP_LEAD_ROWS = 0.9;  // clip AHEAD of the AVERAGE cell front by ~this many cell-rows. Cells scatter in
-                                   //   ±JIT_ROWS (1.6) rows, so individual tops poke above the average front; leading
-                                   //   the clip by ~1 cell keeps those pokes from touching the text. Text vanishes a
-                                   //   cell early (a thin dark gap on the dark ground) — strictly safer than a poke.
+  var ABOUT_CLIP_MARGIN = 0.06;    // tiny overscan (fraction of a line) added to the clip so a cell's top edge never
+                                   //   antialiases through the clipped text edge. The clip itself reads the REAL grid
+                                   //   (highest drawn cell over the line's columns), so no averaging/lead guessing —
+                                   //   robust to the random per-load cell scatter that a single average front misses.
   // CONTACT text×strip inversion (index.html: html.strip-invert #strip{z-index:5;mix-blend-mode:difference}).
   // #strip is a FIXED thin row pinned to the viewport bottom (lit from bp 0; it does NOT move or "form late"),
   // so .wish__lead's two lines ("LET'S MAKE" / "SOMETHING GOOD.") each sweep DOWN through that one row at a
@@ -213,20 +213,34 @@
     // guarded separately so it still updates while --work-reveal sits at 0 through the CONTACT range.
     var cv = clamp01((bpFall - CONTACT_REVEAL_START) / (CONTACT_REVEAL_END - CONTACT_REVEAL_START));
     if (Math.abs(cv - lastContactReveal) >= 0.004) { lastContactReveal = cv; root.style.setProperty("--contact-reveal", cv.toFixed(3)); }
-    // mobile ABOUT right-line CLIP-WIPE — clip each line to just above the rising cell front so the block fill
-    // appears to CONSUME the text bottom→up (no ghosting, no z-change → WORK untouched). ≤820px only; on desktop
-    // the lines exit the top before the front reaches them, so clip resolves to 0. inset(...) clips from the
-    // BOTTOM (cells rise from the bottom). Same pass, no new listener; pure function of bpFill + rect → reversible.
-    if (rightLines.length) {
+    // mobile ABOUT right-line CLIP-WIPE — clip each line to the TOP of the highest DRAWN cell over the columns it
+    // spans, so the (scattered) block fill appears to CONSUME the text bottom→up. No ghosting, no z-change → the
+    // WORK list/ascii (which paint on these same cells) are untouched. ≤820px only; on desktop the lines exit the
+    // top before cells reach them, so clip stays 0. Reads the REAL grid (thresh, same test as draw()), so a single
+    // tall column can't poke through as it does with an average front. Same pass, no new listener; pure function of
+    // bpFill + the once-seeded grid → fully reversible.
+    if (rightLines.length && cols > 0) {
       var mobile = W <= ABOUT_CLIP_BP;
-      // ~top edge of the filled cells (they fill up by TH_TOP), raised so the clip leads the jittery front. The
-      // lead SCALES with the fill (fillFrac) so it is 0 at bpFill 0 — otherwise low-sitting lines would be clipped
-      // before any cell exists (and the clip wouldn't be reversible at the bottom of the range).
-      var fillFrac = clamp01(bpFill / TH_TOP);
-      var frontY = H * (1 - fillFrac) - colW * ABOUT_CLIP_LEAD_ROWS * fillFrac;
       for (var li = 0; li < rightLines.length; li++) {
         var el = rightLines[li], clip = 0;
-        if (mobile) { var b = el.getBoundingClientRect(); if (b.height > 0) clip = clamp01((b.bottom - frontY) / b.height); }
+        if (mobile) {
+          var b = el.getBoundingClientRect();
+          if (b.height > 0) {
+            var c0 = b.left <= 0 ? 0 : (b.left / colW) | 0;
+            var c1 = (b.right / colW) | 0; if (c1 > cols - 1) c1 = cols - 1;
+            var topY = H;   // no cell over this line yet → nothing to clip
+            for (var c = c0; c <= c1; c++) {
+              var base = c * rows;
+              for (var r = rows - 1; r >= 0; r--) {
+                if (thresh[base + r] < bpFill) {                 // drawn iff bpFill > threshold (same as draw())
+                  var cellTop = H - (r + 1) * colW; if (cellTop < topY) topY = cellTop;
+                  break;
+                }
+              }
+            }
+            clip = clamp01((b.bottom - topY) / b.height + ABOUT_CLIP_MARGIN);
+          }
+        }
         if (lastClip[li] === undefined || Math.abs(clip - lastClip[li]) >= 0.01 || (clip <= 0.001) !== (lastClip[li] <= 0.001)) {
           lastClip[li] = clip;
           el.style.clipPath = clip <= 0.001 ? "" : "inset(-2px 0 " + (clip * 100).toFixed(1) + "% 0)";
