@@ -78,7 +78,7 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 #halftone{position:fixed;inset:0;width:100%;height:100%;z-index:61;display:block;pointer-events:none;mix-blend-mode:difference}
 @media(hover:none){#halftone{display:none}}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
-.hero__quote.refract-active,.wish__lead.refract-active{color:transparent}
+.hero__quote.refract-active{color:transparent}
 
 .shell{position:relative;z-index:4;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}
@@ -543,22 +543,21 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    at reveal = 0.15·i + 0.4, so the last word (i=3) is solid by reveal 0.85 — and --contact-reveal saturates to 1
    by bpFall 0.25, still WELL before either line meets the bottom strip (~0.45), so the strip's difference
    colour-inversion sees fully-opaque text on every pass (unchanged). Opacity outside [0,1] is auto-clamped by
-   the engine. No transform / no JS loop → reversible & scroll-position-pure. On the refract path the words
-   inherit color:transparent from .wish__lead.refract-active, so the #refract glass lens is unchanged and this
-   per-word fade only shows on the fallback (no-WebGL / touch / reduced-motion) path — as chosen. */
+   the engine. No transform / no JS loop → reversible & scroll-position-pure. The statement was REMOVED from the
+   #refract glass lens (hero-refract.js) so this per-word reveal now shows on ALL platforms (previously the lens's
+   color:transparent hid it on desktop). */
 .wl-w{opacity:calc((var(--contact-reveal) - var(--i) * 0.15) / 0.4)}
 /* fine-print copyright under the statement — SAME family as .wish__lead (var(--hero-font) = Plus Jakarta
    Sans), weight 400, uppercase, --dim, so it belongs to the statement rather than the mono meta system.
-   letter-spacing .18em (was .2em for mono): measured — at 12px the proportional PJS line lands at 289px ink,
-   matching the old mono .2em width (288.8px) almost exactly, so swapping the family kept the footprint under
-   the big line; .18em also equals the nav's tracking. opacity:var(--contact-reveal) = the SAME scroll-driven
+   letter-spacing .06em (tightened from .18em on request — a tighter, less "tracked" copyright; .18em had been
+   chosen to match the old mono .2em width but the wider tracking read too loose here). opacity:var(--contact-reveal) = the SAME scroll-driven
    ramp as .wish__lead (no separate transition/animation, no transform → scroll-position-pure, keeps refract
    text from shifting). margin-top is optical spacing below the big line (its line-height is 1.14). NO optical
    text-indent: re-measured for PJS (Range ink-centre vs container-centre) — offset is 0.0px at indent 0 on
    every viewport (the engine drops the trailing letter-spacing, and the solve gives solvedIndent ≈ 0px), so a
    correction is unnecessary and a naive ls/2 indent would mis-shift it right. PJS 400 verified LOADED (not a
    Helvetica/Arial fallback) when these numbers were taken. */
-.wish__copy{font-family:var(--hero-font);font-weight:400;font-size:clamp(10px,1.05vw,12px);letter-spacing:.18em;
+.wish__copy{font-family:var(--hero-font);font-weight:400;font-size:clamp(10px,1.05vw,12px);letter-spacing:.06em;
   text-transform:uppercase;color:var(--dim);text-align:center;
   margin:clamp(22px,3.4vh,46px) 0 0;opacity:var(--contact-reveal)}
 /* clip the .contact-thanks slide-in start (it begins off-screen to the right). body{overflow-x:hidden}

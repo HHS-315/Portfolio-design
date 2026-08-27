@@ -51,8 +51,10 @@
 
   var canvas = document.getElementById("refract");
   if (!canvas) return;
-  // The two hero taglines PLUS the CONTACT closing statement (#wishLead) all get the same glass lens.
-  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2"), document.getElementById("wishLead")].filter(Boolean);
+  // The two hero taglines get the glass lens. #wishLead was REMOVED so the CONTACT closing statement can show
+  // its word-by-word reveal (the DOM .wl-w spans) — the lens rasterises the whole line at once and sets the DOM
+  // text color:transparent, which would hide the per-word fade. Refract stays on the hero quotes only.
+  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2")].filter(Boolean);
   if (!els.length) return;
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true });
@@ -332,10 +334,9 @@
     window.addEventListener("scroll", function () { refreshRects(); schedule(); }, { passive: true });
     window.addEventListener("resize", rebuild);
 
-    // Keep the loop alive while EITHER the hero OR the CONTACT section is on screen — the lens now also draws
-    // #wishLead, which lives in #contact (the hero is long gone by then). If we only watched the hero, the loop
-    // would idle at CONTACT and the transparent #wishLead would vanish. inView = any watched target intersecting.
-    var watch = [document.querySelector(".hero"), document.getElementById("contact")].filter(Boolean);
+    // Keep the loop alive while the hero is on screen — the only refract targets now live there (#wishLead was
+    // dropped so the CONTACT statement shows its word-reveal). inView = any watched target intersecting.
+    var watch = [document.querySelector(".hero")].filter(Boolean);
     if (!watch.length) watch = [canvas];
     var seen = watch.map(function () { return false; });
     var io = new IntersectionObserver(function (es) {
