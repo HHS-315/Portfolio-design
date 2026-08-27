@@ -259,12 +259,12 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 /* WORK text darkens with the cells behind it (var set by work-transition.js) instead of a scrim */
 #work,#work .sec__head,#work .sec__head b{color:var(--work-ink)}
 /* per-section label: number (left) · name (right), no line */
-.sec__head{display:flex;justify-content:space-between;margin-bottom:40px;padding-inline:var(--gutter);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+.sec__head{display:flex;justify-content:space-between;margin-bottom:12px;padding-inline:var(--gutter);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}   /* WORK-only; was 40px — tightened so the WORK header sits closer to the list */
 .sec__head b{color:var(--hi);font-weight:500}
 /* WORK section header: "WORK" rendered by work-ascii.js as a grid of blinking ASCII glyphs (same look
    as the intro PORTFOLIO). The font-size here IS the letterform size the script reads (responsive);
    the canvas is drawn in --work-ink so it darkens with the section. */
-.work-ascii{font-size:clamp(90px,13.5vw,135px);line-height:0;display:block;opacity:var(--work-reveal)}
+.work-ascii{font-size:clamp(90px,13.5vw,135px);line-height:0;display:block;opacity:var(--work-reveal);margin-bottom:-.28em}   /* -.28em pulls the list up under the empty canvas overhang below the glyphs (≈0.32×font-size), scaling with the header on PC + mobile alike */
 .work-ascii canvas{display:block}
 .tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 .tag::before{content:"// "}
