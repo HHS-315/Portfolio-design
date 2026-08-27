@@ -304,10 +304,11 @@
     for (var i = 0; i < quotes.length; i++) {
       var q = quotes[i], r = q.rect; if (!r) continue;
       // #wishLead: scroll-driven word fill. progress 0 when the statement sits low (entering from the bottom),
-      // 1 by the time it has risen into the upper-middle — so the words fill as you scroll INTO contact. Re-raster
-      // the (small) texture only when progress shifts enough; on scroll the loop already ticks (refreshRects).
+      // reaching 1 by the time its top is ~mid-viewport — which happens just BEFORE it settles centred at the
+      // page bottom, so the LAST word (GOOD.) is fully white at rest. (0.72 left it at ~0.83 → GOOD stuck ~0.47.)
+      // Re-raster the (small) texture only when progress shifts enough; on scroll the loop already ticks.
       if (q.isWish) {
-        var prog = (H - r.top) / (0.72 * H); prog = prog < 0 ? 0 : prog > 1 ? 1 : prog;
+        var prog = (H - r.top) / (0.50 * H); prog = prog < 0 ? 0 : prog > 1 ? 1 : prog;
         if (Math.abs(prog - q.reveal) > 0.012) { q.reveal = prog; buildTexture(q); moving = true; }
       }
       q.cur[0] += (q.tCur[0] - q.cur[0]) * followK;
