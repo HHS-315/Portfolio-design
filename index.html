@@ -46,7 +46,7 @@ a{color:inherit;text-decoration:none}
    the light cells). Two canvases because one z-index can't put part of a canvas behind and part in
    front of the same blocks layer. */
 #shaderbg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none}
-#field{position:fixed;inset:0;z-index:1;display:block;cursor:default}   /* default cursor over the general page (the halftone-trail areas); the "+" crosshair is now scoped to the lists only (.wbig / .nav__items) */
+#field{position:fixed;inset:0;z-index:1;display:block;cursor:crosshair}
 #blocks{position:fixed;inset:0;width:100%;height:100%;z-index:2;display:block;pointer-events:none}
 #strip{position:fixed;inset:0;width:100%;height:100%;z-index:3;display:block;pointer-events:none}
 /* CONTACT text × strip colour-inversion. Deep in CONTACT, LIFT #strip above the text layers (.shell / #refract,
@@ -314,7 +314,7 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
    entry so its light text never lands on still-white cells). */
 #work{--rule:color-mix(in srgb,var(--work-ink) 22%,transparent);padding-bottom:38svh}
 .wbig{margin-top:8px;border-top:1px solid var(--rule);opacity:var(--work-reveal);
-  cursor:crosshair;   /* the "+" is scoped to the list (the rest of the page is now default) */
+  cursor:crosshair;   /* keep the #field crosshair over the list */
   pointer-events:auto}   /* .shell is pointer-events:none — make the list hittable so :hover fires (items inherit) */
 .wbig__item{display:flex;flex-direction:column;gap:6px;padding:clamp(15px,2.5vw,30px) 0;border-bottom:1px solid var(--rule);
   cursor:crosshair;color:var(--work-ink);transition:color .3s ease,border-color .3s ease}   /* default = full ink (every item) */
