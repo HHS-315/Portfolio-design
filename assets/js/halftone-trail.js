@@ -117,7 +117,13 @@
   //   (was 100, clearly less "carve") while the dark bg(10) stays 78 — strong. hoverSelector is deliberately
   //   UNCHANGED: adding .wish__lead etc. would slam the trail down to hoverOpacity 0.2 whenever it crosses the big
   //   statements — an abrupt "the trail died on the headline" glitch.
-  var CFG = { decay: 0.965, brushSize: 0.045, hoverBrushSize: 0.012, opacity: 0.6, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 10, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
+  // brushSize is the trail BLOB's gaussian sigma in the 512² FBO's UV. Visible radius ≈ 1.517·brushSize·innerH,
+  //   so blob DIAMETER at 1080p ≈ 2·1.517·brushSize·1080. 0.045 was ~147px (too big); 0.020 → ~66px (≈55%
+  //   smaller). hoverBrushSize dropped in step (0.012→0.008) so the hover shrink stays real (else 0.012 ≈ 0.020).
+  //   FBO-texel floor: sigma = brushSize·512, keep ≥ ~5 texels or the blob steps/flickers → brushSize ≥ 0.010
+  //   (0.020 = 10 texels, safe) and hoverBrushSize ≥ 0.008 (=4 texels, the sanctioned floor — proportional 0.005
+  //   would alias). This is the BLOB size only; per-dot size (cellSize/radius) and ink (opacity) are unchanged.
+  var CFG = { decay: 0.965, brushSize: 0.020, hoverBrushSize: 0.008, opacity: 0.6, hoverOpacity: 0.2, speedScale: 38.0, cellSize: 10, hoverSelector: "a,button,[data-hover],.nav__link,.wbig__item,#flowerTip" };
   var IDLE_MS = 1800;   // self-pause this long after the last pointer move (trail has decayed below the dot threshold by then)
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false });
