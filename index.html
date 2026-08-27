@@ -621,7 +621,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   animation:thanks-wobble 6.5s ease-in-out infinite}
 @keyframes thanks-slide{from{transform:translate3d(var(--thanks-D),0,0)}to{transform:translate3d(0,0,0)}}
 @keyframes thanks-wobble{0%,100%{transform:rotate(-3.5deg)}50%{transform:rotate(3.5deg)}}
-@media(max-width:640px){.contact-thanks{width:clamp(92px,26vw,124px);bottom:clamp(15px,4.2vw,23px)}}   /* mark ~18% larger on mobile; bottom nudged up a hair so the bigger wobble dip keeps its clearance above the #strip band. Text sits far above (measured ~150px gap on 375), so no intrusion. */
+@media(max-width:640px){.contact-thanks{width:clamp(115px,32.5vw,155px);bottom:clamp(17px,4.6vw,25px)}}   /* mark scaled 1.25× on mobile; bottom raised so the bigger wobble dip keeps clearance above the #strip band. Text sits far above (measured ~120px gap on 375), so no intrusion. */
 @media(prefers-reduced-motion:reduce){
   .contact-thanks{animation:none;transform:none}
   .contact-thanks__img{animation:none}}
