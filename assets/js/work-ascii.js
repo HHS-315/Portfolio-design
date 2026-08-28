@@ -30,9 +30,16 @@
   var INK  = (getComputedStyle(root).getPropertyValue("--work-ink") || "#141414").trim() || "#141414";  // WORK field ink (dark)
   var BONE = (getComputedStyle(root).getPropertyValue("--bone") || "#e9e9e6").trim() || "#e9e9e6";       // CONTACT field ink (light)
 
-  var cv = document.createElement("canvas"); cv.setAttribute("aria-hidden", "true");
-  cv.style.display = "block"; host.appendChild(cv);
-  var ctx = cv.getContext("2d");
+  // The header word "WORK" is now a DECODED TEXT element (index.html #workAscii + work-scramble.js), not this
+  // glyph-mosaic canvas. HEADER_ON=false keeps the mosaic canvas from being created/built/drawn, while the two
+  // ambient scatter fields below keep running exactly as before.
+  var HEADER_ON = false;
+  var cv = null, ctx = null;
+  if (HEADER_ON) {
+    cv = document.createElement("canvas"); cv.setAttribute("aria-hidden", "true");
+    cv.style.display = "block"; host.appendChild(cv);
+    ctx = cv.getContext("2d");
+  }
 
   // ---- header knobs -------------------------------------------------------
   // Matched to the intro (dandelion.js extractText): glyph = FS 6–9px, step = glyph×0.7 (~1.43× overlap).
@@ -422,7 +429,8 @@
 
   // ---- header (the word "WORK") -------------------------------------------
   function build() {
-    DPR = Math.min(2, window.devicePixelRatio || 1);
+    DPR = Math.min(2, window.devicePixelRatio || 1);   // set unconditionally — the ambient fields below read it
+    if (HEADER_ON) {
     var LFS = parseFloat(getComputedStyle(host).fontSize) || 54;
     cellFS = Math.max(CELL_MIN, Math.min(CELL_MAX, LFS * CELL_RATIO));
     var step = Math.max(3, cellFS * STEP_RATIO);
@@ -449,11 +457,13 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.font = cellFS.toFixed(1) + "px " + MONO;
+    }
 
     workField.build(); contactField.build();   // rebuild both ambient fields (DPR is set above, used inside)
   }
 
   function draw(t) {
+    if (!HEADER_ON) return;   // header word is a decoded text element now; only the ambient fields draw here
     ctx.clearRect(0, 0, tw, th);
     ctx.fillStyle = INK;
     for (var i = 0; i < cells.length; i++) {
