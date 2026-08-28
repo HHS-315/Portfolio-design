@@ -264,8 +264,7 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 /* WORK section header: "WORK" rendered by work-ascii.js as a grid of blinking ASCII glyphs (same look
    as the intro PORTFOLIO). The font-size here IS the letterform size the script reads (responsive);
    the canvas is drawn in --work-ink so it darkens with the section. */
-.work-ascii{font-size:clamp(104px,15.5vw,160px);display:block;opacity:var(--work-reveal)}   /* WORK header size (enlarged ~18%); the word is a decoded text element now (work-scramble.js), not the glyph-mosaic canvas */
-.work-ascii__t{display:block;font-family:var(--mono);font-weight:600;line-height:.86;letter-spacing:.01em;color:var(--work-ink);white-space:nowrap}   /* big monospace "WORK" — mono keeps the scramble width fixed; .86 line-height pulls the list close under it */
+.work-ascii{font-size:clamp(104px,15.5vw,160px);line-height:0;display:block;opacity:var(--work-reveal);margin-bottom:-.28em}   /* WORK header (glyph-mosaic canvas, enlarged ~18%); decodes in left→right once via work-ascii.js. -.28em pulls the list up under the empty canvas overhang below the glyphs (≈0.32×font-size) */
 .work-ascii canvas{display:block}
 .tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 .tag::before{content:"// "}
@@ -718,7 +717,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 
   <!-- WORK -->
   <section id="work" class="sec sec--tint">
-    <div class="sec__head"><div id="workAscii" class="work-ascii" role="img" aria-label="Work"><span class="work-ascii__t">WORK</span></div></div>
+    <div class="sec__head"><div id="workAscii" class="work-ascii" role="img" aria-label="Work"></div></div>
     <div class="wrap">
       <!-- big category list (chdartmaker-style spotlight): English is the visual lead, Korean subtitle
            below it, small. Colour + rules bind to --work-ink so they track the stacking cells; the
@@ -777,7 +776,6 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/hero-refract.js"></script>
 <script src="./assets/js/work-ascii.js"></script>
 <script src="./assets/js/work-list.js"></script>
-<script src="./assets/js/work-scramble.js"></script>   <!-- WORK list titles decode-in (scramble→reveal), ported from a React SpecialText component -->
 <script src="./assets/js/work-detail.js"></script>
 <script src="./assets/js/about-lines.js"></script>
 <!-- nav-menu.js AFTER work-transition.js (reads window.WorkTransition.grid) -->

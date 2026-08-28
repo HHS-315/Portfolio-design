@@ -30,15 +30,23 @@
   var INK  = (getComputedStyle(root).getPropertyValue("--work-ink") || "#141414").trim() || "#141414";  // WORK field ink (dark)
   var BONE = (getComputedStyle(root).getPropertyValue("--bone") || "#e9e9e6").trim() || "#e9e9e6";       // CONTACT field ink (light)
 
-  // The header word "WORK" is now a DECODED TEXT element (index.html #workAscii + work-scramble.js), not this
-  // glyph-mosaic canvas. HEADER_ON=false keeps the mosaic canvas from being created/built/drawn, while the two
-  // ambient scatter fields below keep running exactly as before.
-  var HEADER_ON = false;
-  var cv = null, ctx = null;
-  if (HEADER_ON) {
-    cv = document.createElement("canvas"); cv.setAttribute("aria-hidden", "true");
-    cv.style.display = "block"; host.appendChild(cv);
-    ctx = cv.getContext("2d");
+  var cv = document.createElement("canvas"); cv.setAttribute("aria-hidden", "true");
+  cv.style.display = "block"; host.appendChild(cv);
+  var ctx = cv.getContext("2d");
+
+  // Header DECODE-IN — adapted from the pasted React "SpecialText" scramble→reveal to this glyph mosaic: the
+  // ASCII effect is KEPT (the cells never stop churning random CODE glyphs), and the "decode" is a left→right
+  // reveal of the WORK shape that plays ONCE when the header has faded in (a soft frontier sweeps across, so the
+  // churning code resolves into WORK from the left). introStart is stamped on the first painted frame where
+  // --work-reveal has risen; reduced-motion skips straight to the full shape.
+  var INTRO_MS = 900;        // decode-in duration
+  var INTRO_EDGE = 0.16;     // soft reveal frontier width, as a fraction of the word width
+  var INTRO_REVEAL_MIN = 0.6;
+  var introStart = -1;
+  function introReady() {
+    var s = root.style.getPropertyValue("--work-reveal");
+    if (s === "") return true;                 // var not driven → don't stall the header
+    var v = parseFloat(s); return isNaN(v) ? true : v >= INTRO_REVEAL_MIN;
   }
 
   // ---- header knobs -------------------------------------------------------
@@ -429,8 +437,7 @@
 
   // ---- header (the word "WORK") -------------------------------------------
   function build() {
-    DPR = Math.min(2, window.devicePixelRatio || 1);   // set unconditionally — the ambient fields below read it
-    if (HEADER_ON) {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
     var LFS = parseFloat(getComputedStyle(host).fontSize) || 54;
     cellFS = Math.max(CELL_MIN, Math.min(CELL_MAX, LFS * CELL_RATIO));
     var step = Math.max(3, cellFS * STEP_RATIO);
@@ -457,19 +464,27 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.font = cellFS.toFixed(1) + "px " + MONO;
-    }
 
     workField.build(); contactField.build();   // rebuild both ambient fields (DPR is set above, used inside)
   }
 
   function draw(t) {
-    if (!HEADER_ON) return;   // header word is a decoded text element now; only the ambient fields draw here
     ctx.clearRect(0, 0, tw, th);
     ctx.fillStyle = INK;
+    // DECODE-IN: stamp the start once the header has faded in, then sweep a soft reveal frontier left→right.
+    if (introStart < 0 && !reduce && introReady()) introStart = t;
+    var introP = reduce ? 1 : (introStart < 0 ? 0 : (t - introStart) / INTRO_MS);
+    if (introP > 1) introP = 1;
+    var revX = introP * tw, edge = tw * INTRO_EDGE, sweeping = introP < 1;
     for (var i = 0; i < cells.length; i++) {
       var c = cells[i];
       if (!reduce && t > c.swapAt) { c.ch = pick(CODE); c.swapAt = t + CHURN_MIN + Math.random() * (CHURN_MAX - CHURN_MIN); }
       var a = reduce ? 0.9 : SHIM_BASE + Math.sin(t * SHIM_SPEED + c.ph) * SHIM_AMP;
+      if (sweeping) {                                  // left of the frontier = shown; a soft edge fades it in
+        var af = (revX - c.x) / edge;
+        if (af <= 0) continue;                         // not yet reached — hidden
+        if (af < 1) a *= af;
+      }
       if (a < 0.06) continue; if (a > 1) a = 1;
       ctx.globalAlpha = a;
       ctx.fillText(c.ch, c.x, c.y);
