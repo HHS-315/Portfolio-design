@@ -264,7 +264,7 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 /* WORK section header: "WORK" rendered by work-ascii.js as a grid of blinking ASCII glyphs (same look
    as the intro PORTFOLIO). The font-size here IS the letterform size the script reads (responsive);
    the canvas is drawn in --work-ink so it darkens with the section. */
-.work-ascii{font-size:clamp(90px,13.5vw,135px);line-height:0;display:block;opacity:var(--work-reveal);margin-bottom:-.28em}   /* -.28em pulls the list up under the empty canvas overhang below the glyphs (≈0.32×font-size), scaling with the header on PC + mobile alike */
+.work-ascii{font-size:clamp(104px,15.5vw,160px);line-height:0;display:block;opacity:var(--work-reveal);margin-bottom:-.28em}   /* WORK header enlarged ~18%. -.28em pulls the list up under the empty canvas overhang below the glyphs (≈0.32×font-size), scaling with the header on PC + mobile alike */
 .work-ascii canvas{display:block}
 .tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 .tag::before{content:"// "}
@@ -776,6 +776,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/hero-refract.js"></script>
 <script src="./assets/js/work-ascii.js"></script>
 <script src="./assets/js/work-list.js"></script>
+<script src="./assets/js/work-scramble.js"></script>   <!-- WORK list titles decode-in (scramble→reveal), ported from a React SpecialText component -->
 <script src="./assets/js/work-detail.js"></script>
 <script src="./assets/js/about-lines.js"></script>
 <!-- nav-menu.js AFTER work-transition.js (reads window.WorkTransition.grid) -->
