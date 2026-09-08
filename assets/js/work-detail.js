@@ -55,7 +55,7 @@
   // Leave hero/shots undefined to keep the generated SVG placeholders.
   var WORK_DETAILS = {
     "yakbongji": {
-      en: "Yakbongji", title: "약봉지", sub: "복약 관리 모바일 앱 — 약봉지를 스캔하면 복용 시간을 챙겨주는 서비스",
+      en: "Yakbongji", title: "약봉지", sub: "처방전을 촬영하면 약 정보를 확인하고,\n복용 시간을 설정해 알림을 받을 수 있는\n복약 관리 서비스",
       lead: "복잡한 복약 정보를 한 장의 약봉지에서 읽어내, 누구나 놓치지 않고 약을 챙길 수 있게 설계한 모바일 경험입니다.",
       paras: [
         "사용자 인터뷰와 관찰을 통해 ‘언제·무엇을·얼마나’를 매번 헷갈리는 지점을 찾아냈고, 약봉지 촬영 한 번으로 복약 스케줄이 자동으로 구성되도록 정보 구조를 다시 짰습니다.",
@@ -153,6 +153,9 @@
   // here. When present, a muted/looping <video> covers the settled subpage hero (.wd__hero2) and plays while
   // the subpage is open; imageFor(key) is still the poster/fallback and the FLIP expand stays on the image.
   var VIDEO = { "yakbongji": "assets/video/yakbongji-hero.mp4" };
+  // solid-black placeholder — for video keys the FLIP expand and the settled hero read BLACK until the video is
+  // fully open and starts playing (so the growing rectangle is black, then the video appears).
+  var BLACK = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='2'%20height='2'%3E%3Crect%20width='2'%20height='2'%20fill='%23000'/%3E%3C/svg%3E";
   function imageFor(key) {
     if (IMG[key]) return IMG[key];
     var a = ART[key] || ART["company-renewal"];
@@ -261,19 +264,29 @@
     var p = heroVid.play(); if (p && p.catch) p.catch(function () {});   // autoplay may be refused → poster stands in
   }
   function stopHeroVideo() { try { heroVid.pause(); } catch (e) {} }
+  // FLIP expand surface background for a key: solid BLACK for video keys (the growing rectangle stays black until
+  // the video is fully open), the item image otherwise.
+  function setFlipBg(key) {
+    if (VIDEO[key]) { heroBgBlack(hero); }
+    else { hero.style.backgroundColor = ""; hero.style.backgroundImage = "url('" + imageFor(key) + "')"; }
+  }
+  function heroBgBlack(el) { el.style.backgroundColor = "#000"; el.style.backgroundImage = "none"; }
+  function heroBgImage(el, url) { el.style.backgroundColor = ""; el.style.backgroundImage = "url('" + url + "')"; }
 
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
     var img = imageFor(key);
     // hero title block (Korean title + description) — both carry the white→ink scroll mask (updateMask)
     elTtl.textContent = d.title || d.en || "";
-    elSubTtl.textContent = d.sub || "";
+    elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
     elText.innerHTML = (d.lead ? '<p class="wd__lead wd-rise">' + riseInner(d.lead) + "</p>" : "") +
       (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     elCaps.innerHTML = (d.caps || []).map(function (c) { return '<li class="wd-rise">' + riseInner(c) + "</li>"; }).join("");
-    hero.style.backgroundImage = "url('" + img + "')";      // FLIP surface image (the one that expands)
-    hero2.style.backgroundImage = "url('" + img + "')";     // subpage hero (image = poster/fallback under any video)
-    setHeroVideo(key, img);                                 // overlay a looping video on the settled hero when this key has one
+    // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
+    // the item image otherwise. The video (if any) overlays the settled hero and plays in showPage/swapContent.
+    setFlipBg(key);                                         // the expanding rectangle
+    if (VIDEO[key]) heroBgBlack(hero2); else heroBgImage(hero2, img);
+    setHeroVideo(key, VIDEO[key] ? BLACK : img);            // poster = black for video keys → no image flash before play
     // grid: three deterministic accent variations of the same artwork (real shots override via IMG later)
     var a = ART[key] || ART["company-renewal"];
     elGrid.innerHTML = [0, 1, 2].map(function (i) {
@@ -510,7 +523,7 @@
     if (reduce) { if (doPush) pushHist(newKey); swapContent(newKey); return; }   // no expand under reduced-motion
     switching = true;
     ox = oxp; oy = oyp;
-    hero.style.backgroundImage = "url('" + imageFor(newKey) + "')";   // the image that expands = the target item's
+    setFlipBg(newKey);                                 // the expanding rectangle = target item's image, or BLACK for video keys
     surface.style.transformOrigin = ox + "px " + oy + "px";
     p = 0; applyFrame(0);
     surface.style.display = "";
