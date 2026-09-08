@@ -426,7 +426,7 @@ html.nav-open.nav-dark .work-chip__i{
    .shell (4) and .bar (5). Scroll-locked body carries .wd-lock (see below).
    ============================================================================ */
 body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY set inline by JS → no visual jump */
-#workOverlay{position:fixed;inset:0;z-index:60;display:none;color:var(--bone);cursor:default}
+#workOverlay{position:fixed;inset:0;z-index:60;display:none;color:var(--bone);cursor:crosshair}   /* + pointer throughout the subpage (matches the WORK list) */
 #workOverlay.is-active{display:block}
 /* the FLIP rectangle — starts mapped onto the item's rect (JS transform), tweens to full viewport.
    transform-origin 0 0 so translate+scale lands the top-left corner exactly on the item. */
@@ -496,7 +496,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__logo-img{z-index:3;color:#fff;clip-path:inset(0 0 100% 0);pointer-events:none}   /* crisp white over the hero image only (JS sets the clip; default hidden) */
 .wd__logo-star{font-style:normal}   /* inherits the layer colour (inverts with the text over dark, white over the image) */
 @media(max-width:560px){.wd__logo,.wd__logo-img{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
-.wd__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px);gap:clamp(28px,5vw,80px)}
+.wd__body{display:block}   /* single column — the right caps aside (USER RESEARCH … DESIGN SYSTEM) was removed */
 /* body copy: Latin → Plus Jakarta Sans, Korean → Pretendard (per-character fallback). ch caps KEPT for
    readability (the section is full width now, so an uncapped line would run too long), just widened a bit. */
 .wd__lead{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:500;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:66ch}   /* 강조(리드 문단) = Medium */

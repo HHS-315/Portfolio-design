@@ -55,8 +55,8 @@
   // Leave hero/shots undefined to keep the generated SVG placeholders.
   var WORK_DETAILS = {
     "yakbongji": {
-      en: "Yakbongji", title: "약봉지", sub: "처방전을 촬영하면 약 정보를 확인하고,\n복용 시간을 설정해 알림을 받을 수 있는\n복약 관리 서비스",
-      lead: "복잡한 복약 정보를 한 장의 약봉지에서 읽어내, 누구나 놓치지 않고 약을 챙길 수 있게 설계한 모바일 경험입니다.",
+      en: "Yakbongji", title: "약봉지", sub: "처방전을 촬영하면 약 정보를 확인하고,\n복용 시간을 설정해 알림을 받을 수 있는 복약 관리 서비스",
+      lead: "처방전을 찍는 것만으로 복약 관리가 시작됩니다.",
       paras: [
         "사용자 인터뷰와 관찰을 통해 ‘언제·무엇을·얼마나’를 매번 헷갈리는 지점을 찾아냈고, 약봉지 촬영 한 번으로 복약 스케줄이 자동으로 구성되도록 정보 구조를 다시 짰습니다.",
         "알림·기록·보호자 공유까지 이어지는 흐름을 하나의 디자인 시스템으로 묶어, 화면이 늘어나도 일관된 규칙 안에서 확장되도록 했습니다."
@@ -178,7 +178,7 @@
         '<div class="wd__titles"><h2 class="wd__ttl" tabindex="-1"></h2><p class="wd__ttl-sub"></p></div>' + // title + description; both pin & sweep
       '</div>' +
       '<div class="wd__page"><div class="wd__inner">' +
-        '<div class="wd__body"><div class="wd__text"></div><aside><ul class="wd__caps"></ul></aside></div>' +
+        '<div class="wd__body"><div class="wd__text"></div></div>' +
         '<div class="wd__grid"></div>' +
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
@@ -200,7 +200,6 @@
       elTtl   = overlay.querySelector(".wd__ttl"),
       elSubTtl = overlay.querySelector(".wd__ttl-sub"),
       elText  = overlay.querySelector(".wd__text"),
-      elCaps  = overlay.querySelector(".wd__caps"),
       elGrid  = overlay.querySelector(".wd__grid"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
@@ -281,7 +280,6 @@
     elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
     elText.innerHTML = (d.lead ? '<p class="wd__lead wd-rise">' + riseInner(d.lead) + "</p>" : "") +
       (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
-    elCaps.innerHTML = (d.caps || []).map(function (c) { return '<li class="wd-rise">' + riseInner(c) + "</li>"; }).join("");
     // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
     // the item image otherwise. The video (if any) overlays the settled hero and plays in showPage/swapContent.
     setFlipBg(key);                                         // the expanding rectangle

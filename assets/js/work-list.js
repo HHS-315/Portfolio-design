@@ -84,7 +84,8 @@
     // Chip hover targets: the WORK big list (.wbig) AND the menu-overlay item column (.nav__items). One shared
     // pill trails the cursor over either. .nav__items exists at load but is display:none (inside #navOverlay)
     // until the menu opens, so it can't spuriously trigger the chip while closed.
-    var CHIP_TARGETS = ".wbig,.nav__items";
+    var CHIP_TARGETS = ".wbig,.nav__items";              // list / menu rows → "Click"
+    var HERO_SEL = ".wd__hero2", HERO_TEXT = "Scroll Down";   // WORK subpage hero (video) area → "Scroll Down"
     if (!document.querySelector(CHIP_TARGETS)) return;
 
     var wrap = document.createElement("div"); wrap.className = "work-chip";
@@ -116,8 +117,11 @@
     // list (rows AND the gaps between them → no flicker) and null elsewhere. This also sidesteps the spurious
     // pointerleave the moving fixed/backdrop-filter chip would otherwise trigger on .wbig.
     document.addEventListener("pointermove", function (e) {
-      var over = e.target && e.target.closest && e.target.closest(CHIP_TARGETS);
+      var t = e.target, cl = t && t.closest;
+      var overHero = cl && t.closest(HERO_SEL);                       // subpage hero/video → "Scroll Down"
+      var over = overHero || (cl && t.closest(CHIP_TARGETS));         // else list/menu rows → "Click"
       if (!over) { hide(); return; }
+      txt.textContent = overHero ? HERO_TEXT : CHIP_TEXT;            // region-aware label (updated live per move)
       tx = e.clientX; ty = e.clientY;
       show();
       if (reduce) { cx = tx; cy = ty; place(cx, cy); }
