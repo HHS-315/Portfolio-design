@@ -448,6 +448,11 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__stage{position:relative}
 /* hero: the image, one screen tall; the title sits at its bottom-left and STICKS as the image scrolls up */
 .wd__hero2{position:relative;height:100svh;background:#14161a center/cover no-repeat}
+/* optional header video (work-detail.js): covers the hero like the background image (poster = the image, shown
+   under it until the first frame). Sits ABOVE the poster bg but BELOW ::after (the scrim still overlays it).
+   Hidden unless the active item has a video (.has-video). */
+.wd__hero-vid{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#14161a center/cover no-repeat;border:0}
+.wd__hero2.has-video .wd__hero-vid{display:block}
 .wd__hero2::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,10,10,0) 45%,rgba(10,10,10,.32))}
 /* sticky-TOP: pinned at the image's bottom-left from scroll 0; as the page scrolls the image rides up
    behind it and its bottom edge sweeps down through the glyphs (white→ink via --cut). JS sets marginTop

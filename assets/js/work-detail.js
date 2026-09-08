@@ -149,6 +149,10 @@
   // real image override: drop a file at assets/img/work/<key>.jpg and add it to IMG below; it wins.
   // Recommended: 1600×900 (16:9) or larger, JPG q≈75, < ~300KB, subject safe-framed for cover-crop.
   var IMG = { /* "yakbongji": "assets/img/work/yakbongji.jpg", … */ };
+  // Header VIDEO override: drop a file at assets/video/<key>-hero.mp4 (see assets/video/README.md) and map it
+  // here. When present, a muted/looping <video> covers the settled subpage hero (.wd__hero2) and plays while
+  // the subpage is open; imageFor(key) is still the poster/fallback and the FLIP expand stays on the image.
+  var VIDEO = { "yakbongji": "assets/video/yakbongji-hero.mp4" };
   function imageFor(key) {
     if (IMG[key]) return IMG[key];
     var a = ART[key] || ART["company-renewal"];
@@ -167,7 +171,7 @@
     '<div class="wd__surface"><div class="wd__hero"></div><div class="wd__scrim"></div></div>' +
     '<div class="wd__content" aria-hidden="true">' +
       '<div class="wd__stage">' +                                                // bounds the sticky title's pin range
-        '<div class="wd__hero2"></div>' +
+        '<div class="wd__hero2"><video class="wd__hero-vid" muted loop playsinline preload="metadata" aria-hidden="true"></video></div>' +
         '<div class="wd__titles"><h2 class="wd__ttl" tabindex="-1"></h2><p class="wd__ttl-sub"></p></div>' + // title + description; both pin & sweep
       '</div>' +
       '<div class="wd__page"><div class="wd__inner">' +
@@ -187,6 +191,7 @@
       content = overlay.querySelector(".wd__content"),
       stage   = overlay.querySelector(".wd__stage"),
       hero2   = overlay.querySelector(".wd__hero2"),
+      heroVid = overlay.querySelector(".wd__hero-vid"),
       titles  = overlay.querySelector(".wd__titles"),
       pageEl  = overlay.querySelector(".wd__page"),
       elTtl   = overlay.querySelector(".wd__ttl"),
@@ -199,6 +204,9 @@
       logoImg = overlay.querySelector(".wd__logo-img");
 
   var LOGO_HIDDEN = "inset(0 0 100% 0)";   // image clip that shows nothing (logo reads via the blend button)
+  // If the browser can't decode the clip (missing codec / network), drop the video layer so the hero's
+  // background image (poster) shows instead of a black box.
+  heroVid.addEventListener("error", function () { hero2.classList.remove("has-video"); });
 
   function riseInner(text) { return '<span class="wd-rise__i">' + esc(text) + "</span>"; }
 
@@ -232,6 +240,28 @@
     });
   }
 
+  // ---- header video (optional per key) ------------------------------------
+  // Point the hero <video> at this key's clip (or clear it), toggling .has-video on the hero so the CSS shows
+  // or hides the layer. Poster = the placeholder/real image, so nothing flashes before the first frame. play()
+  // is deferred to playHeroVideo() (called once the hero is actually on screen).
+  function setHeroVideo(key, poster) {
+    var src = VIDEO[key] || "";
+    if (heroVid.getAttribute("poster") !== poster) heroVid.setAttribute("poster", poster);
+    if (src) {
+      if (heroVid.getAttribute("src") !== src) { heroVid.setAttribute("src", src); heroVid.load(); }
+      hero2.classList.add("has-video");
+    } else {
+      hero2.classList.remove("has-video");
+      heroVid.pause(); heroVid.removeAttribute("src"); heroVid.load();
+    }
+  }
+  function playHeroVideo() {
+    if (!hero2.classList.contains("has-video")) return;
+    try { heroVid.currentTime = 0; } catch (e) {}
+    var p = heroVid.play(); if (p && p.catch) p.catch(function () {});   // autoplay may be refused → poster stands in
+  }
+  function stopHeroVideo() { try { heroVid.pause(); } catch (e) {} }
+
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
     var img = imageFor(key);
@@ -242,7 +272,8 @@
       (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     elCaps.innerHTML = (d.caps || []).map(function (c) { return '<li class="wd-rise">' + riseInner(c) + "</li>"; }).join("");
     hero.style.backgroundImage = "url('" + img + "')";      // FLIP surface image (the one that expands)
-    hero2.style.backgroundImage = "url('" + img + "')";     // subpage hero (same image → seamless hand-off)
+    hero2.style.backgroundImage = "url('" + img + "')";     // subpage hero (image = poster/fallback under any video)
+    setHeroVideo(key, img);                                 // overlay a looping video on the settled hero when this key has one
     // grid: three deterministic accent variations of the same artwork (real shots override via IMG later)
     var a = ART[key] || ART["company-renewal"];
     elGrid.innerHTML = [0, 1, 2].map(function (i) {
@@ -459,10 +490,11 @@
     activeKey = newKey;
     cancelSnap(); clearTimeout(snapTimer);
     content.scrollTop = 0;
-    populate(newKey);                                  // rebuilds body + "OTHER WORK" + images
+    populate(newKey);                                  // rebuilds body + "OTHER WORK" + images (+ hero video)
     layoutTitle();
     setupReveal();                                     // re-arm the sequential reveal for the new content
     updateMask();
+    playHeroVideo();                                   // content is already visible on a switch → play now
     overlay.setAttribute("aria-label", (WORK_DETAILS[newKey].title || "Work") + " 상세");
   }
   // The shared FLIP expand used for EVERY item change — clicking a row AND browser Back/Forward. REUSES the
@@ -521,8 +553,10 @@
     content.addEventListener("wheel", onSnapInput, { passive: true });
     content.addEventListener("touchstart", onSnapInput, { passive: true });
     updateMask();
+    playHeroVideo();                                   // hero now on screen → start the looping video (if any)
   }
   function hidePage() {
+    stopHeroVideo();
     content.removeEventListener("scroll", onContentScroll);
     content.removeEventListener("scroll", onSnapScroll);
     content.removeEventListener("wheel", onSnapInput);
