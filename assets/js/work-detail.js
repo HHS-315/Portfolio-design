@@ -56,7 +56,7 @@
   var WORK_DETAILS = {
     "yakbongji": {
       en: "Yakbongji", title: "약봉지", sub: "처방전을 촬영하면 약 정보를 확인하고,\n복용 시간을 설정해 알림을 받을 수 있는 복약 관리 서비스",
-      lead: "처방받은 약의 정보를 확인하기 위해서는 약 이름을 직접 검색하거나 처방전의 작은 글씨를 확인해야 하고, 정해진 시간에 약을 복용하기 위해서는 별도의 알람을 설정해야 합니다. 약봉지는 이러한 과정을 하나의 경험으로 연결해, 처방전을 촬영하는 것만으로 약 정보를 확인하고 복용 일정까지 관리할 수 있도록 설계했습니다.",
+      lead: "처방받은 약의 정보를 확인하기 위해서는 약 이름을 직접 검색하거나 처방전의 작은 글씨를 확인해야 하고, 정해진 시간에 약을 복용하기 위해서는 별도의 알람을 설정해야 합니다.\n약봉지는 이러한 과정을 하나의 경험으로 연결해, 처방전을 촬영하는 것만으로 약 정보를 확인하고 복용 일정까지 관리할 수 있도록 설계했습니다.",
       leadSm: true,   // longer, explanatory lead → smaller body-like size (matches the hero intro), not the big punchy lead
       paras: [],   // body paragraphs removed — the single full-width image below carries this subpage
       caps: ["User Research", "Information Architecture", "Interaction", "Design System"]
@@ -208,7 +208,7 @@
   // background image (poster) shows instead of a black box.
   heroVid.addEventListener("error", function () { hero2.classList.remove("has-video"); });
 
-  function riseInner(text) { return '<span class="wd-rise__i">' + esc(text) + "</span>"; }
+  function riseInner(text) { return '<span class="wd-rise__i">' + esc(text).replace(/\n/g, "<br>") + "</span>"; }   // \n → line break (e.g. a two-line lead)
 
   // Snapshot the WORK list's display text once, robust to work-list.js having already wrapped .wbig__en in
   // a 2-copy curtain track (read the first .wr__copy, else the plain text). Used to rebuild the same rows
