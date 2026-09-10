@@ -60,15 +60,14 @@
       leadSm: true,   // longer, explanatory lead → smaller body-like size (matches the hero intro), not the big punchy lead
       paras: [],   // body paragraphs removed — the single full-width image below carries this subpage
       caps: ["User Research", "Information Architecture", "Interaction", "Design System"],
-      // "좌측 텍스트 / 우측 이미지" 행들 (medicine_phone 아래). 있으면 렌더, 없으면(다른 키) 아무것도 안 그림.
-      // TODO: 실제 문구로 교체 — 아래 h/cap 3줄은 기존 paras[]·caps[]에서 요지만 끌어온 임시 카피.
-      // 이미지는 실제 파일이 없어 플레이스홀더 생성기 재사용. 실제 파일 교체 시 IMG["yakbongji-row1"] 등에 경로를
+      // "좌측 텍스트 / 우측 이미지(또는 영상)" 행들 (medicine_phone 아래). 있으면 렌더, 없으면(다른 키) 아무것도 안 그림.
+      // 1행은 vid(영상), 2·3행은 아직 플레이스홀더 이미지. 실제 파일 교체 시 IMG["yakbongji-row2"] / "-row3"에 경로를
       // 등록하면 우선 사용됨(medicine_phone이 IMG["yakbongji-3"]로 들어간 방식과 동일한 IMG[key+"-rowN"] 규약).
       rows: [
         // vid 있으면 이미지 대신 영상(자동재생/무음/루프) 렌더. 실제 파일 교체는 vid 경로 / IMG[key+"-rowN"] 규약.
         { h: "SCAN — 처방전 촬영", cap: "처방전을 직접 입력하거나 약 이름을 검색하지 않고 카메라로 촬영해 처방 정보를 등록합니다.", vid: "assets/video/yakbongji_1.mp4" },
-        { h: "복용 시간에 맞춰 알림을 받고, 복용 여부를 기록합니다", cap: "Interaction" },   // TODO: 실제 문구로 교체
-        { h: "알림·기록·보호자 공유를 하나의 디자인 시스템으로", cap: "Design System" }        // TODO: 실제 문구로 교체
+        { h: "VIEW — 복용약 비중 확인", cap: "등록된 약을 종류별로 분류해 현재 복용 중인 약 가운데 어떤 계열의 약을 많이 복용하고 있는지 비중을 시각적으로 확인할 수 있습니다." },
+        { h: "REMIND — 복용 일정 관리", cap: "등록된 약의 복용 시간을 설정하고 알림을 받아 정해진 시간에 약을 챙길 수 있도록 돕습니다." }
       ]
     },
     "stac": {
