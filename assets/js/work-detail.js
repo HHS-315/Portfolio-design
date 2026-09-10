@@ -57,8 +57,7 @@
     "yakbongji": {
       en: "Yakbongji", title: "약봉지", sub: "처방전을 촬영하면 약 정보를 확인하고,\n복용 시간을 설정해 알림을 받을 수 있는 복약 관리 서비스",
       lead: "처방전을 찍는 것만으로 복약 관리가 시작됩니다.",
-      feature: true,   // large horizontal image band under the lead (optional per key; absent keys render nothing)
-      paras: [],   // body paragraphs removed — the large image area carries this subpage instead
+      paras: [],   // body paragraphs removed — the single full-width image below carries this subpage
       caps: ["User Research", "Information Architecture", "Interaction", "Design System"]
     },
     "stac": {
@@ -274,28 +273,19 @@
     var d = WORK_DETAILS[key]; if (!d) return;
     var img = imageFor(key);
     var a = ART[key] || ART["company-renewal"];
-    // optional large image band under the lead — WORK_DETAILS[key].feature is "present → shown" (same pattern as
-    // the VIDEO map). Real image later: feature:"assets/img/work/<key>-feature.jpg" (a string src wins) or
-    // IMG["<key>-feature"] — same convention as IMG[key+"-n"]; otherwise the SHARED placeholder generator is reused.
-    var featureHTML = !d.feature ? "" :
-      '<figure class="wd__feature wd-rise"><span class="wd-rise__i"><img alt="" loading="lazy" decoding="async" src="' +
-        (typeof d.feature === "string" ? d.feature : (IMG[key + "-feature"] || svgURI(artwork(hash(key + "-feature"), a.cols, a.tag)))) +
-      '"></span></figure>';
     // hero title block (Korean title + description) — both carry the white→ink scroll mask (updateMask)
     elTtl.textContent = d.title || d.en || "";
     elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
     elText.innerHTML = (d.lead ? '<p class="wd__lead wd-rise">' + riseInner(d.lead) + "</p>" : "") +
-      featureHTML +                                                  // ← large image band sits between lead and paras
       (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
     // the item image otherwise. The video (if any) overlays the settled hero and plays in showPage/swapContent.
     setFlipBg(key);                                         // the expanding rectangle
     if (VIDEO[key]) heroBgBlack(hero2); else heroBgImage(hero2, img);
     setHeroVideo(key, VIDEO[key] ? BLACK : img);            // poster = black for video keys → no image flash before play
-    // grid: three deterministic accent variations of the same artwork (real shots override via IMG later)
-    elGrid.innerHTML = [0, 1, 2].map(function (i) {
-      return '<div class="wd__shot"><img alt="" src="' + (IMG[key + "-" + (i + 1)] || svgURI(artwork(hash(key + i), a.cols, a.tag))) + '"></div>';
-    }).join("");
+    // single full-width image (the one full-bleed-within-gutters rectangle). Real image later: IMG[key+"-3"].
+    elGrid.innerHTML = '<div class="wd__shot"><img alt="" loading="lazy" decoding="async" src="' +
+      (IMG[key + "-3"] || svgURI(artwork(hash(key + 2), a.cols, a.tag))) + '"></div>';
     buildMore(key);   // "OTHER WORK" list (everything but this item)
   }
 

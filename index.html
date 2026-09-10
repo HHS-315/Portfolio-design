@@ -504,20 +504,11 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
 .wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 60%,transparent);
   padding:13px 0;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
-/* large image area (within the page gutters — respects the site's side margins, not full-bleed): two big
-   cards + a full-width third, rounded corners. Was a 3-col thumbnail row. */
-.wd__grid{margin-top:clamp(48px,8vh,96px);display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,1.6vw,24px)}
-.wd__shot{aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:#bfc5cc}
-.wd__shot:nth-child(3){grid-column:1/-1;aspect-ratio:16/9}   /* third image spans full content width */
+/* single large image area (within the page gutters — respects the site's side margins, not full-bleed):
+   one full-content-width 16/9 card, rounded corners. */
+.wd__grid{margin-top:clamp(48px,8vh,96px)}
+.wd__shot{aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#bfc5cc}
 .wd__shot img{width:100%;height:100%;object-fit:cover;display:block}
-/* large horizontal image band under the lead (optional, WORK_DETAILS[key].feature). Full .wd__inner width — NOT
-   the text max-width — inside the page gutters; NO 100vw/negative margins → no x-scroll. aspect-ratio reserves
-   the height before the image loads; max-height keeps the whole band in one screen. */
-.wd__feature{margin:clamp(30px,5.5vh,60px) 0 clamp(6px,2vh,20px);aspect-ratio:21/9;max-height:70svh;border-radius:10px;overflow:hidden;background:#bfc5cc}
-.wd__feature .wd-rise__i{height:100%}
-.wd__feature img{width:100%;height:100%;object-fit:cover;display:block}
-@media(max-width:900px){.wd__feature{aspect-ratio:4/3;max-height:none}}   /* 21/9 is too short on phones → taller ratio so it reads */
-@media(prefers-reduced-motion:no-preference){.wd__feature .wd-rise__i{transform:translateY(46%)}}   /* smaller roll-up than the global 112% — the band is large (is-in still resolves to 0) */
 /* sequential reveal mask (about-lines-style curtain roll): each body element is an overflow:hidden mask
    whose inner block starts pushed down and rolls up into view once. JS (IntersectionObserver, root=.wd__content)
    adds .is-in with a per-element stagger delay. Duration/easing from --wd-rise-dur (set by JS). Only under
@@ -536,7 +527,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__more .wbig{opacity:1;margin-top:0}
 @media(max-width:820px){
   .wd__body{grid-template-columns:1fr;gap:34px}
-  .wd__grid{grid-template-columns:1fr}
+  .wd__shot{aspect-ratio:4/3}   /* 16/9 is too short on phones → taller ratio so it reads */
 }
 @media(prefers-reduced-motion:reduce){.wd__logo{transition:none}}
 
