@@ -178,9 +178,8 @@
         '<div class="wd__titles"><h2 class="wd__ttl" tabindex="-1"></h2><p class="wd__ttl-sub"></p></div>' + // title + description; both pin & sweep
       '</div>' +
       '<div class="wd__page"><div class="wd__inner">' +
-        '<div class="wd__body"><div class="wd__text"></div></div>' +
-        '<div class="wd__grid"></div>' +
-        '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
+        '<div class="wd__doc"></div>' +                                        // breadcrumb + 2-col label rows + body + image bands (built per item)
+        '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item — UNCHANGED)
       '</div></div>' +
     '</div>' +
     // logo close-control: the button itself is mix-blend-difference (glyph-shaped inversion of the content
@@ -199,8 +198,7 @@
       pageEl  = overlay.querySelector(".wd__page"),
       elTtl   = overlay.querySelector(".wd__ttl"),
       elSubTtl = overlay.querySelector(".wd__ttl-sub"),
-      elText  = overlay.querySelector(".wd__text"),
-      elGrid  = overlay.querySelector(".wd__grid"),
+      elDoc   = overlay.querySelector(".wd__doc"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
       logoImg = overlay.querySelector(".wd__logo-img");
@@ -211,6 +209,14 @@
   heroVid.addEventListener("error", function () { hero2.classList.remove("has-video"); });
 
   function riseInner(text) { return '<span class="wd-rise__i">' + esc(text) + "</span>"; }
+  // one hugeinc-style 2-column row: small mono label (left) / content (right), with a top hairline. The whole
+  // grid is the .wd-rise__i so the row rolls up as one unit (parent .wd__row carries the overflow:hidden mask).
+  function row2(label, contentHTML) {
+    return '<div class="wd__row wd-rise"><div class="wd-rise__i wd__row-grid">' +
+      '<div class="wd__row-label">' + esc(label) + "</div>" +
+      '<div class="wd__row-content">' + contentHTML + "</div>" +
+    "</div></div>";
+  }
 
   // Snapshot the WORK list's display text once, robust to work-list.js having already wrapped .wbig__en in
   // a 2-copy curtain track (read the first .wr__copy, else the plain text). Used to rebuild the same rows
@@ -278,19 +284,31 @@
     // hero title block (Korean title + description) — both carry the white→ink scroll mask (updateMask)
     elTtl.textContent = d.title || d.en || "";
     elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
-    elText.innerHTML = (d.lead ? '<p class="wd__lead wd-rise">' + riseInner(d.lead) + "</p>" : "") +
-      (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
     // the item image otherwise. The video (if any) overlays the settled hero and plays in showPage/swapContent.
     setFlipBg(key);                                         // the expanding rectangle
     if (VIDEO[key]) heroBgBlack(hero2); else heroBgImage(hero2, img);
     setHeroVideo(key, VIDEO[key] ? BLACK : img);            // poster = black for video keys → no image flash before play
-    // grid: three deterministic accent variations of the same artwork (real shots override via IMG later)
+
+    // ---- body (hugeinc case-study structure) — pure re-arrangement of existing WORK_DETAILS fields ----
+    //   breadcrumb (en) → 2-col label rows [Overview=caps, The key=lead] → section [label + paras]
+    //   → full-bleed image bands (the same 3 grid images, restacked). No invented copy; no stats block.
     var a = ART[key] || ART["company-renewal"];
-    elGrid.innerHTML = [0, 1, 2].map(function (i) {
-      return '<div class="wd__shot"><img alt="" src="' + (IMG[key + "-" + (i + 1)] || svgURI(artwork(hash(key + i), a.cols, a.tag))) + '"></div>';
+    var caps = (d.caps || []).map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("");
+    var paras = (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
+    var bands = [0, 1, 2].map(function (i) {
+      var src = IMG[key + "-" + (i + 1)] || svgURI(artwork(hash(key + i), a.cols, a.tag));
+      return '<figure class="wd__band wd-rise"><span class="wd-rise__i"><img alt="" src="' + src + '"></span></figure>';
     }).join("");
-    buildMore(key);   // "OTHER WORK" list (everything but this item)
+    elDoc.innerHTML =
+      '<nav class="wd__crumb wd-rise" aria-label="위치"><span class="wd-rise__i">Work <i class="wd__crumb-sep">→</i> ' + esc(d.en || d.title || "") + "</span></nav>" +
+      '<div class="wd__rows">' +
+        (caps ? row2("Overview", '<ul class="wd__caps">' + caps + "</ul>") : "") +
+        (d.lead ? row2("The key", '<p class="wd__lead">' + esc(d.lead) + "</p>") : "") +
+      "</div>" +
+      (paras ? '<section class="wd__sec"><div class="wd__sec-head wd-rise"><span class="wd-rise__i wd__sec-label">Detail</span></div>' + paras + "</section>" : "") +
+      (bands ? '<div class="wd__bands">' + bands + "</div>" : "");
+    buildMore(key);   // "OTHER WORK" list (everything but this item — UNCHANGED)
   }
 
   // ---- animation (single rAF tween, reversible) ---------------------------
