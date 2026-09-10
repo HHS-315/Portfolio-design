@@ -59,7 +59,16 @@
       lead: "처방받은 약의 정보를 확인하기 위해서는 약 이름을 직접 검색하거나 처방전의 작은 글씨를 확인해야 하고, 정해진 시간에 약을 복용하기 위해서는 별도의 알람을 설정해야 합니다.\n약봉지는 이러한 과정을 하나의 경험으로 연결해, 처방전을 촬영하는 것만으로 약 정보를 확인하고 복용 일정까지 관리할 수 있도록 설계했습니다.",
       leadSm: true,   // longer, explanatory lead → smaller body-like size (matches the hero intro), not the big punchy lead
       paras: [],   // body paragraphs removed — the single full-width image below carries this subpage
-      caps: ["User Research", "Information Architecture", "Interaction", "Design System"]
+      caps: ["User Research", "Information Architecture", "Interaction", "Design System"],
+      // "좌측 텍스트 / 우측 이미지" 행들 (medicine_phone 아래). 있으면 렌더, 없으면(다른 키) 아무것도 안 그림.
+      // TODO: 실제 문구로 교체 — 아래 h/cap 3줄은 기존 paras[]·caps[]에서 요지만 끌어온 임시 카피.
+      // 이미지는 실제 파일이 없어 플레이스홀더 생성기 재사용. 실제 파일 교체 시 IMG["yakbongji-row1"] 등에 경로를
+      // 등록하면 우선 사용됨(medicine_phone이 IMG["yakbongji-3"]로 들어간 방식과 동일한 IMG[key+"-rowN"] 규약).
+      rows: [
+        { h: "약봉지 촬영 한 번으로 복약 스케줄이 자동으로 구성됩니다", cap: "User Research · Information Architecture" },
+        { h: "복용 시간에 맞춰 알림을 받고, 복용 여부를 기록합니다", cap: "Interaction" },
+        { h: "알림·기록·보호자 공유를 하나의 디자인 시스템으로", cap: "Design System" }
+      ]
     },
     "stac": {
       en: "STAC", title: "STAC", sub: "생성형 AI로 만든 캐릭터·키비주얼 시리즈",
@@ -178,6 +187,7 @@
       '<div class="wd__page"><div class="wd__inner">' +
         '<div class="wd__body"><div class="wd__text"></div></div>' +
         '<div class="wd__grid"></div>' +
+        '<div class="wd__rows"></div>' +                                       // "좌측 텍스트 / 우측 이미지" 행들 (rows 있는 키만)
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
     '</div>' +
@@ -199,6 +209,7 @@
       elSubTtl = overlay.querySelector(".wd__ttl-sub"),
       elText  = overlay.querySelector(".wd__text"),
       elGrid  = overlay.querySelector(".wd__grid"),
+      elRows  = overlay.querySelector(".wd__rows"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
       logoImg = overlay.querySelector(".wd__logo-img");
@@ -287,6 +298,19 @@
     // single full-width image (the one full-bleed-within-gutters rectangle). Real image later: IMG[key+"-3"].
     elGrid.innerHTML = '<div class="wd__shot"><img alt="" loading="lazy" decoding="async" src="' +
       (IMG[key + "-3"] || svgURI(artwork(hash(key + 2), a.cols, a.tag))) + '"></div>';
+    // "좌측 텍스트 / 우측 이미지" 행들 — d.rows 있는 키만 렌더, 없으면 빈 문자열(switchTo로 다른 키로 가도 이전 행 안 남음).
+    // 헤드라인·캡션·이미지를 각각 .wd-rise + riseInner(<span class="wd-rise__i">)로 감싸 순차 등장(setupReveal)에 편승.
+    // 이미지: 실제 파일 없으므로 기존 플레이스홀더 생성기 재사용. 교체 시 IMG[key+"-rowN"]에 경로 등록(IMG[key+"-3"]와 동일 규약).
+    elRows.innerHTML = (d.rows || []).map(function (r, i) {
+      var rimg = IMG[key + "-row" + (i + 1)] || svgURI(artwork(hash(key + "row" + i), a.cols, a.tag));
+      return '<div class="wd__row">' +
+          '<div class="wd__row-text">' +
+            '<h3 class="wd__row-h wd-rise">' + riseInner(r.h) + "</h3>" +
+            '<p class="wd__row-cap wd-rise">' + riseInner(r.cap) + "</p>" +
+          "</div>" +
+          '<figure class="wd__row-fig wd-rise"><span class="wd-rise__i"><img alt="" loading="lazy" decoding="async" src="' + rimg + '"></span></figure>' +
+        "</div>";
+    }).join("");
     buildMore(key);   // "OTHER WORK" list (everything but this item)
   }
 

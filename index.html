@@ -512,6 +512,27 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__grid{margin-top:clamp(48px,8vh,96px)}
 .wd__shot{aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#bfc5cc}
 .wd__shot img{width:100%;height:100%;object-fit:cover;display:block}
+/* "좌측 텍스트 / 우측 이미지" 행들 (hugeinc/nbcu 중간 섹션 형태) — medicine_phone(.wd__shot) 아래, OTHER WORK 위.
+   · 좌측 텍스트는 세로 중앙이 아니라 상단 정렬(align-items:start) → 이미지 높이가 행 높이를 결정.
+   · 우측 컬럼이 조금 더 넓다(1 : 1.32). 우측 정렬선은 바로 위 .wd__shot과 동일(--gutter 안쪽, 음수 마진 없음)
+     → 가로 스크롤 위험 없이 medicine_phone 블록과 정렬 라인을 맞춤.
+   · aspect-ratio로 로딩 전 이미지 높이를 예약(레이아웃 밀림 방지). border-radius는 .wd__shot과 동일 10px. */
+.wd__rows{margin-top:clamp(64px,12vh,150px)}
+.wd__row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.32fr);gap:clamp(20px,3.4vw,64px);align-items:start}
+.wd__row + .wd__row{margin-top:clamp(80px,16vh,200px)}   /* 행 간 매우 넓은 여백(레퍼런스 리듬) */
+/* 텍스트 컬럼은 상단 정렬 그대로(패딩 없음) → 헤드라인 top이 이미지 top과 flush.
+   등장 순서: 동률(row top)은 DOM 순서로 갈려 헤드라인 → 이미지 → 캡션(top→down)으로 정렬됨. */
+.wd__row-h{margin:0;font-family:'Pretendard',system-ui,sans-serif;font-weight:600;letter-spacing:-.01em;line-height:1.28;font-size:clamp(23px,2.5vw,32px);color:var(--work-ink)}   /* .wd__lead(≤22)보다 크고 .wd__ttl(≥34)보다 작게 */
+.wd__row-cap{margin:clamp(12px,1.6vh,20px) 0 0;font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.7;letter-spacing:.01em;color:color-mix(in srgb,var(--work-ink) 60%,transparent)}   /* .wd__p(14.5px) 계열, 조금 더 옅게 */
+.wd__row-fig{margin:0;aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:#bfc5cc}   /* 4/3 = 레퍼런스풍 가로 이미지, 높이 예약 */
+.wd__row-fig .wd-rise__i{height:100%}
+.wd__row-fig img{width:100%;height:100%;object-fit:cover;display:block}
+@media(prefers-reduced-motion:no-preference){.wd__row-fig .wd-rise__i{transform:translateY(40%)}}   /* 큰 이미지에서 전역 112%는 과함 → 이 요소만 이동량 축소 */
+@media(max-width:900px){
+  .wd__rows{margin-top:clamp(44px,9vh,90px)}
+  .wd__row{grid-template-columns:1fr;gap:18px}         /* 2단 해제 → 텍스트 위 / 이미지 아래 세로 스택 */
+  .wd__row + .wd__row{margin-top:clamp(48px,9vh,90px)} /* 행 간 여백 축소 */
+}
 /* sequential reveal mask (about-lines-style curtain roll): each body element is an overflow:hidden mask
    whose inner block starts pushed down and rolls up into view once. JS (IntersectionObserver, root=.wd__content)
    adds .is-in with a per-element stagger delay. Duration/easing from --wd-rise-dur (set by JS). Only under
