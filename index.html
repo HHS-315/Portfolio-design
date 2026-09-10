@@ -261,11 +261,11 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 /* per-section label: number (left) · name (right), no line */
 .sec__head{display:flex;justify-content:space-between;margin-bottom:12px;padding-inline:var(--gutter);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}   /* WORK-only; was 40px — tightened so the WORK header sits closer to the list */
 .sec__head b{color:var(--hi);font-weight:500}
-/* WORK section header: "WORK" rendered by work-ascii.js as a grid of blinking ASCII glyphs (same look
-   as the intro PORTFOLIO). The font-size here IS the letterform size the script reads (responsive);
-   the canvas is drawn in --work-ink so it darkens with the section. */
-.work-ascii{font-size:clamp(104px,15.5vw,160px);line-height:0;display:block;opacity:var(--work-reveal);margin-bottom:-.28em}   /* WORK header (glyph-mosaic canvas, enlarged ~18%); decodes in left→right once via work-ascii.js. -.28em pulls the list up under the empty canvas overhang below the glyphs (≈0.32×font-size) */
-.work-ascii canvas{display:block}
+/* WORK section header: plain bold word "WORK" in the site's display font (--hero-font, ExtraBold 800,
+   uppercase, -.02em — same treatment as the hero quotes / ABOUT lines). ASCII-glyph canvas effect removed
+   (work-ascii.js HEADER_ON:false); the script now only drives the CONTACT ambient field. Still fades in
+   with the section via --work-reveal. */
+.work-ascii{margin:0 0 .04em;font-family:var(--hero-font);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;line-height:.9;font-size:clamp(104px,15.5vw,160px);color:var(--work-ink);opacity:var(--work-reveal,1)}
 .tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
 .tag::before{content:"// "}
 
@@ -748,7 +748,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 
   <!-- WORK -->
   <section id="work" class="sec sec--tint">
-    <div class="sec__head"><div id="workAscii" class="work-ascii" role="img" aria-label="Work"></div></div>
+    <div class="sec__head"><h2 id="workAscii" class="work-ascii">WORK</h2></div>
     <div class="wrap">
       <!-- big category list (chdartmaker-style spotlight): English is the visual lead, Korean subtitle
            below it, small. Colour + rules bind to --work-ink so they track the stacking cells; the

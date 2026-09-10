@@ -15,6 +15,9 @@
   "use strict";
   var host = document.getElementById("workAscii"); if (!host) return;
   var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  // WORK header glyph-mosaic is OFF — the header is now plain bold text (CSS .work-ascii). This file is kept
+  // ONLY for the CONTACT ambient field (and the preserved-but-OFF WORK field), which share its single rAF loop.
+  var HEADER_ON = false;
 
   // same character set the dandelion uses for its code glyphs
   var CODE = ['0','1','/','\\','<','>','{','}','(',')','=','+','-','*','#','$','%','&','|',';',':','.','x','?','!','^','~'];
@@ -30,9 +33,12 @@
   var INK  = (getComputedStyle(root).getPropertyValue("--work-ink") || "#141414").trim() || "#141414";  // WORK field ink (dark)
   var BONE = (getComputedStyle(root).getPropertyValue("--bone") || "#e9e9e6").trim() || "#e9e9e6";       // CONTACT field ink (light)
 
-  var cv = document.createElement("canvas"); cv.setAttribute("aria-hidden", "true");
-  cv.style.display = "block"; host.appendChild(cv);
-  var ctx = cv.getContext("2d");
+  var cv = null, ctx = null;
+  if (HEADER_ON) {
+    cv = document.createElement("canvas"); cv.setAttribute("aria-hidden", "true");
+    cv.style.display = "block"; host.appendChild(cv);
+    ctx = cv.getContext("2d");
+  }
 
   // Header DECODE-IN — adapted from the pasted React "SpecialText" scramble→reveal to this glyph mosaic: the
   // ASCII effect is KEPT (the cells never stop churning random CODE glyphs), and the "decode" is a left→right
@@ -438,6 +444,7 @@
   // ---- header (the word "WORK") -------------------------------------------
   function build() {
     DPR = Math.min(2, window.devicePixelRatio || 1);
+    if (!HEADER_ON) { workField.build(); contactField.build(); return; }   // header off → only rebuild the ambient fields
     var LFS = parseFloat(getComputedStyle(host).fontSize) || 54;
     cellFS = Math.max(CELL_MIN, Math.min(CELL_MAX, LFS * CELL_RATIO));
     var step = Math.max(3, cellFS * STEP_RATIO);
@@ -469,6 +476,7 @@
   }
 
   function draw(t) {
+    if (!HEADER_ON) return;   // header is plain text now — nothing to paint here
     ctx.clearRect(0, 0, tw, th);
     ctx.fillStyle = INK;
     // DECODE-IN: stamp the start once the header has faded in, then sweep a soft reveal frontier left→right.
