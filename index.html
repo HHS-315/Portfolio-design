@@ -472,8 +472,8 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__ttl{margin:0;font-weight:800;letter-spacing:-.01em;line-height:1.14;font-size:clamp(34px,6.6vw,104px)}   /* Korean → Pretendard ExtraBold; no uppercase; no ch cap (full width) */
 .wd__ttl-sub{margin:clamp(10px,1.4vh,18px) 0 0;font-weight:400;letter-spacing:0;line-height:1.5;font-size:clamp(14px,1.6vw,20px);max-width:52ch}   /* description under the title, same mask, Pretendard Regular */
 /* grey content page below the hero */
-.wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) 0 clamp(56px,11vh,130px)}   /* L/R gutter moved to the text blocks (below) so image bands can go full-bleed with NO negative margins → no x-scroll */
-.wd__inner{margin:0}   /* full section width */
+.wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px)}
+.wd__inner{margin:0}   /* full section width — the only horizontal inset is .wd__page's --gutter padding */
 /* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
    font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay is
    open. It must read over the grey page, the big black title/list text (glyph-shaped, not a coarse rect),
@@ -496,21 +496,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__logo-img{z-index:3;color:#fff;clip-path:inset(0 0 100% 0);pointer-events:none}   /* crisp white over the hero image only (JS sets the clip; default hidden) */
 .wd__logo-star{font-style:normal}   /* inherits the layer colour (inverts with the text over dark, white over the image) */
 @media(max-width:560px){.wd__logo,.wd__logo-img{font-size:10px;letter-spacing:.1em;padding:14px var(--gutter)}}   /* match .bar mobile */
-/* ── hugeinc-style body. The gutter lives on the TEXT blocks (below), page padding-inline is 0, so the image
-   bands go full-bleed without negative margins (no horizontal scrollbar). Order: breadcrumb → 2-col label
-   rows → section → bands. ── */
-.wd__crumb,.wd__rows,.wd__sec,.wd__more{padding-inline:var(--gutter)}
-.wd__crumb{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 55%,transparent);margin:0 0 clamp(30px,6vh,64px)}
-.wd__crumb-sep{font-style:normal;margin:0 .5em;opacity:.65}
-/* signature 2-column rows — small mono label (left) / content (right), hairline on top */
-.wd__row{border-top:1px solid color-mix(in srgb,var(--work-ink) 18%,transparent)}
-.wd__row-grid{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:clamp(20px,4vw,64px);padding:clamp(22px,3.6vh,44px) 0}
-.wd__row-label{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 55%,transparent);white-space:nowrap}
-.wd__row-content>:last-child{margin-bottom:0}
-.wd__row .wd__caps{border-top:0}   /* the row already draws the top hairline; keep only the li dividers */
-/* section: mono label → paragraphs (no separate headline field exists in WORK_DETAILS, so none is invented) */
-.wd__sec{margin-top:clamp(64px,11vh,128px)}
-.wd__sec-label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 55%,transparent);margin:0 0 clamp(18px,2.8vh,32px)}
+.wd__body{display:block}   /* single column — the right caps aside (USER RESEARCH … DESIGN SYSTEM) was removed */
 /* body copy: Latin → Plus Jakarta Sans, Korean → Pretendard (per-character fallback). ch caps KEPT for
    readability (the section is full width now, so an uncapped line would run too long), just widened a bit. */
 .wd__lead{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:500;font-size:clamp(16px,1.7vw,22px);line-height:1.6;color:var(--work-ink);margin:0 0 26px;max-width:66ch}   /* 강조(리드 문단) = Medium */
@@ -518,12 +504,9 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
 .wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 60%,transparent);
   padding:13px 0;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
-/* full-bleed image bands (was the 3-col .wd__grid) — the SAME 3 images, edge-to-edge, stacked vertically */
-.wd__bands{margin-top:clamp(64px,11vh,128px)}
-.wd__band{margin:0;aspect-ratio:16/9;overflow:hidden;background:#bfc5cc}   /* overflow doubles as the wd-rise mask */
-.wd__band+.wd__band{margin-top:clamp(10px,1.6vh,22px)}
-.wd__band .wd-rise__i{height:100%}
-.wd__band img{width:100%;height:100%;object-fit:cover;display:block}
+.wd__grid{margin-top:clamp(40px,7vh,80px);display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,18px)}
+.wd__shot{aspect-ratio:4/3;border-radius:4px;overflow:hidden;background:#bfc5cc}
+.wd__shot img{width:100%;height:100%;object-fit:cover;display:block}
 /* sequential reveal mask (about-lines-style curtain roll): each body element is an overflow:hidden mask
    whose inner block starts pushed down and rolls up into view once. JS (IntersectionObserver, root=.wd__content)
    adds .is-in with a per-element stagger delay. Duration/easing from --wd-rise-dur (set by JS). Only under
@@ -541,8 +524,8 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__more-label{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 6px}
 .wd__more .wbig{opacity:1;margin-top:0}
 @media(max-width:820px){
-  .wd__row-grid{grid-template-columns:1fr;gap:10px;padding:clamp(18px,3vh,30px) 0}   /* 2-col label row → stacked */
-  .wd__band{aspect-ratio:4/3}   /* taller bands read better on narrow screens */
+  .wd__body{grid-template-columns:1fr;gap:34px}
+  .wd__grid{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.wd__logo{transition:none}}
 
