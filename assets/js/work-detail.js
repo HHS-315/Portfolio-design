@@ -65,9 +65,10 @@
       // 이미지는 실제 파일이 없어 플레이스홀더 생성기 재사용. 실제 파일 교체 시 IMG["yakbongji-row1"] 등에 경로를
       // 등록하면 우선 사용됨(medicine_phone이 IMG["yakbongji-3"]로 들어간 방식과 동일한 IMG[key+"-rowN"] 규약).
       rows: [
-        { h: "약봉지 촬영 한 번으로 복약 스케줄이 자동으로 구성됩니다", cap: "User Research · Information Architecture" },
-        { h: "복용 시간에 맞춰 알림을 받고, 복용 여부를 기록합니다", cap: "Interaction" },
-        { h: "알림·기록·보호자 공유를 하나의 디자인 시스템으로", cap: "Design System" }
+        // vid 있으면 이미지 대신 영상(자동재생/무음/루프) 렌더. 실제 파일 교체는 vid 경로 / IMG[key+"-rowN"] 규약.
+        { h: "SCAN — 처방전 촬영", cap: "처방전을 직접 입력하거나 약 이름을 검색하지 않고 카메라로 촬영해 처방 정보를 등록합니다.", vid: "assets/video/yakbongji_1.mp4" },
+        { h: "복용 시간에 맞춰 알림을 받고, 복용 여부를 기록합니다", cap: "Interaction" },   // TODO: 실제 문구로 교체
+        { h: "알림·기록·보호자 공유를 하나의 디자인 시스템으로", cap: "Design System" }        // TODO: 실제 문구로 교체
       ]
     },
     "stac": {
@@ -303,12 +304,16 @@
     // 이미지: 실제 파일 없으므로 기존 플레이스홀더 생성기 재사용. 교체 시 IMG[key+"-rowN"]에 경로 등록(IMG[key+"-3"]와 동일 규약).
     elRows.innerHTML = (d.rows || []).map(function (r, i) {
       var rimg = IMG[key + "-row" + (i + 1)] || svgURI(artwork(hash(key + "row" + i), a.cols, a.tag));
+      // r.vid 있으면 영상(자동재생·무음·루프·인라인), 없으면 이미지. poster=플레이스홀더 → 디코드 전 빈 박스 방지.
+      var media = r.vid
+        ? '<video class="wd__row-media" muted loop playsinline autoplay preload="metadata" poster="' + rimg + '"><source src="' + r.vid + '" type="video/mp4"></video>'
+        : '<img class="wd__row-media" alt="" loading="lazy" decoding="async" src="' + rimg + '">';
       return '<div class="wd__row">' +
           '<div class="wd__row-text">' +
             '<h3 class="wd__row-h wd-rise">' + riseInner(r.h) + "</h3>" +
             '<p class="wd__row-cap wd-rise">' + riseInner(r.cap) + "</p>" +
           "</div>" +
-          '<figure class="wd__row-fig wd-rise"><span class="wd-rise__i"><img alt="" loading="lazy" decoding="async" src="' + rimg + '"></span></figure>' +
+          '<figure class="wd__row-fig wd-rise"><span class="wd-rise__i">' + media + "</span></figure>" +
         "</div>";
     }).join("");
     buildMore(key);   // "OTHER WORK" list (everything but this item)
