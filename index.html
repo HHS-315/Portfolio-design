@@ -504,8 +504,11 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__caps{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
 .wd__caps li{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 60%,transparent);
   padding:13px 0;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 20%,transparent)}
-.wd__grid{margin-top:clamp(40px,7vh,80px);display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,18px)}
-.wd__shot{aspect-ratio:4/3;border-radius:4px;overflow:hidden;background:#bfc5cc}
+/* large image area (within the page gutters — respects the site's side margins, not full-bleed): two big
+   cards + a full-width third, rounded corners. Was a 3-col thumbnail row. */
+.wd__grid{margin-top:clamp(48px,8vh,96px);display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,1.6vw,24px)}
+.wd__shot{aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:#bfc5cc}
+.wd__shot:nth-child(3){grid-column:1/-1;aspect-ratio:16/9}   /* third image spans full content width */
 .wd__shot img{width:100%;height:100%;object-fit:cover;display:block}
 /* sequential reveal mask (about-lines-style curtain roll): each body element is an overflow:hidden mask
    whose inner block starts pushed down and rolls up into view once. JS (IntersectionObserver, root=.wd__content)

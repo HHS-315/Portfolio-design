@@ -57,10 +57,7 @@
     "yakbongji": {
       en: "Yakbongji", title: "약봉지", sub: "처방전을 촬영하면 약 정보를 확인하고,\n복용 시간을 설정해 알림을 받을 수 있는 복약 관리 서비스",
       lead: "처방전을 찍는 것만으로 복약 관리가 시작됩니다.",
-      paras: [
-        "사용자 인터뷰와 관찰을 통해 ‘언제·무엇을·얼마나’를 매번 헷갈리는 지점을 찾아냈고, 약봉지 촬영 한 번으로 복약 스케줄이 자동으로 구성되도록 정보 구조를 다시 짰습니다.",
-        "알림·기록·보호자 공유까지 이어지는 흐름을 하나의 디자인 시스템으로 묶어, 화면이 늘어나도 일관된 규칙 안에서 확장되도록 했습니다."
-      ],
+      paras: [],   // body paragraphs removed — the large image area carries this subpage instead
       caps: ["User Research", "Information Architecture", "Interaction", "Design System"]
     },
     "stac": {
@@ -228,7 +225,7 @@
   // WORK section's .wbig classes (styling + hover spotlight are shared CSS); rows switch content in place.
   function buildMore(activeK) {
     var rows = LIST.filter(function (e) { return e.key !== activeK; });
-    elMore.innerHTML = '<p class="wd__more-label">OTHER WORK</p><div class="wbig">' +
+    elMore.innerHTML = '<div class="wbig">' +   // "OTHER WORK" label text removed (list itself unchanged)
       rows.map(function (e) {
         return '<div class="wbig__item" role="button" tabindex="0" data-key="' + e.key + '">' +
           '<span class="wbig__en">' + esc(e.big) + '</span>' +
