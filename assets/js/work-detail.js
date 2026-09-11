@@ -74,7 +74,7 @@
         h: "이번 프로젝트는.",
         items: [
           { v: "Tools", cap: "Figma · Chat GPT · Photoshop" },
-          { v: "Duration", cap: "2 weeks" },
+          { v: "Duration", cap: "2 weeks · 100% 개인 작업" },
           { v: "Project Type", cap: "Redesign - 실무에서 직접 참여했던 프로젝트를 바탕으로, 기존 디자인의 아쉬운 점을 개선하기 위해 개인적으로 진행한 UX/UI 리디자인입니다." }
         ]
       }
