@@ -662,7 +662,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
    bubble's BOTTOM-CENTRE (over the flower below). Two rows (email / phone) with symmetric vertical margins
    inside the body. Shown on hover of the mark; the tip itself is pointer-events:none. Anchored to the mark's
    right edge and extends left so it never overflows the viewport (flower sits in the bottom-right corner). */
-.contact-thanks{pointer-events:auto}   /* was none — enable hover on the mark to trigger the tooltip */
+.contact-thanks{pointer-events:auto;cursor:crosshair}   /* was none — enable hover on the mark to trigger the tooltip; + (crosshair) cursor over the flower */
 .contact-tip{position:absolute;right:0;bottom:calc(100% + 14px);z-index:7;pointer-events:none;box-sizing:border-box;
   width:248px;height:96px;padding:20px 22px 32px;                       /* bottom pad clears the 12px tail; top/bottom keep the 2 rows centred in the body */
   display:flex;flex-direction:column;justify-content:center;gap:9px;white-space:nowrap;
@@ -672,11 +672,13 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   --ctip-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 248 96' preserveAspectRatio='none'><path d='M13 0 L235 0 Q248 0 248 13 L248 71 Q248 84 235 84 L136 84 L124 96 L112 84 L13 84 Q0 84 0 71 L0 13 Q0 0 13 0 Z' fill='%23000'/></svg>");
   --ctip-stroke:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 248 96' preserveAspectRatio='none'><path d='M13 0 L235 0 Q248 0 248 13 L248 71 Q248 84 235 84 L136 84 L124 96 L112 84 L13 84 Q0 84 0 71 L0 13 Q0 0 13 0 Z' fill='none' stroke='%23333' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>");
   -webkit-mask:var(--ctip-mask) center/100% 100% no-repeat;mask:var(--ctip-mask) center/100% 100% no-repeat;
-  opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .3s ease,transform .3s ease}
+  /* visibility delayed .3s on HIDE so the element stays rendered through the opacity/transform fade-out (else it
+     snapped away instantly = "띡"); on SHOW the :hover rule sets the delay to 0s so it appears at once. */
+  opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .3s ease,transform .3s ease,visibility 0s linear .3s}
 .contact-tip::after{content:"";position:absolute;inset:0;pointer-events:none;background:var(--ctip-stroke) center/100% 100% no-repeat}
 .contact-tip__row{display:flex;align-items:center}
 .contact-tip__k{color:rgba(242,242,240,.5);margin-right:10px;font-size:11px;letter-spacing:.04em}
-.contact-thanks:hover .contact-tip{opacity:1;visibility:visible;transform:translateY(0)}
+.contact-thanks:hover .contact-tip{opacity:1;visibility:visible;transform:translateY(0);transition:opacity .3s ease,transform .3s ease,visibility 0s linear 0s}
 @media(prefers-reduced-motion:reduce){.contact-tip{transition:none}}
 /* intro scroll-lock — the page is frozen on the hero until the dandelion forms */
 html.intro-lock{scroll-behavior:auto}
