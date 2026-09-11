@@ -68,7 +68,16 @@
         { h: "SCAN — 처방전 촬영", cap: "처방전을 직접 입력하거나 약 이름을 일일이 검색하는 과정 없이, 처방전을 촬영하는 것만으로 약의 정보를 확인할 수 있습니다. 촬영된 처방 정보를 바탕으로 복용약을 빠르게 확인하고 관리할 수 있도록 복약 경험의 시작 과정을 단순화했습니다.", vid: "assets/video/yakbongji_1.mp4" },
         { h: "VIEW — 복용약 비중 확인", cap: "등록된 복용약을 종류별로 분류하고 비중을 시각화해, 현재 어떤 종류의 약을 주로 복용하고 있는지 한눈에 파악할 수 있습니다. 개별 약의 정보를 확인하는 것을 넘어 전체적인 복용약의 구성을 보다 직관적으로 이해할 수 있도록 했습니다.", vid: "assets/video/yakbongji_2.mp4" },
         { h: "REMIND — 복용 일정 관리", cap: "등록한 약마다 복용해야 하는 시간을 설정하고, 설정한 시간에 맞춰 알림을 받아 복용 일정을 놓치지 않도록 관리할 수 있습니다. 약을 확인하는 과정에서 끝나지 않고 실제 복용 행동까지 자연스럽게 이어질 수 있도록 설계했습니다.", vid: "assets/video/yakbongji_3.mp4" }
-      ]
+      ],
+      // "이번 프로젝트는." 통계 카드 블록 (.wd__rows 아래). stats 있는 키만 렌더. 카드 = items 길이만큼(3단 그리드 기준).
+      stats: {
+        h: "이번 프로젝트는.",
+        items: [
+          { v: "Tools", cap: "Figma · Chat GPT · Photoshop" },
+          { v: "Duration", cap: "2 weeks" },
+          { v: "Project Type", cap: "Redesign - 실무에서 직접 참여했던 프로젝트를 바탕으로, 기존 디자인의 아쉬운 점을 개선하기 위해 개인적으로 진행한 UX/UI 리디자인입니다." }
+        ]
+      }
     },
     "stac": {
       en: "STAC", title: "STAC", sub: "생성형 AI로 만든 캐릭터·키비주얼 시리즈",
@@ -188,6 +197,7 @@
         '<div class="wd__body"><div class="wd__text"></div></div>' +
         '<div class="wd__grid"></div>' +
         '<div class="wd__rows"></div>' +                                       // "좌측 텍스트 / 우측 이미지" 행들 (rows 있는 키만)
+        '<div class="wd__stats"></div>' +                                      // "이번 프로젝트는." 통계 카드 블록 (stats 있는 키만)
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
     '</div>' +
@@ -210,6 +220,7 @@
       elText  = overlay.querySelector(".wd__text"),
       elGrid  = overlay.querySelector(".wd__grid"),
       elRows  = overlay.querySelector(".wd__rows"),
+      elStats = overlay.querySelector(".wd__stats"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
       logoImg = overlay.querySelector(".wd__logo-img");
@@ -316,6 +327,16 @@
           '<figure class="wd__row-fig wd-rise"><span class="wd-rise__i">' + media + "</span></figure>" +
         "</div>";
     }).join("");
+    // "이번 프로젝트는." 통계 카드 — d.stats 있는 키만, 없으면 빈 문자열(switchTo로 넘어가도 이전 내용 안 남음).
+    // 헤드라인은 .wd-rise+riseInner. 카드는 .wd-rise(카드=마스크/배경) + 내부 .wd-rise__i(height:100% flex space-between)로,
+    // .wd__row-fig와 동일하게 큰 요소 이동량을 CSS에서 40%로 낮춘다. 카드 수 = items 길이(3단 그리드 기준; 개수≠3이면 CSS 그리드 조정 필요).
+    elStats.innerHTML = !d.stats ? "" : '<h3 class="wd__stats-h wd-rise">' + riseInner(d.stats.h) + "</h3>" +
+      '<div class="wd__stats-grid">' + (d.stats.items || []).map(function (it) {
+        return '<div class="wd__stat wd-rise"><span class="wd-rise__i">' +
+            '<span class="wd__stat-v">' + esc(it.v) + "</span>" +
+            '<span class="wd__stat-cap">' + esc(it.cap) + "</span>" +
+          "</span></div>";
+      }).join("") + "</div>";
     buildMore(key);   // "OTHER WORK" list (everything but this item)
   }
 
