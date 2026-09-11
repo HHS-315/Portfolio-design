@@ -63,11 +63,11 @@
       // "좌측 텍스트 / 우측 이미지(또는 영상)" 행들 (medicine_phone 아래). 있으면 렌더, 없으면(다른 키) 아무것도 안 그림.
       // 3행 모두 vid(영상) 사용. vid 없는 행은 IMG[key+"-rowN"] 있으면 그 이미지, 없으면 플레이스홀더로 폴백
       // (medicine_phone이 IMG["yakbongji-3"]로 들어간 방식과 동일한 IMG[key+"-rowN"] 규약).
+      // 각 행 = kicker(짧은 라벨) + h(영문 제목, 볼드) + cap(국문 본문) + vid(영상). vid 있으면 영상, 없으면 IMG[key+"-rowN"]/플레이스홀더.
       rows: [
-        // vid 있으면 이미지 대신 영상(자동재생/무음/루프) 렌더. 실제 파일 교체는 vid 경로 / IMG[key+"-rowN"] 규약.
-        { h: "SCAN — 처방전 촬영", cap: "처방전을 직접 입력하거나 약 이름을 검색하지 않고 카메라로 촬영해 처방 정보를 등록합니다.", vid: "assets/video/yakbongji_1.mp4" },
-        { h: "VIEW — 복용약 비중 확인", cap: "등록된 약을 종류별로 분류해 현재 복용 중인 약 가운데 어떤 계열의 약을 많이 복용하고 있는지 비중을 시각적으로 확인할 수 있습니다.", vid: "assets/video/yakbongji_2.mp4" },
-        { h: "REMIND — 복용 일정 관리", cap: "등록된 약의 복용 시간을 설정하고 알림을 받아 정해진 시간에 약을 챙길 수 있도록 돕습니다.", vid: "assets/video/yakbongji_3.mp4" }
+        { kicker: "SCAN", h: "Prescription Scan", cap: "처방전을 직접 입력하거나 약 이름을 일일이 검색하는 과정 없이, 처방전을 촬영하는 것만으로 약의 정보를 확인할 수 있습니다. 촬영된 처방 정보를 바탕으로 복용약을 빠르게 확인하고 관리할 수 있도록 복약 경험의 시작 과정을 단순화했습니다.", vid: "assets/video/yakbongji_1.mp4" },
+        { kicker: "INSIGHT", h: "Medication Insight", cap: "등록된 복용약을 종류별로 분류하고 비중을 시각화해, 현재 어떤 종류의 약을 주로 복용하고 있는지 한눈에 파악할 수 있습니다. 개별 약의 정보를 확인하는 것을 넘어 전체적인 복용약의 구성을 보다 직관적으로 이해할 수 있도록 했습니다.", vid: "assets/video/yakbongji_2.mp4" },
+        { kicker: "REMIND", h: "Medication Reminder", cap: "등록한 약마다 복용해야 하는 시간을 설정하고, 설정한 시간에 맞춰 알림을 받아 복용 일정을 놓치지 않도록 관리할 수 있습니다. 약을 확인하는 과정에서 끝나지 않고 실제 복용 행동까지 자연스럽게 이어질 수 있도록 설계했습니다.", vid: "assets/video/yakbongji_3.mp4" }
       ]
     },
     "stac": {
@@ -309,6 +309,7 @@
         : '<img class="wd__row-media" alt="" loading="lazy" decoding="async" src="' + rimg + '">';
       return '<div class="wd__row">' +
           '<div class="wd__row-text">' +
+            (r.kicker ? '<p class="wd__row-kicker wd-rise">' + riseInner(r.kicker) + "</p>" : "") +
             '<h3 class="wd__row-h wd-rise">' + riseInner(r.h) + "</h3>" +
             '<p class="wd__row-cap wd-rise">' + riseInner(r.cap) + "</p>" +
           "</div>" +

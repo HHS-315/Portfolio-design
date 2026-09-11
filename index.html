@@ -522,7 +522,8 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__row + .wd__row{margin-top:clamp(52px,10vh,124px)}   /* 행 간 여백 — 줄어든 이미지 높이에 맞춰 축소(이전 80–200px) */
 /* 텍스트 컬럼은 상단 정렬 그대로(패딩 없음) → 헤드라인 top이 이미지 top과 flush.
    등장 순서: 동률(row top)은 DOM 순서로 갈려 헤드라인 → 이미지 → 캡션(top→down)으로 정렬됨. */
-.wd__row-h{margin:0;font-family:'Pretendard',system-ui,sans-serif;font-weight:600;letter-spacing:-.01em;line-height:1.28;font-size:clamp(23px,2.5vw,32px);color:var(--work-ink)}   /* .wd__lead(≤22)보다 크고 .wd__ttl(≥34)보다 작게 */
+.wd__row-kicker{margin:0 0 clamp(10px,1.4vh,16px);font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 55%,transparent)}   /* 짧은 라벨(SCAN 등) — 사이트 라벨 컨벤션(mono/uppercase) */
+.wd__row-h{margin:0;font-family:'Pretendard',system-ui,sans-serif;font-weight:600;letter-spacing:-.01em;line-height:1.28;font-size:clamp(23px,2.5vw,32px);color:var(--work-ink)}   /* 영문 제목(볼드). .wd__lead(≤22)보다 크고 .wd__ttl(≥34)보다 작게 */
 .wd__row-cap{margin:clamp(12px,1.6vh,20px) 0 0;font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.7;letter-spacing:.01em;color:var(--work-ink)}   /* 리드(.wd__lead--sm)와 동일한 컬러(work-ink)·굵기(400) */
 .wd__row-fig{margin:0;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#bfc5cc}   /* 16/9 = 최초 4/3 높이의 3/4(수정 전 대비 세로 1/4 축소), 높이 예약 */
 .wd__row-fig .wd-rise__i{height:100%}
