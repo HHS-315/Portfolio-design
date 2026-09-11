@@ -542,10 +542,12 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__stats:not(:empty){margin-block:clamp(90px,14vh,180px)}
 .wd__stats-h{margin:0 0 clamp(28px,4vh,52px);font-family:'Pretendard',system-ui,sans-serif;font-weight:800;letter-spacing:-.01em;line-height:1.1;font-size:clamp(32px,5.2vw,76px);color:var(--work-ink)}   /* 섹션 헤드 — .wd__ttl(34–104)보다 작은 32–76 밴드 */
 .wd__stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}   /* 값 폭 실측 기준 3단. 개수≠3이면 이 그리드를 auto-fit/개수별로 조정할 것 */
-.wd__stat{background:color-mix(in srgb,var(--work-ink) 6%,var(--work-cell));border-radius:10px;min-height:clamp(300px,26vw,500px);padding:clamp(24px,2vw,34px)}   /* 배경보다 아주 조금 어두운 면색. 높이는 카드 폭에 연동(26vw)해 레퍼런스 비율(높이≈폭×0.85) 유지 — vh는 낮은 창에서 납작해져 폭 기반 채택 */
+.wd__stat{background:color-mix(in srgb,var(--work-ink) 6%,var(--work-cell));border-radius:10px;min-height:clamp(270px,23vw,440px);padding:clamp(24px,2vw,34px)}   /* 배경보다 아주 조금 어두운 면색. 높이는 카드 폭 연동(23vw) — 이전 26vw가 너무 길어 살짝 축소(높이≈폭×0.74) */
 .wd__stat .wd-rise__i{height:100%;display:flex;flex-direction:column;justify-content:space-between;gap:20px}   /* 값 상단 / 캡션 하단 + 가운데 여백. height:100%로 카드(.wd-rise) 높이를 flex에 전달 */
 .wd__stat-v{font-family:'Pretendard',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em;line-height:1.05;font-size:clamp(26px,3.6vw,64px);color:var(--work-ink)}   /* 값(영문) — "Project Type"가 3단 카드에서 한 줄에 들어가는 실측 상한(1440≈65 / 1920≈92px)보다 낮춘 clamp */
 .wd__stat-cap{font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.6;letter-spacing:.01em;color:var(--work-ink)}   /* 하단 캡션 = 검은색(work-ink) */
+/* 모바일: 영상 행 캡션(.wd__row-cap)과 통계 카드 캡션(.wd__stat-cap)을 리드(.wd__lead--sm ≤820px: 12.5px/1.8)와 동일 크기로 */
+@media(max-width:820px){.wd__row-cap,.wd__stat-cap{font-size:12.5px;line-height:1.8}}
 @media(prefers-reduced-motion:no-preference){.wd__stat .wd-rise__i{transform:translateY(40%)}}   /* 큰 카드 → 전역 112% 대신 40%(.wd__row-fig와 동일) */
 @media(max-width:900px){
   .wd__stats:not(:empty){margin-block:clamp(56px,10vh,110px)}   /* 모바일도 같은 비율로 확대 */
