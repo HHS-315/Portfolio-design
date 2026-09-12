@@ -437,7 +437,8 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* the detail subpage — revealed after the expand completes; scrolls, grey (var --work-cell) below the
    hero image, dark text (var --work-ink) on the grey. */
 .wd__content{position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-  opacity:var(--wd-content,0);background:var(--work-cell);color:var(--work-ink);scroll-behavior:auto}
+  opacity:var(--wd-content,0);background:var(--work-cell);color:var(--work-ink);scroll-behavior:auto;
+  word-break:keep-all;overflow-wrap:break-word}   /* 국문 줄바꿈을 글자 단위가 아니라 단어(어절) 단위로 — 상속되어 서브페이지 모든 문장에 적용 */
   /* magnetic snap is JS (work-detail.js): on scroll-stop it eases to the nearest snap point when within
      ±25vh — a stronger "catch" than CSS proximity, and it never fires mid-body. scroll-behavior:auto so the
      JS rAF ease isn't double-animated by any inherited smooth-scroll. */
