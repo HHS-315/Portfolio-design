@@ -82,29 +82,59 @@
     "stac": {
       en: "STAC", title: "STAC", sub: "생성형 AI로 만든 캐릭터·키비주얼 시리즈",
       lead: "하나의 세계관 아래 일관된 캐릭터 셋과 키비주얼을 빠르게 시각화하고, 방향을 정제해 브랜드 아트워크로 발전시켰습니다.",
-      paras: [
-        "콘셉트 스케치부터 스타일 시트까지 생성형 AI를 파이프라인에 넣어, 수십 개의 방향을 짧은 시간에 실험하고 비교했습니다.",
-        "선택된 방향은 색·비율·질감의 규칙을 정리해 재현 가능한 스타일 가이드로 남겨, 이후 제작에서도 톤이 흔들리지 않도록 했습니다."
+      paras: [],   // 본문은 아래 rows로 이동(약봉지 UI와 동일 구조)
+      caps: ["Concept", "Character Design", "Style Sheet", "Art Direction"],
+      rows: [   // 이미지는 실제 파일 없어 플레이스홀더(교체 시 IMG["stac-rowN"] 또는 vid)
+        { h: "CONCEPT — 세계관 설정", cap: "콘셉트 스케치부터 스타일 시트까지 생성형 AI를 파이프라인에 넣어, 수십 개의 방향을 짧은 시간에 실험하고 비교했습니다." },
+        { h: "CHARACTER — 캐릭터 시각화", cap: "하나의 세계관 아래 일관된 캐릭터 셋과 키비주얼을 빠르게 시각화하고, 방향을 정제해 브랜드 아트워크로 발전시켰습니다." },
+        { h: "SYSTEM — 스타일 가이드", cap: "선택된 방향은 색·비율·질감의 규칙을 정리해 재현 가능한 스타일 가이드로 남겨, 이후 제작에서도 톤이 흔들리지 않도록 했습니다." }
       ],
-      caps: ["Concept", "Character Design", "Style Sheet", "Art Direction"]
+      stats: {   // TODO: Tools·Duration 실제 값으로 교체
+        h: "이번 프로젝트는.",
+        items: [
+          { v: "Tools", cap: "Generative AI · Photoshop · Figma" },
+          { v: "Duration", cap: "1 week · 100% 개인 작업" },
+          { v: "Project Type", cap: "Character & Key Visual - 하나의 세계관 아래 캐릭터·키비주얼을 생성형 AI로 시각화한 개인 작업입니다." }
+        ]
+      }
     },
     "company-renewal": {
       en: "Company Renewal", title: "회사 웹사이트 리뉴얼", sub: "노후한 코퍼레이트 사이트의 구조·비주얼 전면 개편",
       lead: "오래된 정보 구조와 낡은 비주얼을 걷어내고, 브랜드의 지금을 담은 코퍼레이트 웹사이트로 다시 설계했습니다.",
-      paras: [
-        "핵심 메시지와 사용자 여정을 먼저 정리해 내비게이션과 페이지 위계를 재구성하고, 불필요한 뎁스를 줄였습니다.",
-        "타이포그래피와 여백을 중심으로 한 절제된 비주얼 시스템을 세워, 콘텐츠가 바뀌어도 완성도가 유지되도록 했습니다."
+      paras: [],
+      caps: ["IA / Structure", "Visual System", "Responsive", "Handoff"],
+      rows: [
+        { h: "STRUCTURE — 정보 구조 재정비", cap: "핵심 메시지와 사용자 여정을 먼저 정리해 내비게이션과 페이지 위계를 재구성하고, 불필요한 뎁스를 줄였습니다." },
+        { h: "VISUAL — 비주얼 시스템", cap: "타이포그래피와 여백을 중심으로 한 절제된 비주얼 시스템을 세워, 콘텐츠가 바뀌어도 완성도가 유지되도록 했습니다." },
+        { h: "RESPONSIVE — 반응형 · 핸드오프", cap: "다양한 화면에서 일관되게 동작하도록 반응형 규칙을 정리하고, 개발로 매끄럽게 이어지도록 컴포넌트와 가이드를 전달했습니다." }
       ],
-      caps: ["IA / Structure", "Visual System", "Responsive", "Handoff"]
+      stats: {   // TODO: Tools·Duration 실제 값으로 교체
+        h: "이번 프로젝트는.",
+        items: [
+          { v: "Tools", cap: "Figma · Photoshop" },
+          { v: "Duration", cap: "3 weeks" },
+          { v: "Project Type", cap: "Corporate Renewal - 노후한 코퍼레이트 사이트의 정보 구조와 비주얼을 전면 개편한 리뉴얼 작업입니다." }
+        ]
+      }
     },
     "maritime": {
       en: "Maritime Institute", title: "해양수산정책기술연구소 사이트", sub: "연구기관 웹사이트 — 자료 접근성과 신뢰감에 초점",
       lead: "방대한 연구 자료와 정책 정보를 명확한 위계로 정리해, 방문자가 원하는 문서까지 빠르게 도달하도록 설계했습니다.",
-      paras: [
-        "자료실·발간물·공지의 구조를 재정의하고 검색과 필터 흐름을 다듬어, 목적형 방문자의 경로를 짧게 만들었습니다.",
-        "기관의 성격에 맞는 차분한 색과 타이포로 신뢰감을 주면서도, 딱딱하지 않은 균형을 찾았습니다."
+      paras: [],
+      caps: ["IA / Structure", "Accessibility", "Visual System", "Responsive"],
+      rows: [
+        { h: "ACCESS — 자료 접근성", cap: "자료실·발간물·공지의 구조를 재정의하고 검색과 필터 흐름을 다듬어, 목적형 방문자의 경로를 짧게 만들었습니다." },
+        { h: "TRUST — 신뢰감 있는 비주얼", cap: "기관의 성격에 맞는 차분한 색과 타이포로 신뢰감을 주면서도, 딱딱하지 않은 균형을 찾았습니다." },
+        { h: "RESPONSIVE — 접근성 · 반응형", cap: "다양한 기기와 사용 환경을 고려해 접근성 기준을 지키고, 화면 크기에 따라 자료를 편안하게 읽을 수 있도록 반응형으로 설계했습니다." }
       ],
-      caps: ["IA / Structure", "Accessibility", "Visual System", "Responsive"]
+      stats: {   // TODO: Tools·Duration 실제 값으로 교체
+        h: "이번 프로젝트는.",
+        items: [
+          { v: "Tools", cap: "Figma" },
+          { v: "Duration", cap: "3 weeks" },
+          { v: "Project Type", cap: "Institutional Website - 연구기관의 자료 접근성과 신뢰감에 초점을 둔 웹사이트 설계입니다." }
+        ]
+      }
     },
     "indie-film": {
       en: "Indie Film", title: "가상의 독립 영화 배급 사이트", sub: "코드로 구현한 독립 영화 배급 플랫폼 프로토타입",
