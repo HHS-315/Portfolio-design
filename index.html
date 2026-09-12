@@ -505,7 +505,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__lead--sm{font-weight:400;font-size:14px;line-height:1.85;letter-spacing:.005em;max-width:none}   /* 하단 이미지(.wd__shot)와 같은 콘텐츠 풀 너비로 늘림 — 두 줄은 lead의 \n(<br>)로 유지 */
 @media(max-width:820px){.wd__lead--sm{font-size:12.5px;line-height:1.8}}
 /* 큰 이미지 아래 role/roleDesc 블록 — 위(이미지)·아래(rows) 여백을 넉넉히(내용 있는 키만) */
-.wd__mid:not(:empty){margin-block:clamp(64px,11vh,140px)}
+.wd__mid:not(:empty){margin-top:clamp(36px,6vh,80px);margin-bottom:clamp(64px,11vh,140px)}   /* 상단(이미지↔역할) 간격만 축소, 하단(역할↔rows)은 유지 */
 /* 큰 Bold 역할 문장(예: "나의 역할은, …") — 리드와 설명 사이의 강조 스테이트먼트 */
 .wd__role{margin:0 0 clamp(16px,2.4vh,26px);font-family:'Pretendard',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em;line-height:1.32;font-size:clamp(26px,3.4vw,48px);color:var(--work-ink);max-width:26ch}
 .wd__p{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:400;font-size:14.5px;line-height:1.8;color:color-mix(in srgb,var(--work-ink) 72%,transparent);margin:0 0 16px;max-width:76ch}
