@@ -118,8 +118,8 @@
         h: "이번 프로젝트는.",
         items: [
           { v: "Tools", cap: "Figma · Photoshop" },
-          { v: "Duration", cap: "3 weeks" },
-          { v: "Project Type", cap: "Corporate Renewal - 노후한 코퍼레이트 사이트의 정보 구조와 비주얼을 전면 개편한 리뉴얼 작업입니다." }
+          { v: "Duration", cap: "3 weeks(인덱스 페이지 작업) · 기여도 100%" },
+          { v: "Project Type", cap: "In-house Renewal - 재직 당시 회사의 브랜드 방향성과 핵심 메시지를 시각적으로 재구성한 공식 웹사이트 리뉴얼 작업입니다." }
         ]
       }
     },
