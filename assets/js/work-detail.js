@@ -83,6 +83,9 @@
       en: "STAC", title: "STAC", sub: "집중한 시간이 모여,\n함께 하나의 문명을 만들어가는 집중 타이머",
       lead: "STAC은 혼자 기록하는 기존의 집중 타이머에서 벗어나, 전 세계 사용자와 함께 집중 시간을 쌓아가는 서비스입니다. 사용자가 집중한 시간만큼 브릭이 쌓이고, 모두의 브릭이 모일수록 문명이 단계적으로 발전합니다.\n개인의 작은 집중이 하나의 거대한 세계를 만들어가는 경험을 통해 집중에 지속적인 동기를 부여합니다.",
       leadSm: true,   // 약봉지 리드와 동일 크기·굵기(14px/weight 400)
+      // role = 큰 Bold 역할 문장, roleDesc = 그 아래 regular 설명(리드와 동일 크기·굵기). 리드 아래에 렌더.
+      role: "나의 역할은, 이 문명을 시각화하는 것.",
+      roleDesc: "STAC의 AI 기반 그래픽 디자인을 담당했습니다. 서비스의 핵심 컨셉인 ‘집중을 통해 성장하는 문명’을 시각적으로 전달하기 위해 캐릭터 디자인부터 10단계의 문명 발전 배경, 단계별 캐릭터 변화, 아이콘까지 서비스 전반의 비주얼 에셋을 제작했습니다.",
       paras: [],   // 본문은 아래 rows로 이동(약봉지 UI와 동일 구조)
       caps: ["Concept", "Character Design", "Style Sheet", "Art Direction"],
       rows: [   // 이미지는 실제 파일 없어 플레이스홀더(교체 시 IMG["stac-rowN"] 또는 vid)
@@ -355,7 +358,10 @@
     elTtl.textContent = d.title || d.en || "";
     elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
     elText.innerHTML = (d.lead ? '<p class="wd__lead' + (d.leadSm ? " wd__lead--sm" : "") + ' wd-rise">' + riseInner(d.lead) + "</p>" : "") +
-      (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
+      (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("") +
+      // 선택: 큰 Bold 역할 문장(role) + regular 설명(roleDesc, 리드와 동일한 .wd__lead--sm 크기·굵기). 있는 키만 렌더.
+      (d.role ? '<p class="wd__role wd-rise">' + riseInner(d.role) + "</p>" : "") +
+      (d.roleDesc ? '<p class="wd__lead wd__lead--sm wd-rise">' + riseInner(d.roleDesc) + "</p>" : "");
     // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
     // the item image otherwise. The video (if any) overlays the settled hero and plays in showPage/swapContent.
     setFlipBg(key);                                         // the expanding rectangle
