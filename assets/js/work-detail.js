@@ -292,6 +292,30 @@
   function heroBgBlack(el) { el.style.backgroundColor = "#000"; el.style.backgroundImage = "none"; }
   function heroBgImage(el, url) { el.style.backgroundColor = ""; el.style.backgroundImage = "url('" + url + "')"; }
 
+  // ---- stats-card WebGL (same Neuro Noise shader as the WORK bg / menu) ----
+  // One ShaderBG instance per .wd__stat-fx canvas. Light-grey palette (= nav-menu.js FX_LIGHT) so it reads as a
+  // subtle moving texture on the light cards. autoPauseOnOverlay:false (the "work:overlay" open event must NOT
+  // pause these — we drive pause/resume with the overlay lifecycle, like the menu's navFx). Created paused;
+  // resumeStatFx() on show/switch, pauseStatFx() on close, and rebuilt (old disposed) on every populate.
+  var STAT_FX = { colors: [[0.800, 0.824, 0.847], [0.737, 0.765, 0.796], [0.682, 0.710, 0.741], [0.624, 0.651, 0.682]], colorCount: 4, seed: 5.0, grain: 0.04, saturation: 1.0, vignette: 0.0 };
+  var statFx = [];
+  function disposeStatFx() { for (var i = 0; i < statFx.length; i++) { try { statFx[i].dispose(); } catch (e) {} } statFx = []; }
+  function buildStatFx() {
+    disposeStatFx();
+    if (!window.ShaderBG) return;   // no WebGL / script → cards keep their CSS color-mix background
+    var cvs = elStats.querySelectorAll(".wd__stat-fx");
+    for (var i = 0; i < cvs.length; i++) {
+      var fx = window.ShaderBG.create(cvs[i], {
+        autoPauseOnOverlay: false, perfLabel: "statfx",
+        colors: STAT_FX.colors, colorCount: STAT_FX.colorCount, seed: STAT_FX.seed + i, grain: STAT_FX.grain, saturation: STAT_FX.saturation, vignette: STAT_FX.vignette
+      });
+      fx.pause();                   // created paused; shown on resumeStatFx()
+      statFx.push(fx);
+    }
+  }
+  function resumeStatFx() { for (var i = 0; i < statFx.length; i++) { try { statFx[i].resume(); } catch (e) {} } }
+  function pauseStatFx() { for (var i = 0; i < statFx.length; i++) { try { statFx[i].pause(); } catch (e) {} } }
+
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
     var img = imageFor(key);
@@ -330,13 +354,15 @@
     // "이번 프로젝트는." 통계 카드 — d.stats 있는 키만, 없으면 빈 문자열(switchTo로 넘어가도 이전 내용 안 남음).
     // 헤드라인은 .wd-rise+riseInner. 카드는 .wd-rise(카드=마스크/배경) + 내부 .wd-rise__i(height:100% flex space-between)로,
     // .wd__row-fig와 동일하게 큰 요소 이동량을 CSS에서 40%로 낮춘다. 카드 수 = items 길이(3단 그리드 기준; 개수≠3이면 CSS 그리드 조정 필요).
+    // 카드 안에 canvas.wd__stat-fx(WORK/메뉴와 같은 Neuro Noise 셰이더) — 텍스트(.wd-rise__i)는 그 위(z-index).
     elStats.innerHTML = !d.stats ? "" : '<h3 class="wd__stats-h wd-rise">' + riseInner(d.stats.h) + "</h3>" +
       '<div class="wd__stats-grid">' + (d.stats.items || []).map(function (it) {
-        return '<div class="wd__stat wd-rise"><span class="wd-rise__i">' +
+        return '<div class="wd__stat wd-rise"><canvas class="wd__stat-fx" aria-hidden="true"></canvas><span class="wd-rise__i">' +
             '<span class="wd__stat-v">' + esc(it.v) + "</span>" +
             '<span class="wd__stat-cap">' + esc(it.cap) + "</span>" +
           "</span></div>";
       }).join("") + "</div>";
+    buildStatFx();    // (re)mount the card shaders — disposes any previous instances first
     buildMore(key);   // "OTHER WORK" list (everything but this item)
   }
 
@@ -553,6 +579,7 @@
     setupReveal();                                     // re-arm the sequential reveal for the new content
     updateMask();
     playHeroVideo();                                   // content is already visible on a switch → play now
+    resumeStatFx();                                    // start the (rebuilt) stats-card shaders
     overlay.setAttribute("aria-label", (WORK_DETAILS[newKey].title || "Work") + " 상세");
   }
   // The shared FLIP expand used for EVERY item change — clicking a row AND browser Back/Forward. REUSES the
@@ -612,9 +639,11 @@
     content.addEventListener("touchstart", onSnapInput, { passive: true });
     updateMask();
     playHeroVideo();                                   // hero now on screen → start the looping video (if any)
+    resumeStatFx();                                    // stats-card shaders now on screen
   }
   function hidePage() {
     stopHeroVideo();
+    pauseStatFx();                                     // stop the card shader GPU loops while closed
     content.removeEventListener("scroll", onContentScroll);
     content.removeEventListener("scroll", onSnapScroll);
     content.removeEventListener("wheel", onSnapInput);
