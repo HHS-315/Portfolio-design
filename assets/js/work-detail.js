@@ -117,7 +117,7 @@
       stats: {   // TODO: Tools·Duration 실제 값으로 교체
         h: "이번 프로젝트는.",
         items: [
-          { v: "Tools", cap: "Figma · Photoshop" },
+          { v: "Tools", cap: "Photoshop" },
           { v: "Duration", cap: "3 weeks(인덱스 페이지 작업) · 기여도 100%" },
           { v: "Project Type", cap: "In-house Renewal - 재직 당시 회사의 브랜드 방향성과 핵심 메시지를 시각적으로 재구성한 공식 웹사이트 리뉴얼 작업입니다." }
         ]
