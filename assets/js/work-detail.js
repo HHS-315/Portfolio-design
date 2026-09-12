@@ -74,7 +74,7 @@
         h: "이번 프로젝트는.",
         items: [
           { v: "Tools", cap: "Figma · Chat GPT · Photoshop" },
-          { v: "Duration", cap: "2 weeks · 100% 개인 작업" },
+          { v: "Duration", cap: "2 weeks · 기여도 100%" },
           { v: "Project Type", cap: "Redesign - 실무에서 직접 참여했던 프로젝트를 바탕으로, 기존 디자인의 아쉬운 점을 개선하기 위해 개인적으로 진행한 UX/UI 리디자인입니다." }
         ]
       }
@@ -98,7 +98,7 @@
         h: "이번 프로젝트는.",
         items: [
           { v: "Tools", cap: "Nano Banana · Kling · Photoshop" },
-          { v: "Duration", cap: "2 months · 100% 개인 작업" },
+          { v: "Duration", cap: "2 months · 기여도 100%" },
           { v: "Project Type", cap: "AI Graphic - AI 기반 그래픽 디자인을 담당했으며, 캐릭터·문명 단계별 변화·UI 아이콘·모션 그래픽을 제작했습니다." }
         ]
       }
