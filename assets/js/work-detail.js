@@ -230,6 +230,7 @@
       '<div class="wd__page"><div class="wd__inner">' +
         '<div class="wd__body"><div class="wd__text"></div></div>' +
         '<div class="wd__grid"></div>' +
+        '<div class="wd__mid"></div>' +                                        // 큰 이미지 아래 role/roleDesc 문단 (있는 키만)
         '<div class="wd__rows"></div>' +                                       // "좌측 텍스트 / 우측 이미지" 행들 (rows 있는 키만)
         '<div class="wd__stats"></div>' +                                      // "이번 프로젝트는." 통계 카드 블록 (stats 있는 키만)
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
@@ -253,6 +254,7 @@
       elSubTtl = overlay.querySelector(".wd__ttl-sub"),
       elText  = overlay.querySelector(".wd__text"),
       elGrid  = overlay.querySelector(".wd__grid"),
+      elMid   = overlay.querySelector(".wd__mid"),
       elRows  = overlay.querySelector(".wd__rows"),
       elStats = overlay.querySelector(".wd__stats"),
       elMore  = overlay.querySelector(".wd__more"),
@@ -358,10 +360,7 @@
     elTtl.textContent = d.title || d.en || "";
     elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
     elText.innerHTML = (d.lead ? '<p class="wd__lead' + (d.leadSm ? " wd__lead--sm" : "") + ' wd-rise">' + riseInner(d.lead) + "</p>" : "") +
-      (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("") +
-      // 선택: 큰 Bold 역할 문장(role) + regular 설명(roleDesc, 리드와 동일한 .wd__lead--sm 크기·굵기). 있는 키만 렌더.
-      (d.role ? '<p class="wd__role wd-rise">' + riseInner(d.role) + "</p>" : "") +
-      (d.roleDesc ? '<p class="wd__lead wd__lead--sm wd-rise">' + riseInner(d.roleDesc) + "</p>" : "");
+      (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
     // the item image otherwise. The video (if any) overlays the settled hero and plays in showPage/swapContent.
     setFlipBg(key);                                         // the expanding rectangle
@@ -370,6 +369,9 @@
     // single full-width image (the one full-bleed-within-gutters rectangle). Real image later: IMG[key+"-3"].
     elGrid.innerHTML = '<div class="wd__shot"><img alt="" loading="lazy" decoding="async" src="' +
       (IMG[key + "-3"] || svgURI(artwork(hash(key + 2), a.cols, a.tag))) + '"></div>';
+    // 큰 이미지(.wd__grid) 아래: 큰 Bold 역할 문장(role) + regular 설명(roleDesc, 리드와 동일한 .wd__lead--sm). 있는 키만, 없으면 비움.
+    elMid.innerHTML = (d.role ? '<p class="wd__role wd-rise">' + riseInner(d.role) + "</p>" : "") +
+      (d.roleDesc ? '<p class="wd__lead wd__lead--sm wd-rise">' + riseInner(d.roleDesc) + "</p>" : "");
     // "좌측 텍스트 / 우측 이미지" 행들 — d.rows 있는 키만 렌더, 없으면 빈 문자열(switchTo로 다른 키로 가도 이전 행 안 남음).
     // 헤드라인·캡션·이미지를 각각 .wd-rise + riseInner(<span class="wd-rise__i">)로 감싸 순차 등장(setupReveal)에 편승.
     // 이미지: 실제 파일 없으므로 기존 플레이스홀더 생성기 재사용. 교체 시 IMG[key+"-rowN"]에 경로 등록(IMG[key+"-3"]와 동일 규약).
