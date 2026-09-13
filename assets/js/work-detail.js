@@ -130,16 +130,18 @@
       paras: [],
       caps: ["IA / Structure", "Accessibility", "Visual System", "Responsive"],
       rows: [
-        { h: "ACCESS — 자료 접근성", cap: "자료실·발간물·공지의 구조를 재정의하고 검색과 필터 흐름을 다듬어, 목적형 방문자의 경로를 짧게 만들었습니다." },
-        { h: "TRUST — 신뢰감 있는 비주얼", cap: "기관의 성격에 맞는 차분한 색과 타이포로 신뢰감을 주면서도, 딱딱하지 않은 균형을 찾았습니다." },
-        { h: "RESPONSIVE — 접근성 · 반응형", cap: "다양한 기기와 사용 환경을 고려해 접근성 기준을 지키고, 화면 크기에 따라 자료를 편안하게 읽을 수 있도록 반응형으로 설계했습니다." }
+        { h: "CONCEPT — 전문성을 시각적 경험으로", cap: "연구기관이 가진 전문성과 신뢰성을 유지하면서도 딱딱하고 정적인 인상을 줄이기 위해 정보와 비주얼이 함께 어우러지는 화면 구성을 설계했습니다. 연구소의 주요 콘텐츠를 명확한 위계로 정리하고, 과감한 이미지 배치와 여백을 활용해 각 섹션이 자연스럽게 이어지는 흐름을 만들었습니다." },
+        { h: "VISUAL — 연구 분야를 보여주는 이미지", cap: "단순히 바다의 이미지를 장식적으로 사용하는 대신, 갯벌·해양 환경·어촌과 어업 등 연구소의 실제 연구 영역과 연결되는 비주얼을 중심으로 구성했습니다. 서로 다른 이미지를 하나의 톤으로 조율해 해양수산 분야의 정체성을 전달하면서도 전문적인 분위기를 유지했습니다." },
+        { h: "SYSTEM — 하나의 흐름으로 연결된 화면", cap: "각 페이지마다 서로 다른 성격의 정보를 다루면서도 블루 컬러, 곡선형 그래픽, 타이포그래피와 여백 규칙을 일관되게 적용했습니다. 이를 통해 메인 비주얼부터 기관 소개, 연혁, 조직도, CI, 오시는 길까지 하나의 디자인 시스템 안에서 자연스럽게 연결되도록 구성했습니다." }
       ],
-      stats: {   // TODO: Tools·Duration 실제 값으로 교체
+      // rows(이미지 리스트) 아래 마무리 문단 — 리드와 동일 크기·굵기(.wd__lead--sm)
+      outro: "기관의 신뢰성과 전문성을 유지하면서, 정보 중심의 연구기관 웹사이트에 보다 선명한 시각적 정체성을 더했습니다. 콘텐츠의 성격에 따라 다양한 레이아웃을 적용하되 공통된 디자인 언어를 유지해, 연구소가 가진 정보와 방향성을 일관된 경험으로 전달할 수 있도록 완성했습니다.",
+      stats: {
         h: "이번 프로젝트는.",
         items: [
-          { v: "Tools", cap: "Figma" },
+          { v: "Tools", cap: "Photoshop" },
           { v: "Duration", cap: "3 weeks" },
-          { v: "Project Type", cap: "Institutional Website - 연구기관의 자료 접근성과 신뢰감에 초점을 둔 웹사이트 설계입니다." }
+          { v: "Project Type", cap: "Website Design - 연구기관의 전문성과 신뢰도를 유지하면서, 해양수산 분야의 정체성을 시각적으로 전달하기 위해 진행한 웹사이트 디자인 프로젝트입니다." }
         ]
       }
     },
@@ -235,6 +237,7 @@
         '<div class="wd__grid"></div>' +
         '<div class="wd__mid"></div>' +                                        // 큰 이미지 아래 role/roleDesc 문단 (있는 키만)
         '<div class="wd__rows"></div>' +                                       // "좌측 텍스트 / 우측 이미지" 행들 (rows 있는 키만)
+        '<div class="wd__outro"></div>' +                                      // rows 아래 마무리 문단 (outro 있는 키만)
         '<div class="wd__stats"></div>' +                                      // "이번 프로젝트는." 통계 카드 블록 (stats 있는 키만)
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
       '</div></div>' +
@@ -259,6 +262,7 @@
       elGrid  = overlay.querySelector(".wd__grid"),
       elMid   = overlay.querySelector(".wd__mid"),
       elRows  = overlay.querySelector(".wd__rows"),
+      elOutro = overlay.querySelector(".wd__outro"),
       elStats = overlay.querySelector(".wd__stats"),
       elMore  = overlay.querySelector(".wd__more"),
       btnLogo = overlay.querySelector(".wd__logo"),
@@ -393,6 +397,8 @@
           '<figure class="wd__row-fig wd-rise"><span class="wd-rise__i">' + media + "</span></figure>" +
         "</div>";
     }).join("");
+    // rows 아래 마무리 문단(outro) — 리드와 동일한 .wd__lead--sm 크기·굵기. 있는 키만, 없으면 비움.
+    elOutro.innerHTML = d.outro ? '<p class="wd__lead wd__lead--sm wd-rise">' + riseInner(d.outro) + "</p>" : "";
     // "이번 프로젝트는." 통계 카드 — d.stats 있는 키만, 없으면 빈 문자열(switchTo로 넘어가도 이전 내용 안 남음).
     // 헤드라인은 .wd-rise+riseInner. 카드는 .wd-rise(카드=마스크/배경) + 내부 .wd-rise__i(height:100% flex space-between)로,
     // .wd__row-fig와 동일하게 큰 요소 이동량을 CSS에서 40%로 낮춘다. 카드 수 = items 길이(3단 그리드 기준; 개수≠3이면 CSS 그리드 조정 필요).
