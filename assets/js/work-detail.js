@@ -75,7 +75,7 @@
         items: [
           { v: "Tools", cap: "Figma · Chat GPT · Photoshop" },
           { v: "Duration", cap: "2 weeks · 기여도 100%" },
-          { v: "Project Type", cap: "Redesign - 실무에서 직접 참여했던 프로젝트를 바탕으로, 기존 디자인의 아쉬운 점을 개선하기 위해 개인적으로 진행한 UX/UI 리디자인입니다." }
+          { v: "Project Type", cap: "UXUI Redesign - 실무에서 직접 참여했던 프로젝트를 바탕으로, 기존 디자인의 아쉬운 점을 개선하기 위해 개인적으로 진행한 UX/UI 리디자인입니다." }
         ]
       }
     },
@@ -119,7 +119,7 @@
         items: [
           { v: "Tools", cap: "Photoshop" },
           { v: "Duration", cap: "3 weeks(인덱스 페이지 작업) · 기여도 100%" },
-          { v: "Project Type", cap: "In-house Renewal - 재직 당시 회사의 브랜드 방향성과 핵심 메시지를 시각적으로 재구성한 공식 웹사이트 리뉴얼 작업입니다." }
+          { v: "Project Type", cap: "In-house Website Renewal - 재직 당시 회사의 브랜드 방향성과 핵심 메시지를 시각적으로 재구성한 공식 웹사이트 리뉴얼 작업입니다." }
         ]
       }
     },
