@@ -545,10 +545,8 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__link:not(:empty){margin-top:clamp(90px,14vh,180px);text-align:right}   /* 우측 정렬 — stats 헤드라인 위 오른쪽에 앉힘 */
 .wd__link .wd-rise__i{text-align:right}
 .wd__link:not(:empty) + .wd__stats:not(:empty){margin-top:clamp(24px,4vh,44px)}   /* 링크↔stats는 좁게(한 그룹) */
-.wd__link-a{display:inline-flex;align-items:center;gap:10px;text-decoration:none;
-  padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 30%,transparent);
-  transition:border-color .3s ease,gap .3s ease}
-.wd__link-a:hover{border-bottom-color:var(--work-ink);gap:14px}
+.wd__link-a{display:inline-flex;align-items:center;gap:10px;text-decoration:none;transition:gap .3s ease}
+.wd__link-a:hover{gap:14px}
 .wd__link-url{font-family:'Pretendard',system-ui,sans-serif;font-weight:600;font-size:clamp(15px,1.5vw,19px);letter-spacing:-.01em;color:var(--work-ink)}
 .wd__link-arrow{font-size:clamp(14px,1.4vw,18px);line-height:1;color:var(--work-ink);transition:transform .3s ease}
 .wd__link-a:hover .wd__link-arrow{transform:translate(3px,-3px)}
