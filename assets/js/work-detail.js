@@ -203,7 +203,14 @@
   }
   // real image override: drop a file at assets/img/work/<key>.jpg and add it to IMG below; it wins.
   // Recommended: 1600×900 (16:9) or larger, JPG q≈75, < ~300KB, subject safe-framed for cover-crop.
-  var IMG = { "yakbongji-3": "assets/img/medicine_phone.jpg" /* 하단 대형 이미지(.wd__shot) 실사진 override */ };
+  var IMG = {
+    "yakbongji-3": "assets/img/medicine_phone.jpg",   // 하단 대형 이미지(.wd__shot) 실사진 override
+    // 회사 웹사이트 리뉴얼 — 히어로 제외 모든 이미지 영역(대형 1 + 행 3)에 test.jpg
+    "company-renewal-3": "assets/img/test.jpg",
+    "company-renewal-row1": "assets/img/test.jpg",
+    "company-renewal-row2": "assets/img/test.jpg",
+    "company-renewal-row3": "assets/img/test.jpg"
+  };
   // Header VIDEO override: drop a file at assets/video/<key>-hero.mp4 (see assets/video/README.md) and map it
   // here. When present, a muted/looping <video> covers the settled subpage hero (.wd__hero2) and plays while
   // the subpage is open; imageFor(key) is still the poster/fallback and the FLIP expand stays on the image.
