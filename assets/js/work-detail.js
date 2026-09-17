@@ -416,8 +416,7 @@
     // .wd-rise+내부 .wd-rise__i로 다른 요소와 동일하게 순차 등장. 외부 사이트라 새 탭(target=_blank, noopener).
     elLink.innerHTML = !d.link ? "" :
       '<span class="wd-rise__i"><a class="wd__link-a" href="' + esc(d.link) + '" target="_blank" rel="noopener noreferrer">' +
-        '<span class="wd__link-label">Visit Site</span>' +
-        '<span class="wd__link-url">' + esc(d.link) + "</span>" +
+        '<span class="wd__link-url">회사 바로가기</span>' +
         '<span class="wd__link-arrow" aria-hidden="true">↗</span>' +
       "</a></span>";
     // "이번 프로젝트는." 통계 카드 — d.stats 있는 키만, 없으면 빈 문자열(switchTo로 넘어가도 이전 내용 안 남음).
