@@ -107,6 +107,7 @@
       en: "Company Renewal", title: "회사 웹사이트 리뉴얼", sub: "AI 기반 앱 개발 기업의 기술과 성장, 조직 문화를 하나의 흐름으로 담아낸 기업 웹사이트",
       lead: "재직 당시 회사가 가진 기술 경쟁력과 성장 가능성, 조직 문화를 보다 명확하게 전달하기 위해 웹사이트를 새롭게 구성했습니다.\n서로 다른 성격의 기업 정보를 하나의 일관된 흐름으로 연결하고, 전문성과 혁신적인 이미지를 동시에 전달하는 데 중점을 두었습니다.",
       leadSm: true,   // STAC·약봉지 리드와 동일 크기·굵기(14px/weight 400)
+      shotVid: "assets/video/company_web.mp4",   // 큰 단일 이미지(.wd__shot)를 영상으로
       paras: [],
       caps: ["IA / Structure", "Visual System", "Responsive", "Handoff"],
       rows: [
@@ -380,9 +381,11 @@
     setFlipBg(key);                                         // the expanding rectangle
     if (VIDEO[key]) heroBgBlack(hero2); else heroBgImage(hero2, img);
     setHeroVideo(key, VIDEO[key] ? BLACK : img);            // poster = black for video keys → no image flash before play
-    // single full-width image (the one full-bleed-within-gutters rectangle). Real image later: IMG[key+"-3"].
-    elGrid.innerHTML = '<div class="wd__shot"><img alt="" loading="lazy" decoding="async" src="' +
-      (IMG[key + "-3"] || svgURI(artwork(hash(key + 2), a.cols, a.tag))) + '"></div>';
+    // 큰 단일 이미지(.wd__shot, 16/9 풀너비). d.shotVid 있으면 영상(자동재생·무음·루프·인라인), 없으면 IMG[key+"-3"]/플레이스홀더.
+    var shotSrc = IMG[key + "-3"] || svgURI(artwork(hash(key + 2), a.cols, a.tag));
+    elGrid.innerHTML = '<div class="wd__shot">' + (d.shotVid
+      ? '<video class="wd__row-media" muted loop playsinline autoplay preload="metadata" poster="' + shotSrc + '"><source src="' + d.shotVid + '" type="video/mp4"></video>'
+      : '<img class="wd__row-media" alt="" loading="lazy" decoding="async" src="' + shotSrc + '">') + "</div>";
     // 큰 이미지(.wd__grid) 아래: 큰 Bold 역할 문장(role) + regular 설명(roleDesc, 리드와 동일한 .wd__lead--sm). 있는 키만, 없으면 비움.
     elMid.innerHTML = (d.role ? '<p class="wd__role wd-rise">' + riseInner(d.role) + "</p>" : "") +
       (d.roleDesc ? '<p class="wd__lead wd__lead--sm wd-rise">' + riseInner(d.roleDesc) + "</p>" : "");
