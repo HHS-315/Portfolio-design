@@ -540,6 +540,19 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   .wd__row{grid-template-columns:1fr;gap:18px}         /* 2단 해제 → 텍스트 위 / 이미지 아래 세로 스택 */
   .wd__row + .wd__row{margin-top:clamp(40px,8vh,76px)} /* 행 간 여백 축소 */
 }
+/* 실제 사이트 링크 — "이번 프로젝트는." 통계 섹션 바로 위(link 있는 키만). 위 콘텐츠와는 섹션 리듬(14vh)으로
+   떼고, 바로 아래 stats 헤드라인과는 좁게(4vh) 묶어 "라이브 사이트 → 프로젝트 요약" 흐름으로 읽히게 한다. */
+.wd__link:not(:empty){margin-top:clamp(90px,14vh,180px)}
+.wd__link:not(:empty) + .wd__stats:not(:empty){margin-top:clamp(24px,4vh,44px)}   /* 링크↔stats는 좁게(한 그룹) */
+.wd__link-a{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px 16px;text-decoration:none;
+  padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--work-ink) 30%,transparent);
+  transition:border-color .3s ease,gap .3s ease}
+.wd__link-a:hover{border-bottom-color:var(--work-ink);gap:6px 20px}
+.wd__link-label{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 55%,transparent)}
+.wd__link-url{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;font-weight:500;font-size:clamp(16px,1.7vw,22px);letter-spacing:-.01em;color:var(--work-ink);word-break:break-all}
+.wd__link-arrow{font-size:clamp(15px,1.5vw,20px);line-height:1;color:var(--work-ink);transition:transform .3s ease}
+.wd__link-a:hover .wd__link-arrow{transform:translate(3px,-3px)}
+@media(max-width:900px){.wd__link:not(:empty){margin-top:clamp(56px,10vh,110px)}}
 /* "이번 프로젝트는." 통계 카드 블록 (hugeinc "The numbers." 레이아웃) — .wd__rows 아래, OTHER WORK 위.
    헤드라인(국문 Pretendard, .wd__ttl보다 작은 섹션-헤드 밴드) + 동일폭 3단 카드. 카드는 세로 flex space-between
    으로 값=상단 / 캡션=하단, 가운데 여백. align-items:stretch + min-height로 3장 높이 동일. */
