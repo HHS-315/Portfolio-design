@@ -542,15 +542,15 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 }
 /* 실제 사이트 링크 — "이번 프로젝트는." 통계 섹션 바로 위(link 있는 키만). 위 콘텐츠와는 섹션 리듬(14vh)으로
    떼고, 바로 아래 stats 헤드라인과는 좁게(4vh) 묶어 "라이브 사이트 → 프로젝트 요약" 흐름으로 읽히게 한다. */
-.wd__link:not(:empty){margin-top:clamp(90px,14vh,180px);text-align:right}   /* 우측 정렬 — stats 헤드라인 위 오른쪽에 앉힘 */
+.wd__link:not(:empty){margin-top:clamp(28px,4.5vh,56px);text-align:right}   /* 위 리스트 섹션에 가깝게 — 링크를 리스트 쪽에 묶음 */
 .wd__link .wd-rise__i{text-align:right}
-.wd__link:not(:empty) + .wd__stats:not(:empty){margin-top:clamp(24px,4vh,44px)}   /* 링크↔stats는 좁게(한 그룹) */
+.wd__link:not(:empty) + .wd__stats:not(:empty){margin-top:clamp(72px,12vh,160px)}   /* 대신 stats와는 넉넉히 띄움 */
 .wd__link-a{display:inline-flex;align-items:center;gap:10px;text-decoration:none;transition:gap .3s ease}
 .wd__link-a:hover{gap:14px}
 .wd__link-url{font-family:'Pretendard',system-ui,sans-serif;font-weight:600;font-size:clamp(15px,1.5vw,19px);letter-spacing:-.01em;color:var(--work-ink)}
 .wd__link-arrow{font-size:clamp(14px,1.4vw,18px);line-height:1;color:var(--work-ink);transition:transform .3s ease}
 .wd__link-a:hover .wd__link-arrow{transform:translate(3px,-3px)}
-@media(max-width:900px){.wd__link:not(:empty){margin-top:clamp(56px,10vh,110px)}}
+@media(max-width:900px){.wd__link:not(:empty){margin-top:clamp(22px,4vh,44px)}}
 /* "이번 프로젝트는." 통계 카드 블록 (hugeinc "The numbers." 레이아웃) — .wd__rows 아래, OTHER WORK 위.
    헤드라인(국문 Pretendard, .wd__ttl보다 작은 섹션-헤드 밴드) + 동일폭 3단 카드. 카드는 세로 flex space-between
    으로 값=상단 / 캡션=하단, 가운데 여백. align-items:stretch + min-height로 3장 높이 동일. */
