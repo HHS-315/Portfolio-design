@@ -473,7 +473,7 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__ttl{margin:0;font-weight:800;letter-spacing:-.01em;line-height:1.14;font-size:clamp(34px,6.6vw,104px)}   /* Korean → Pretendard ExtraBold; no uppercase; no ch cap (full width) */
 .wd__ttl-sub{margin:clamp(10px,1.4vh,18px) 0 0;font-weight:400;letter-spacing:0;line-height:1.5;font-size:clamp(14px,1.6vw,20px);max-width:52ch}   /* description under the title, same mask, Pretendard Regular */
 /* grey content page below the hero */
-.wd__page{background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) clamp(56px,11vh,130px)}
+.wd__page{--wd-page-pb:clamp(56px,11vh,130px);background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) var(--wd-page-pb)}
 .wd__inner{margin:0}   /* full section width — the only horizontal inset is .wd__page's --gutter padding */
 /* close control = the logo, positioned to match the real .bar pixel-for-pixel (same top/left, padding,
    font-size, letter-spacing, weight) so it looks like the nav logo stayed in place while the overlay is
@@ -590,8 +590,10 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__more-label{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:color-mix(in srgb,var(--work-ink) 58%,transparent);margin:0 0 6px}
 .wd__more .wbig{opacity:1;margin-top:0}
 /* 하단 ASCII 스트립 — OTHER WORK 리스트 아래, 서브페이지의 맨 밑에 일렬로 반짝이는 코드 행(WORK 섹션 #strip과 동일).
+   · 풀 블리드: 좌우 --gutter를 음수 마진으로 상쇄해 사이트 마진까지 화면 폭 전체(100vw)를 채움.
+   · 바닥 밀착: .wd__page 하단 패딩(--wd-page-pb)만큼 음수 하단 마진으로 당겨 페이지 맨 아래에 딱 붙임.
    height는 JS(stripBuild)가 글리프 크기에 맞춰 inline으로 지정 — 여기선 폭·여백만. */
-.wd__strip{display:block;width:100%;margin-top:clamp(44px,8vh,96px);margin-bottom:clamp(18px,3.5vh,40px)}
+.wd__strip{display:block;width:auto;margin-top:clamp(44px,8vh,96px);margin-inline:calc(-1 * var(--gutter));margin-bottom:calc(-1 * var(--wd-page-pb))}
 @media(max-width:820px){
   .wd__body{grid-template-columns:1fr;gap:34px}
   .wd__shot{aspect-ratio:4/3}   /* 16/9 is too short on phones → taller ratio so it reads */

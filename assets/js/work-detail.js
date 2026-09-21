@@ -388,17 +388,22 @@
   function stripPick() { return STRIP_CODE[(Math.random() * STRIP_CODE.length) | 0]; }
   function stripBuild() {
     if (!stripCtx) return;
-    var cssW = stripCv.clientWidth || pageEl.clientWidth || 0; if (!cssW) return;
+    // 풀 블리드: <canvas>는 대체 요소라 CSS width:auto가 고유 폭으로 잡히므로, 페이지 전체 폭(.wd__page clientWidth
+    // = 뷰포트 폭 − 스크롤바, 좌우 --gutter 포함)을 JS로 명시 지정. CSS의 margin-inline:-gutter가 좌측 거터만큼 당겨
+    // 화면 좌우 끝까지 채운다. glyph 레이아웃도 이 폭 기준.
+    var cssW = (pageEl && pageEl.clientWidth) || stripCv.clientWidth || 0; if (!cssW) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1), mob = window.innerWidth <= 640;
     stripFS = Math.max(6, Math.min(9, cssW / 170)) * (mob ? 1.22 : 1);
-    stripW = cssW; stripH = Math.round(stripFS * 3);
+    stripW = cssW; stripH = Math.round(stripFS * 2);
+    stripCv.style.width = cssW + "px";
     stripCv.style.height = stripH + "px";
     stripCv.width = Math.round(cssW * dpr); stripCv.height = Math.round(stripH * dpr);
     stripCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     stripCtx.textAlign = "center"; stripCtx.textBaseline = "middle"; stripCtx.lineJoin = "round";
     stripCtx.font = stripFS.toFixed(1) + "px " + STRIP_MONO;
     var charW = stripCtx.measureText("0").width || stripFS * 0.6;
-    var gap = charW * (mob ? STRIP_GAP_MOB : STRIP_GAP), slots = Math.max(1, Math.floor(cssW / gap)), y = stripH / 2;
+    // 글리프 중심을 밴드 하단 쪽(바닥에서 ~0.95×FS 위)에 둬 화면 맨 아래에 밀착 — WORK strip의 landY(FS×0.5 above bottom)와 유사
+    var gap = charW * (mob ? STRIP_GAP_MOB : STRIP_GAP), slots = Math.max(1, Math.floor(cssW / gap)), y = stripH - stripFS * 0.95;
     stripGlyphs = [];
     for (var s = 0; s < slots; s++) stripGlyphs.push({ x: (s + 0.5) * (cssW / slots), y: y, ch: stripPick(), swapAt: 0, sway: Math.random() * 6.283 });
   }
