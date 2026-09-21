@@ -212,7 +212,11 @@
     "company-renewal-3": "assets/img/test.jpg",
     "company-renewal-row1": "assets/img/company_list_1.jpg",
     "company-renewal-row2": "assets/img/company_list_2.jpg",
-    "company-renewal-row3": "assets/img/company_list_3.jpg"
+    "company-renewal-row3": "assets/img/company_list_3.jpg",
+    // 해양수산 — 텍스트+이미지 행(3)에 위→아래 순서로 marine_list1~3
+    "maritime-row1": "assets/img/marine_list1.jpg",
+    "maritime-row2": "assets/img/marine_list2.jpg",
+    "maritime-row3": "assets/img/marine_list3.jpg"
   };
   // Header VIDEO override: drop a file at assets/video/<key>-hero.mp4 (see assets/video/README.md) and map it
   // here. When present, a muted/looping <video> covers the settled subpage hero (.wd__hero2) and plays while
