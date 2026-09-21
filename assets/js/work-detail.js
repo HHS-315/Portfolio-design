@@ -250,6 +250,7 @@
         '<div class="wd__link"></div>' +                                       // 실제 사이트 링크 — stats 바로 위 (link 있는 키만)
         '<div class="wd__stats"></div>' +                                      // "이번 프로젝트는." 통계 카드 블록 (stats 있는 키만)
         '<div class="wd__more"></div>' +                                       // "OTHER WORK" list (built per item)
+        '<canvas class="wd__strip" aria-hidden="true"></canvas>' +             // 하단 ASCII 스트립 — WORK 섹션 #strip과 동일한 churn+shimmer(일렬 반짝임)
       '</div></div>' +
     '</div>' +
     // logo close-control: the button itself is mix-blend-difference (glyph-shaped inversion of the content
@@ -276,6 +277,7 @@
       elLink  = overlay.querySelector(".wd__link"),
       elStats = overlay.querySelector(".wd__stats"),
       elMore  = overlay.querySelector(".wd__more"),
+      stripCv = overlay.querySelector(".wd__strip"),
       btnLogo = overlay.querySelector(".wd__logo"),
       logoImg = overlay.querySelector(".wd__logo-img");
 
@@ -369,6 +371,55 @@
   }
   function resumeStatFx() { for (var i = 0; i < statFx.length; i++) { try { statFx[i].resume(); } catch (e) {} } }
   function pauseStatFx() { for (var i = 0; i < statFx.length; i++) { try { statFx[i].pause(); } catch (e) {} } }
+
+  // ---- subpage bottom ASCII strip (footer) --------------------------------
+  // A single row of monospace ASCII glyphs pinned to the FOOT of the subpage (below the OTHER WORK list),
+  // dark ink on the light page — same "일렬 반짝임" as the WORK section's #strip: each slot fast-swaps a random
+  // CODE glyph (churn) and its alpha shimmers, never blinking fully out. Self-contained (own canvas + rAF),
+  // started in showPage / stopped in hidePage (paused while the overlay is closed). Static under reduced-motion.
+  var STRIP_CODE = ['0','1','/','\\','<','>','{','}','(',')','=','+','-','*','#','$','%','&','|',';',':','.','x','?','!','^','~'];
+  var STRIP_INK = (getComputedStyle(root).getPropertyValue("--work-ink") || "#141414").trim() || "#141414";
+  var STRIP_MONO = (getComputedStyle(root).getPropertyValue("--mono") || "ui-monospace,monospace").trim() || "ui-monospace,monospace";
+  var STRIP_GAP = 1.10, STRIP_GAP_MOB = 1.80, STRIP_BOLD = 0.3;                 // slot spacing (× glyph width) / faux-bold
+  var STRIP_CHURN_MIN = 60, STRIP_CHURN_MAX = 260;                             // fast char-swap period (ms) — the flicker
+  var STRIP_SHIM_SPEED = 0.012, STRIP_SHIM_AMP = 0.26, STRIP_SHIM_BASE = 0.94; // gentle always-on alpha wobble
+  var stripCtx = stripCv ? stripCv.getContext("2d") : null;
+  var stripGlyphs = [], stripW = 0, stripH = 0, stripFS = 8, stripRaf = 0, stripOn = false;
+  function stripPick() { return STRIP_CODE[(Math.random() * STRIP_CODE.length) | 0]; }
+  function stripBuild() {
+    if (!stripCtx) return;
+    var cssW = stripCv.clientWidth || pageEl.clientWidth || 0; if (!cssW) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1), mob = window.innerWidth <= 640;
+    stripFS = Math.max(6, Math.min(9, cssW / 170)) * (mob ? 1.22 : 1);
+    stripW = cssW; stripH = Math.round(stripFS * 3);
+    stripCv.style.height = stripH + "px";
+    stripCv.width = Math.round(cssW * dpr); stripCv.height = Math.round(stripH * dpr);
+    stripCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stripCtx.textAlign = "center"; stripCtx.textBaseline = "middle"; stripCtx.lineJoin = "round";
+    stripCtx.font = stripFS.toFixed(1) + "px " + STRIP_MONO;
+    var charW = stripCtx.measureText("0").width || stripFS * 0.6;
+    var gap = charW * (mob ? STRIP_GAP_MOB : STRIP_GAP), slots = Math.max(1, Math.floor(cssW / gap)), y = stripH / 2;
+    stripGlyphs = [];
+    for (var s = 0; s < slots; s++) stripGlyphs.push({ x: (s + 0.5) * (cssW / slots), y: y, ch: stripPick(), swapAt: 0, sway: Math.random() * 6.283 });
+  }
+  function stripDraw(t) {
+    if (!stripCtx) return;
+    stripCtx.clearRect(0, 0, stripW, stripH);
+    stripCtx.fillStyle = STRIP_INK; stripCtx.strokeStyle = STRIP_INK; stripCtx.lineWidth = STRIP_BOLD;
+    for (var i = 0; i < stripGlyphs.length; i++) {
+      var p = stripGlyphs[i];
+      var a = reduce ? STRIP_SHIM_BASE : STRIP_SHIM_BASE + Math.sin(t * STRIP_SHIM_SPEED + p.sway) * STRIP_SHIM_AMP;
+      if (a <= 0.03) continue; if (a > 1) a = 1;
+      if (!reduce && t > p.swapAt) { p.ch = stripPick(); p.swapAt = t + STRIP_CHURN_MIN + Math.random() * (STRIP_CHURN_MAX - STRIP_CHURN_MIN); }
+      stripCtx.globalAlpha = a;
+      stripCtx.fillText(p.ch, p.x, p.y);
+      stripCtx.strokeText(p.ch, p.x, p.y);
+    }
+    stripCtx.globalAlpha = 1;
+  }
+  function stripFrame(t) { stripRaf = 0; if (!stripOn) return; stripDraw(t); if (!reduce) stripRaf = requestAnimationFrame(stripFrame); }
+  function stripStart() { if (!stripCtx) return; stripBuild(); stripOn = true; if (reduce) { stripDraw(performance.now()); return; } if (!stripRaf) stripRaf = requestAnimationFrame(stripFrame); }
+  function stripStop() { stripOn = false; if (stripRaf) { cancelAnimationFrame(stripRaf); stripRaf = 0; } }
 
   function populate(key) {
     var d = WORK_DETAILS[key]; if (!d) return;
@@ -708,10 +759,12 @@
     updateMask();
     playHeroVideo();                                   // hero now on screen → start the looping video (if any)
     resumeStatFx();                                    // stats-card shaders now on screen
+    stripStart();                                      // bottom ASCII strip begins churning/shimmering
   }
   function hidePage() {
     stopHeroVideo();
     pauseStatFx();                                     // stop the card shader GPU loops while closed
+    stripStop();                                       // stop the bottom strip loop while closed
     content.removeEventListener("scroll", onContentScroll);
     content.removeEventListener("scroll", onSnapScroll);
     content.removeEventListener("wheel", onSnapInput);
@@ -816,7 +869,7 @@
     if (!isOpen) return;
     applyFrame(p);
     // once the subpage is revealed, re-measure the title so the pin line / overlap / release point track vh
-    if (content.getAttribute("aria-hidden") === "false") { layoutTitle(); updateMask(); }
+    if (content.getAttribute("aria-hidden") === "false") { layoutTitle(); updateMask(); if (stripOn) stripBuild(); }
   }, { passive: true });
 
   // ---- wire up the list items ---------------------------------------------
