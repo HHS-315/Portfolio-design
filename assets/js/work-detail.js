@@ -257,12 +257,6 @@
         '<canvas class="wd__strip" aria-hidden="true"></canvas>' +             // 하단 ASCII 스트립 — WORK 섹션 #strip과 동일한 churn+shimmer(일렬 반짝임)
       '</div></div>' +
     '</div>' +
-    // pre-scroll title inversion (ÉTUDIER-style): a FIXED clone of the title + subtitle that difference-blends
-    // against the hero video/image. Needed because the real .wd__titles is position:sticky, which forms its own
-    // stacking context → a mix-blend there has no backdrop. A fixed overlay-level element (like .wd__logo) blends
-    // against the content behind it. Shown only while the title is fully over the hero; JS positions it onto the
-    // real title's rect and toggles .is-on. No z-index → it paints above .wd__content but below the logo (DOM order).
-    '<div class="wd__ttl-fx" aria-hidden="true"><h2 class="wd__ttl"></h2><p class="wd__ttl-sub"></p></div>' +
     // logo close-control: the button itself is mix-blend-difference (glyph-shaped inversion of the content
     // behind it), plus a SEPARATE white element on top, JS-clipped to the hero image (crisp white). See CSS.
     '<button class="wd__logo" type="button" aria-label="상세 닫기 — 목록으로">HWANG HYESEON<i class="wd__logo-star">*</i></button>' +
@@ -277,11 +271,8 @@
       heroVid = overlay.querySelector(".wd__hero-vid"),
       titles  = overlay.querySelector(".wd__titles"),
       pageEl  = overlay.querySelector(".wd__page"),
-      elTtl   = overlay.querySelector(".wd__stage .wd__ttl"),
-      elSubTtl = overlay.querySelector(".wd__stage .wd__ttl-sub"),
-      ttlFx   = overlay.querySelector(".wd__ttl-fx"),
-      ttlFxTtl = ttlFx.querySelector(".wd__ttl"),
-      ttlFxSub = ttlFx.querySelector(".wd__ttl-sub"),
+      elTtl   = overlay.querySelector(".wd__ttl"),
+      elSubTtl = overlay.querySelector(".wd__ttl-sub"),
       elText  = overlay.querySelector(".wd__text"),
       elGrid  = overlay.querySelector(".wd__grid"),
       elMid   = overlay.querySelector(".wd__mid"),
@@ -446,8 +437,6 @@
     // hero title block (Korean title + description) — both carry the white→ink scroll mask (updateMask)
     elTtl.textContent = d.title || d.en || "";
     elSubTtl.innerHTML = esc(d.sub || "").replace(/\n/g, "<br>");   // \n → line breaks (e.g. a 3-line description)
-    ttlFxTtl.textContent = elTtl.textContent;                       // mirror into the pre-scroll difference clone
-    ttlFxSub.innerHTML = elSubTtl.innerHTML;
     elText.innerHTML = (d.lead ? '<p class="wd__lead' + (d.leadSm ? " wd__lead--sm" : "") + ' wd-rise">' + riseInner(d.lead) + "</p>" : "") +
       (d.paras || []).map(function (p) { return '<p class="wd__p wd-rise">' + riseInner(p) + "</p>"; }).join("");
     // FLIP surface + settled hero: BLACK for video keys (rectangle grows black → video plays once fully open),
@@ -590,17 +579,6 @@
     var hb = hero2.getBoundingClientRect();
     setCut(elTtl, hb.bottom);       // big Korean title
     setCut(elSubTtl, hb.bottom);    // its description below — same mask
-    // pre-scroll inversion: while the WHOLE title block still sits above the hero's bottom edge (fully over the
-    // video/image), show the fixed difference clone over the real (sticky) title so the glyphs invert the hero
-    // (ÉTUDIER look). Once the edge rises into the title, hide it so the normal white→ink sweep takes over.
-    // +1px tolerance so the rest state counts as "fully over". The clone is positioned onto the real title's rect.
-    var tb = titles.getBoundingClientRect();
-    if (tb.bottom <= hb.bottom + 1) {
-      ttlFx.style.top = tb.top + "px"; ttlFx.style.height = tb.height + "px";
-      ttlFx.classList.add("is-on");
-    } else {
-      ttlFx.classList.remove("is-on");
-    }
     updateLogoMask(hb);
   }
   // Logo mask: whiten the part of the logo that overlaps any DARK element behind it. For each target we
@@ -796,7 +774,6 @@
     stopHeroVideo();
     pauseStatFx();                                     // stop the card shader GPU loops while closed
     stripStop();                                       // stop the bottom strip loop while closed
-    ttlFx.classList.remove("is-on");                   // clear the pre-scroll inversion clone
     content.removeEventListener("scroll", onContentScroll);
     content.removeEventListener("scroll", onSnapScroll);
     content.removeEventListener("wheel", onSnapInput);
