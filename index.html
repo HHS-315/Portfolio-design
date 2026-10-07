@@ -471,6 +471,12 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
   background-image:linear-gradient(180deg,#fff 0,#fff var(--cut,100%),var(--work-ink) var(--cut,100%),var(--work-ink) 100%);
   -webkit-background-clip:text;background-clip:text}
 .wd__ttl{margin:0;font-weight:800;letter-spacing:-.01em;line-height:1.14;font-size:clamp(34px,6.6vw,104px)}   /* Korean → Pretendard ExtraBold; no uppercase; no ch cap (full width) */
+/* pre-scroll inversion clone — a fixed overlay-level copy of the title+subtitle that difference-blends the hero
+   (the real sticky title can't, being its own stacking context). JS sets top/height onto the real title's rect and
+   toggles .is-on. Solid white glyphs (no gradient) so difference cleanly inverts whatever hero pixels are behind. */
+.wd__ttl-fx{position:fixed;left:0;right:0;padding:0 var(--gutter);pointer-events:none;mix-blend-mode:difference;opacity:0;transition:opacity .16s ease}
+.wd__ttl-fx.is-on{opacity:1}
+.wd__ttl-fx .wd__ttl,.wd__ttl-fx .wd__ttl-sub{background:none;color:#fff;-webkit-text-fill-color:#fff}
 .wd__ttl-sub{margin:clamp(10px,1.4vh,18px) 0 0;font-weight:400;letter-spacing:0;line-height:1.5;font-size:clamp(14px,1.6vw,20px);max-width:52ch}   /* description under the title, same mask, Pretendard Regular */
 /* grey content page below the hero */
 .wd__page{--wd-page-pb:clamp(56px,11vh,130px);background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) var(--wd-page-pb)}
