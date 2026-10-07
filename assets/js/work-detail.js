@@ -104,7 +104,7 @@
       }
     },
     "company-renewal": {
-      en: "Company Renewal", title: "회사 웹사이트 리뉴얼", sub: "AI 기반 앱 개발 기업의 기술과 성장, 조직 문화를 하나의 흐름으로 담아낸 기업 웹사이트",
+      en: "Company Renewal", title: "회사 웹사이트 리뉴얼", sub: "AI 기술과 기업의 성장, 문화를\n하나의 흐름으로 담아낸 웹사이트 리디자인",
       lead: "재직 당시 회사가 가진 기술 경쟁력과 성장 가능성, 조직 문화를 보다 명확하게 전달하기 위해 웹사이트를 새롭게 구성했습니다.\n서로 다른 성격의 기업 정보를 하나의 일관된 흐름으로 연결하고, 전문성과 혁신적인 이미지를 동시에 전달하는 데 중점을 두었습니다.",
       leadSm: true,   // STAC·약봉지 리드와 동일 크기·굵기(14px/weight 400)
       shotVid: "assets/video/company_web.mp4",   // 큰 단일 이미지(.wd__shot)를 영상으로
