@@ -577,9 +577,8 @@
   function updateMask() {
     if (!isOpen) return;
     var hb = hero2.getBoundingClientRect();
-    setCut(elTtl, hb.bottom);       // big Korean title
-    setCut(elSubTtl, hb.bottom);    // its description below — same mask
-    updateLogoMask(hb);
+    // title + subtitle now invert the hero via mix-blend-mode:difference on .wd__titles (CSS) — no --cut needed.
+    updateLogoMask(hb);             // the logo's white-over-hero clip is still JS-driven
   }
   // Logo mask: whiten the part of the logo that overlaps any DARK element behind it. For each target we
   // intersect its on-screen rect with the logo box (2D — so a short list title covering only the left of
