@@ -458,20 +458,23 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 /* sticky-TOP: pinned at the image's bottom-left from scroll 0; as the page scrolls the image rides up
    behind it and its bottom edge sweeps down through the glyphs (white→ink via --cut). JS sets marginTop
    (pull up to overlap the image bottom), top (the pin line), and the stage min-height (release point). */
-.wd__titles{position:sticky;z-index:1;padding:0 var(--gutter);pointer-events:none}
-/* white→ink scroll mask: a to-bottom gradient HARD-STOPPED at --cut, clipped to the glyphs. JS moves --cut
-   to the image's bottom edge as it sweeps through the text → white over the image, ink below. One element
-   each = the two colours are pixel-aligned by construction. The Korean title AND its description below both
-   use this same mask (updateMask sets --cut on each). Font: Korean → Pretendard, Latin (e.g. STAC) → Plus
-   Jakarta Sans, via per-character fallback (PJS first has no Korean glyphs, so Korean falls to Pretendard).
-   line-height ≥1.1 so the taller Korean glyphs stay inside the background box (background-clip:text hides
-   anything that overflows it) — the mask edge then lines up with the real glyph tops/bottoms. */
-.wd__ttl,.wd__ttl-sub{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;
-  color:transparent;-webkit-text-fill-color:transparent;
+/* DEFAULT: difference colour-inversion (chdartmaker-style). The blend is on .wd__titles ITSELF, not a child —
+   it is position:sticky + z-index:1 = its own stacking context, so a child mix-blend would be isolated from
+   .wd__hero2. On the block it blends against the hero/page in the parent (.wd__content). No transform/filter/
+   isolation/will-change may sit between .wd__content and here or the backdrop is cut off. */
+.wd__titles{position:sticky;z-index:1;padding:0 var(--gutter);pointer-events:none;mix-blend-mode:difference}
+/* glyph colour = --work-cell(#d9dfe4) + --work-ink(#141414) = #edf3f8: difference = |bg − fg|, so over the grey
+   page it resolves to EXACTLY --work-ink, and over the hero it is the per-pixel inversion of each video frame. */
+.wd__ttl,.wd__ttl-sub{font-family:'Plus Jakarta Sans','Pretendard',system-ui,sans-serif;color:#edf3f8;-webkit-text-fill-color:#edf3f8}
+/* OPT-OUT (invertTitle:false) — for busy, low-saturation, mid-brightness video heroes where the inversion reads
+   muddy (diagnosed per item). Turns the blend off and restores the original white→ink scroll mask (--cut set by
+   updateMask): white glyphs over the hero image/video, ink once scrolled onto the grey page. */
+.wd__titles.no-invert{mix-blend-mode:normal}
+.wd__titles.no-invert .wd__ttl,.wd__titles.no-invert .wd__ttl-sub{color:transparent;-webkit-text-fill-color:transparent;
   background-image:linear-gradient(180deg,#fff 0,#fff var(--cut,100%),var(--work-ink) var(--cut,100%),var(--work-ink) 100%);
   -webkit-background-clip:text;background-clip:text}
 .wd__ttl{margin:0;font-weight:800;letter-spacing:-.01em;line-height:1.14;font-size:clamp(34px,6.6vw,104px)}   /* Korean → Pretendard ExtraBold; no uppercase; no ch cap (full width) */
-.wd__ttl-sub{margin:clamp(10px,1.4vh,18px) 0 0;font-weight:400;letter-spacing:0;line-height:1.5;font-size:clamp(14px,1.6vw,20px);max-width:52ch}   /* description under the title, same mask, Pretendard Regular */
+.wd__ttl-sub{margin:clamp(10px,1.4vh,18px) 0 0;font-weight:400;letter-spacing:0;line-height:1.5;font-size:clamp(14px,1.6vw,20px);max-width:52ch}   /* description under the title, Pretendard Regular */
 /* grey content page below the hero */
 .wd__page{--wd-page-pb:clamp(56px,11vh,130px);background:var(--work-cell);padding:clamp(48px,9vh,110px) var(--gutter) var(--wd-page-pb)}
 .wd__inner{margin:0}   /* full section width — the only horizontal inset is .wd__page's --gutter padding */
