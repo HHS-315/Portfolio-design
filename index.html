@@ -78,7 +78,7 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 #halftone{position:fixed;inset:0;width:100%;height:100%;z-index:61;display:block;pointer-events:none;mix-blend-mode:difference}
 @media(hover:none){#halftone{display:none}}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
-.hero__quote.refract-active,.wish__lead.refract-active{color:transparent}
+.hero__quote.refract-active,.wish__lead.refract-active,.about__line.refract-active{color:transparent}   /* ABOUT lines: hidden only WHILE the hover lens is live (JS toggles per-line); color inherits to the roll copies */
 
 .shell{position:relative;z-index:4;pointer-events:none}
 .shell a,.shell input,.shell button{pointer-events:auto}

@@ -54,7 +54,11 @@
   // The two hero taglines PLUS the CONTACT closing statement (#wishLead) get the glass lens. #wishLead is special:
   // its texture is rasterised with a PER-WORD alpha (a scroll-driven white "fill", Magic-UI style) — see
   // buildTexture's isWish branch and the tick() re-raster — so it keeps the WebGL lens AND fills word-by-word.
-  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2"), document.getElementById("wishLead")].filter(Boolean);
+  // + the ABOUT section's six lines (.about__line) get the SAME glass lens — but only while hovered AND the
+  //   scroll has settled, so the lens never fights the curtain-roll (about-lines.js). Their texture is the single
+  //   word from aria-label (the DOM roll holds TWO stacked copies, so textContent would double it).
+  var els = [document.getElementById("heroQuote"), document.getElementById("heroQuote2"), document.getElementById("wishLead")].filter(Boolean)
+    .concat([].slice.call(document.querySelectorAll("#about .about__line")));
   if (!els.length) return;
 
   var gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true });
@@ -156,6 +160,8 @@
       // .refract-active (color:transparent), so reading it later would give black.
       color: parseColor(getComputedStyle(el).color),
       isWish: el.id === "wishLead",   // gets the per-word scroll fill
+      isAbout: el.classList.contains("about__line"),   // hover-only + scroll-settled gating; single-word texture
+      elActive: false,               // is .refract-active currently applied (about only; avoids per-frame DOM thrash)
       reveal: 1,                      // 0..1 scroll progress of the word fill (only used when isWish; tick() drives it)
       tCur: [0, 0], cur: [0, 0],   // cursor target / smoothed (box-local px, y-up)
       tPres: 0, pres: 0            // presence target / smoothed
@@ -196,10 +202,18 @@
     // each segment to the box width. Split on ordinary whitespace only — NOT the non-breaking space ( ). The CONTACT statement uses an
     // nbsp to keep "작은 것에서부터." on one line (with word-break:keep-all), so treating the nbsp as part of a
     // single "word" reproduces the DOM's two-line wrap instead of breaking there.
-    var rawSegs = el.innerHTML.split(/<br\s*\/?>/i).map(function (h) {
-      var d = document.createElement("div"); d.innerHTML = h; var tt = d.textContent || "";
-      return (cs.textTransform === "uppercase" ? tt.toUpperCase() : tt).trim();
-    });
+    // ABOUT: the word comes from aria-label (the roll span holds two stacked copies → textContent would double it).
+    // Hero/wish: honour the <br> splits in the markup.
+    var rawSegs;
+    if (q.isAbout) {
+      var at = (el.getAttribute("aria-label") || "").trim();
+      rawSegs = [cs.textTransform === "uppercase" ? at.toUpperCase() : at];
+    } else {
+      rawSegs = el.innerHTML.split(/<br\s*\/?>/i).map(function (h) {
+        var d = document.createElement("div"); d.innerHTML = h; var tt = d.textContent || "";
+        return (cs.textTransform === "uppercase" ? tt.toUpperCase() : tt).trim();
+      });
+    }
     var lines = [];
     for (var si = 0; si < rawSegs.length; si++) {
       var words = rawSegs[si].split(/[ \t\r\n]+/).filter(Boolean), cur = "";
@@ -268,12 +282,14 @@
   }
 
   // ---- cursor (window-level, like shader-bg / dandelion) -------------------
-  function onMove(e) {
-    var px = e.clientX, py = e.clientY;
+  var lastPx = -1, lastPy = -1;          // last cursor (so a scroll-settle can re-check hover without a move)
+  var scrollIdle = true, scrollT = 0;    // ABOUT lens engages only when scrolling has settled
+  function evalHover(px, py) {
     for (var i = 0; i < quotes.length; i++) {
       var q = quotes[i], r = q.rect; if (!r) continue;
       var inside = px >= r.left - REFRACT_RADIUS * HOVER_MARGIN && px <= r.right + REFRACT_RADIUS * HOVER_MARGIN &&
                    py >= r.top - REFRACT_RADIUS * HOVER_MARGIN && py <= r.bottom + REFRACT_RADIUS * HOVER_MARGIN;
+      if (q.isAbout && !scrollIdle) inside = false;   // don't hijack the entrance curtain-roll while scrolling
       if (inside) {
         q.tCur[0] = (px - r.left) + TEX_PAD;                 // to PADDED-box-local px
         q.tCur[1] = q.size[1] - ((py - r.top) + TEX_PAD);    // …y-up (q.size[1] = padded height)
@@ -281,10 +297,29 @@
         q.tPres = 1;
       } else q.tPres = 0;
     }
-    if (DEBUG) moveDbg(px, py);
+  }
+  // Safety net: an ABOUT line is hidden (color:transparent) only while its lens is live; the rAF loop normally
+  // fades it back out and restores the DOM text. If that loop ever stalls (tab hidden mid-fade, throttled rAF),
+  // this guarantees a released line's DOM text returns — so a word can never get stuck invisible.
+  var aboutSafetyT = 0;
+  function releaseAboutSafety() {
+    clearTimeout(aboutSafetyT);
+    aboutSafetyT = setTimeout(function () {
+      var any = false;
+      for (var i = 0; i < quotes.length; i++) { var q = quotes[i];
+        if (q.isAbout && q.tPres === 0 && q.elActive) { q.el.classList.remove("refract-active"); q.elActive = false; q.pres = 0; any = true; }
+      }
+      if (any) schedule();   // one clean frame clears those words off the canvas
+    }, 500);
+  }
+  function onMove(e) {
+    lastPx = e.clientX; lastPy = e.clientY;
+    evalHover(lastPx, lastPy);
+    releaseAboutSafety();
+    if (DEBUG) moveDbg(lastPx, lastPy);
     schedule();
   }
-  function onLeave() { for (var i = 0; i < quotes.length; i++) quotes[i].tPres = 0; schedule(); }
+  function onLeave() { for (var i = 0; i < quotes.length; i++) quotes[i].tPres = 0; releaseAboutSafety(); schedule(); }
 
   // ---- render loop (idles when settled) ------------------------------------
   var raf = 0, lastNow = null, running = false, visible = true, inView = true;
@@ -316,6 +351,15 @@
       q.pres += (q.tPres - q.pres) * presK;
       if (Math.abs(q.tPres - q.pres) > SETTLE_EPS ||
           (q.pres > SETTLE_EPS && (Math.abs(q.tCur[0] - q.cur[0]) > 0.5 || Math.abs(q.tCur[1] - q.cur[1]) > 0.5))) moving = true;
+
+      // ABOUT: hand the word to the canvas only WHILE the lens is present. Otherwise the DOM curtain-roll shows
+      // and the canvas draws nothing for this line (the shader's base text alpha is presence-independent, so we
+      // must skip the draw, not rely on presence=0). Toggle the class only on change to avoid DOM thrash.
+      if (q.isAbout) {
+        var on = q.pres > 0.012;
+        if (q.elActive !== on) { q.el.classList.toggle("refract-active", on); q.elActive = on; }
+        if (!on) continue;
+      }
 
       // PADDED box → clip space. The quad is expanded by TEX_PAD on every side so uv 0..1 spans the
       // padded texture; uv(0,0)=bottom-left=(left-pad,bottom+pad), uv(1,1)=top-right=(right+pad,top-pad).
@@ -355,7 +399,9 @@
   function start() {
     if (running) return;
     running = true;
-    els.forEach(function (el) { el.classList.add("refract-active"); });   // hand the text to the canvas
+    // Hero + CONTACT text are STATIC → always drawn by the canvas (hand them over now). ABOUT lines ROLL, so
+    // they keep their DOM text and are handed over per-hover in tick() (never permanently).
+    quotes.forEach(function (q) { if (!q.isAbout) q.el.classList.add("refract-active"); });
     rebuild();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(rebuild);
     setTimeout(rebuild, 400);   // belt-and-suspenders: re-raster once the web font has surely settled
@@ -363,19 +409,32 @@
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerleave", onLeave);
     window.addEventListener("blur", onLeave);
-    window.addEventListener("scroll", function () { refreshRects(); schedule(); }, { passive: true });
+    window.addEventListener("scroll", function () {
+      refreshRects();
+      // ABOUT lens: release during active scroll so the curtain-roll plays; re-check hover once scroll settles.
+      scrollIdle = false; clearTimeout(scrollT);
+      for (var i = 0; i < quotes.length; i++) if (quotes[i].isAbout) quotes[i].tPres = 0;
+      releaseAboutSafety();
+      scrollT = setTimeout(function () { scrollIdle = true; evalHover(lastPx, lastPy); schedule(); }, 160);
+      schedule();
+    }, { passive: true });
     window.addEventListener("resize", rebuild);
 
     // Keep the loop alive while EITHER the hero OR the CONTACT section is on screen — the lens draws #wishLead in
     // #contact (the hero is long gone by then), and its word fill must keep re-rastering as CONTACT scrolls.
     // inView = any watched target intersecting.
-    var watch = [document.querySelector(".hero"), document.getElementById("contact")].filter(Boolean);
+    var watch = [document.querySelector(".hero"), document.getElementById("about"), document.getElementById("contact")].filter(Boolean);
     if (!watch.length) watch = [canvas];
     var seen = watch.map(function () { return false; });
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) { var i = watch.indexOf(e.target); if (i >= 0) seen[i] = e.isIntersecting; });
       inView = seen.some(Boolean);
-      if (inView) schedule(); else if (raf) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
+      if (inView) schedule();
+      else {
+        if (raf) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
+        // loop stopped → make sure no ABOUT line is left handed to the (now idle) canvas with its DOM text hidden.
+        for (var j = 0; j < quotes.length; j++) { var q = quotes[j]; if (q.isAbout && q.elActive) { q.el.classList.remove("refract-active"); q.elActive = false; q.pres = q.tPres = 0; } }
+      }
     });
     watch.forEach(function (el) { io.observe(el); });
     document.addEventListener("visibilitychange", function () {
