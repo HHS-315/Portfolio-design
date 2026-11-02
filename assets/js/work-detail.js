@@ -250,7 +250,8 @@
     '<div class="wd__surface"><div class="wd__hero"></div><div class="wd__scrim"></div></div>' +
     '<div class="wd__content" aria-hidden="true">' +
       '<div class="wd__stage">' +                                                // bounds the sticky title's pin range
-        '<div class="wd__hero2"><video class="wd__hero-vid" muted loop playsinline preload="metadata" aria-hidden="true"></video></div>' +
+        '<div class="wd__hero2"><video class="wd__hero-vid" muted loop playsinline preload="metadata" aria-hidden="true"></video>' +
+          '<span class="wd__hero-note">*해당 영상은 AI 제작물 입니다.</span></div>' +   // 영상 히어로(.has-video)일 때만 우측 하단에 표시
         '<div class="wd__titles"><h2 class="wd__ttl" tabindex="-1"></h2><p class="wd__ttl-sub"></p></div>' + // title + description; both pin & sweep
       '</div>' +
       '<div class="wd__page"><div class="wd__inner">' +

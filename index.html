@@ -455,6 +455,12 @@ body.wd-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* top:-scrollY
 .wd__hero-vid{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#14161a center/cover no-repeat;border:0}
 .wd__hero2.has-video .wd__hero-vid{display:block}
 .wd__hero2::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,10,10,0) 45%,rgba(10,10,10,.32))}
+/* AI-disclaimer caption — bottom-right of the hero, only when a video plays there (over the scrim, so it reads) */
+.wd__hero-note{display:none;position:absolute;right:var(--gutter);bottom:clamp(16px,3vh,30px);z-index:2;margin:0;
+  font-family:'Pretendard',system-ui,sans-serif;font-weight:400;font-size:12px;letter-spacing:.01em;color:rgba(255,255,255,.72);
+  text-shadow:0 1px 3px rgba(0,0,0,.45);pointer-events:none}   /* shadow keeps it legible over bright video frames too */
+.wd__hero2.has-video .wd__hero-note{display:block}
+@media(max-width:560px){.wd__hero-note{font-size:10.5px;bottom:clamp(12px,2.4vh,22px)}}
 /* sticky-TOP: pinned at the image's bottom-left from scroll 0; as the page scrolls the image rides up
    behind it and its bottom edge sweeps down through the glyphs (white→ink via --cut). JS sets marginTop
    (pull up to overlap the image bottom), top (the pin line), and the stage min-height (release point). */
