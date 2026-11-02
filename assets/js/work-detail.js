@@ -220,7 +220,15 @@
   // Header VIDEO override: drop a file at assets/video/<key>-hero.mp4 (see assets/video/README.md) and map it
   // here. When present, a muted/looping <video> covers the settled subpage hero (.wd__hero2) and plays while
   // the subpage is open; imageFor(key) is still the poster/fallback and the FLIP expand stays on the image.
-  var VIDEO = { "yakbongji": "assets/video/yakbongji-hero.mp4" };
+  // A key's hero clip is either a single src, or { d:<landscape 16:9>, m:<portrait 9:16 for mobile> }. videoSrc()
+  // picks the portrait variant on mobile-width viewports (the 16:9 hero would otherwise crop hard on a phone).
+  var VIDEO = { "yakbongji": { d: "assets/video/yakbongji-hero.mp4", m: "assets/video/yakbongji-hero_9x16.mp4" } };
+  var mqVideoMobile = matchMedia("(max-width:820px)");   // same "mobile" breakpoint the subpage CSS uses
+  function videoSrc(key) {
+    var v = VIDEO[key]; if (!v) return "";
+    if (typeof v === "string") return v;
+    return (mqVideoMobile.matches && v.m) ? v.m : (v.d || "");
+  }
   // solid-black placeholder — for video keys the FLIP expand and the settled hero read BLACK until the video is
   // fully open and starts playing (so the growing rectangle is black, then the video appears).
   var BLACK = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='2'%20height='2'%3E%3Crect%20width='2'%20height='2'%20fill='%23000'/%3E%3C/svg%3E";
@@ -327,7 +335,7 @@
   // or hides the layer. Poster = the placeholder/real image, so nothing flashes before the first frame. play()
   // is deferred to playHeroVideo() (called once the hero is actually on screen).
   function setHeroVideo(key, poster) {
-    var src = VIDEO[key] || "";
+    var src = videoSrc(key);
     if (heroVid.getAttribute("poster") !== poster) heroVid.setAttribute("poster", poster);
     if (src) {
       if (heroVid.getAttribute("src") !== src) { heroVid.setAttribute("src", src); heroVid.load(); }
@@ -343,6 +351,12 @@
     var p = heroVid.play(); if (p && p.catch) p.catch(function () {});   // autoplay may be refused → poster stands in
   }
   function stopHeroVideo() { try { heroVid.pause(); } catch (e) {} }
+  // If the viewport crosses the mobile breakpoint while a video hero is open, swap to the matching
+  // orientation's clip. setHeroVideo only reloads when the resolved src actually changes, so this is cheap.
+  (mqVideoMobile.addEventListener ? mqVideoMobile.addEventListener("change", onVideoMQ) : mqVideoMobile.addListener(onVideoMQ));
+  function onVideoMQ() {
+    if (isOpen && activeKey && VIDEO[activeKey]) { setHeroVideo(activeKey, BLACK); if (content.getAttribute("aria-hidden") === "false") playHeroVideo(); }
+  }
   // FLIP expand surface background for a key: solid BLACK for video keys (the growing rectangle stays black until
   // the video is fully open), the item image otherwise.
   function setFlipBg(key) {
