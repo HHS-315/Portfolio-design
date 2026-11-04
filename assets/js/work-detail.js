@@ -222,7 +222,10 @@
   // the subpage is open; imageFor(key) is still the poster/fallback and the FLIP expand stays on the image.
   // A key's hero clip is either a single src, or { d:<landscape 16:9>, m:<portrait 9:16 for mobile> }. videoSrc()
   // picks the portrait variant on mobile-width viewports (the 16:9 hero would otherwise crop hard on a phone).
-  var VIDEO = { "yakbongji": { d: "assets/video/yakbongji-hero.mp4", m: "assets/video/yakbongji-hero_9x16.mp4" } };
+  var VIDEO = {
+    "yakbongji": { d: "assets/video/yakbongji-hero.mp4", m: "assets/video/yakbongji-hero_9x16.mp4" },
+    "stac": "assets/video/stac-hero.mp4"
+  };
   var mqVideoMobile = matchMedia("(max-width:820px)");   // same "mobile" breakpoint the subpage CSS uses
   function videoSrc(key) {
     var v = VIDEO[key]; if (!v) return "";
