@@ -78,12 +78,15 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 #halftone{position:fixed;inset:0;width:100%;height:100%;z-index:61;display:block;pointer-events:none;mix-blend-mode:difference}
 @media(hover:none){#halftone{display:none}}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
-/* custom square cursor (cursor-square.js) — a small white square that difference-blends against
+/* custom square cursor (cursor-square.js) — a small square that difference-blends against
    whatever is under it (강한 색반전, most visible over images), replacing the native crosshair.
+   Fill is #edf3f8 (NOT pure white): the same bo색 trick as the hero titles / ASCII strip, so over
+   the light WORK cells (--work-cell #d9dfe4) the inverted ("black") state lands EXACTLY on the
+   site black --work-ink #141414, while over the dark hero/bg it still flips to a light square.
    z120: on TOP of everything (incl. the MENU glass toggle z63 and the Click chip z70) so the
    cursor never sinks behind a UI pill. Constant size everywhere. hover-only; hidden on touch /
    reduced-motion. */
-#cursorsq{position:fixed;left:0;top:0;width:10px;height:10px;margin:-5px 0 0 -5px;background:#fff;
+#cursorsq{position:fixed;left:0;top:0;width:10px;height:10px;margin:-5px 0 0 -5px;background:#edf3f8;
   mix-blend-mode:difference;pointer-events:none;z-index:120;opacity:0;
   transform:translate3d(-100px,-100px,0);will-change:transform;transition:opacity .3s ease}
 #cursorsq.on{opacity:1}
