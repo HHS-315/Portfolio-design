@@ -367,6 +367,25 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
   background:color-mix(in srgb,var(--work-ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--work-ink) 16%,transparent)}
 .work-gallery__cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 @media(max-width:620px){.work-gallery{grid-template-columns:1fr}}   /* 모바일: 1열로 스택(16:9 유지) */
+/* 클릭 재생 affordance — 호버 시 반투명 원 + 재생 삼각형. pointer-events:none이라 클릭은 셀이 받음. */
+.work-gallery__cell[data-video]{cursor:pointer}
+.work-gallery__play{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .28s ease;pointer-events:none}
+.work-gallery__tri{width:clamp(44px,5vw,60px);aspect-ratio:1;border-radius:50%;background:rgba(20,20,20,.5);backdrop-filter:blur(2px);display:grid;place-items:center}
+.work-gallery__tri::before{content:"";width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;border-color:transparent transparent transparent #fff;margin-left:3px}
+@media(hover:hover){.work-gallery__cell:hover .work-gallery__play{opacity:1}}
+@media(hover:none){.work-gallery__play{opacity:.9}}   /* 터치: 호버 없으니 재생 아이콘 항상 노출 */
+.work-gallery__cell:focus-visible{outline:2px solid var(--work-ink);outline-offset:3px}
+/* 영상 라이트박스 모달 (work-gallery.js) — 셀 클릭 시 16:9 영상 중앙 재생. z100: 콘텐츠 위, 커서(120) 아래. */
+.workvid{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+  padding:clamp(16px,4vw,64px);background:rgba(8,8,8,.9);backdrop-filter:blur(6px)}
+.workvid.open{display:flex}
+.workvid__frame{position:relative;width:min(92vw,calc(86vh*16/9));aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.workvid__video{width:100%;height:100%;display:block;background:#000}
+.workvid__close{position:absolute;top:clamp(12px,2.4vw,26px);right:clamp(12px,2.4vw,26px);z-index:1;
+  width:46px;height:46px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;
+  font-family:var(--hero-font);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;
+  transition:background .25s ease}
+.workvid__close:hover{background:rgba(255,255,255,.22)}
 /* hover curtain-roll (work-list.js builds a 2-copy track inside .wbig__en and rAF-tweens its translateY
    ONCE per hover-enter). Mask = .wbig__en{overflow:hidden}; the track slides up one line so an identical
    copy rolls in. rAF (not a CSS keyframe) mirrors about-lines.js, the site's proven curtain mechanism. */
@@ -867,9 +886,9 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
       </div>
       <!-- 리스트 하단 이미지 갤러리: 16:9 3칸, 가로 일렬. 이미지 등록 시 각 .work-gallery__cell 안에 <img src> 넣기. -->
       <div class="work-gallery">
-        <div class="work-gallery__cell"><img src="./assets/img/secondball_thumbnail.jpg" alt="" loading="lazy" decoding="async"></div>
-        <div class="work-gallery__cell"><img src="./assets/img/scrapin_1_thumbnail.jpg" alt="" loading="lazy" decoding="async"></div>
-        <div class="work-gallery__cell"><img src="./assets/img/scrapin_2_thumbnail.jpg" alt="" loading="lazy" decoding="async"></div>
+        <div class="work-gallery__cell" role="button" tabindex="0" aria-label="secondball 영상 재생" data-video="./assets/video/secondball.mp4"><img src="./assets/img/secondball_thumbnail.jpg" alt="" loading="lazy" decoding="async"><span class="work-gallery__play" aria-hidden="true"><span class="work-gallery__tri"></span></span></div>
+        <div class="work-gallery__cell" role="button" tabindex="0" aria-label="scrapin 1 영상 재생" data-video="./assets/video/scrapin_1.mp4"><img src="./assets/img/scrapin_1_thumbnail.jpg" alt="" loading="lazy" decoding="async"><span class="work-gallery__play" aria-hidden="true"><span class="work-gallery__tri"></span></span></div>
+        <div class="work-gallery__cell" role="button" tabindex="0" aria-label="scrapin 2 영상 재생" data-video="./assets/video/scrapin_2.mp4"><img src="./assets/img/scrapin_2_thumbnail.jpg" alt="" loading="lazy" decoding="async"><span class="work-gallery__play" aria-hidden="true"><span class="work-gallery__tri"></span></span></div>
       </div>
     </div>
   </section>
@@ -913,6 +932,13 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
   if(reduce){ shown=true; update(); }   // reduced-motion skips the intro (no introdone) → flower shown at once
 })();
 </script>
+
+<!-- WORK 갤러리 영상 라이트박스 (work-gallery.js) -->
+<div id="workVid" class="workvid" aria-hidden="true" role="dialog" aria-modal="true">
+  <button class="workvid__close" type="button" aria-label="영상 닫기">✕</button>
+  <div class="workvid__frame"><video class="workvid__video" playsinline controls preload="metadata"></video></div>
+</div>
+
 <script src="./assets/js/perf-hud.js"></script>       <!-- DEBUG perf overlay (?perf=1) -->
 <script src="./assets/js/shader-bg.js"></script>
 <script src="./assets/js/work-transition.js"></script>
@@ -925,6 +951,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <!-- nav-menu.js AFTER work-transition.js (reads window.WorkTransition.grid) -->
 <script src="./assets/js/nav-menu.js"></script>
 <!-- halftone-dot cursor trail removed (square cursor only) -->
+<script src="./assets/js/work-gallery.js"></script>   <!-- WORK gallery video lightbox -->
 <script src="./assets/js/cursor-square.js"></script>   <!-- square color-inverting cursor (site-wide) -->
 </body>
 </html>
