@@ -363,7 +363,7 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 @media(prefers-reduced-motion:reduce){.wbig__item{transition:none}}
 /* WORK 리스트 하단 이미지 갤러리 — 16:9 3칸을 가로로 일렬 배열. 이미지 미제공 시 placeholder 박스. */
 .work-gallery{margin-top:clamp(32px,5vh,72px);display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,20px);opacity:var(--work-reveal)}
-.work-gallery__cell{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:2px;
+.work-gallery__cell{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:10px;   /* 서브페이지 이미지(.wd__shot/.wd__row-fig)와 동일 */
   background:color-mix(in srgb,var(--work-ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--work-ink) 16%,transparent)}
 .work-gallery__cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 @media(max-width:620px){.work-gallery{grid-template-columns:1fr}}   /* 모바일: 1열로 스택(16:9 유지) */
