@@ -224,7 +224,7 @@
   // picks the portrait variant on mobile-width viewports (the 16:9 hero would otherwise crop hard on a phone).
   var VIDEO = {
     "yakbongji": { d: "assets/video/yakbongji-hero.mp4", m: "assets/video/yakbongji-hero_9x16.mp4" },
-    "stac": "assets/video/stac-hero.mp4"
+    "stac": { d: "assets/video/stac-hero.mp4", m: "assets/video/stac-hero_9x16.mp4" }
   };
   var mqVideoMobile = matchMedia("(max-width:820px)");   // same "mobile" breakpoint the subpage CSS uses
   function videoSrc(key) {
