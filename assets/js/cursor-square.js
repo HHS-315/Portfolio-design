@@ -27,9 +27,10 @@
 
   root.classList.add("sqcur");   // hides the native cursor via CSS (hover devices only)
 
-  // selector for things that should enlarge the square (links, buttons, the WORK list items,
-  // the subpage logo, nav items, the flower mark — anything the user clicks/hovers).
-  var LINK_SEL = "a,button,[role='button'],.wbig__item,.wbig__item span,.nav__item,.wd__logo,.toggle,.contact-thanks,.work-chip";
+  // selector for things that should enlarge the square (links, buttons, the subpage logo, nav
+  // items, the flower mark). The WORK list items (.wbig__item) are intentionally EXCLUDED so the
+  // cursor keeps its base size over the list (it was growing too large there).
+  var LINK_SEL = "a,button,[role='button'],.nav__item,.wd__logo,.toggle,.contact-thanks,.work-chip";
 
   var tx = -100, ty = -100;   // target (pointer)
   var cx = -100, cy = -100;   // current (eased)
