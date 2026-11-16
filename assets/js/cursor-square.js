@@ -12,7 +12,7 @@
  *  · The native cursor is hidden (html.sqcur{cursor:none}) only here, only on hover devices.
  *  · pointermove sets a target; rAF eases the square toward it (slight lag, like the ref).
  *  · Fades out when the pointer leaves the window / on blur, back in on re-entry.
- *  · Grows over a, button, [role=button] and the site's interactive items (.is-link).
+ *  · Constant size everywhere — it never grows or shrinks over any element.
  *  · Skipped entirely on touch (no hover) and prefers-reduced-motion, where CSS also hides it.
  */
 (function () {
@@ -26,11 +26,6 @@
   if (!sq) { sq = document.createElement("div"); sq.id = "cursorsq"; sq.setAttribute("aria-hidden", "true"); document.body.appendChild(sq); }
 
   root.classList.add("sqcur");   // hides the native cursor via CSS (hover devices only)
-
-  // selector for things that should enlarge the square (links, buttons, the subpage logo, nav
-  // items, the flower mark). The WORK list items (.wbig__item) are intentionally EXCLUDED so the
-  // cursor keeps its base size over the list (it was growing too large there).
-  var LINK_SEL = "a,button,[role='button'],.nav__item,.wd__logo,.toggle,.contact-thanks,.work-chip";
 
   var tx = -100, ty = -100;   // target (pointer)
   var cx = -100, cy = -100;   // current (eased)
@@ -55,22 +50,8 @@
       sq.style.transform = "translate3d(" + cx + "px," + cy + "px,0)";
     }
     sq.classList.add("on");
-    // enlarge over interactive targets. A full-viewport canvas (#field, trails) often sits on
-    // top and steals e.target, so walk the WHOLE stack under the pointer, not just e.target.
-    var stack = document.elementsFromPoint ? document.elementsFromPoint(tx, ty) : [e.target];
-    var link = false;
-    for (var i = 0; i < stack.length; i++) {
-      var el = stack[i];
-      if (el === sq) continue;                       // skip the cursor itself
-      if (el && el.closest && el.closest(LINK_SEL)) { link = true; break; }
-    }
-    sq.classList.toggle("is-link", link);
     kick();
   }, { passive: true });
-
-  // press feedback: a quick shrink while the button is down
-  window.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") sq.classList.add("is-down"); }, { passive: true });
-  window.addEventListener("pointerup",   function ()  { sq.classList.remove("is-down"); }, { passive: true });
 
   // hide when the pointer leaves the window / tab loses focus
   function hide() { sq.classList.remove("on"); }

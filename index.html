@@ -80,15 +80,13 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
 /* custom square cursor (cursor-square.js) — a small white square that difference-blends against
    whatever is under it (강한 색반전, most visible over images), replacing the native crosshair.
-   z62: ABOVE the halftone trail(61), BELOW the glass toggle(63)/Click chip(70) so those
-   backdrop-filter pills are never inverted. hover-only; hidden on touch / reduced-motion. */
+   z120: on TOP of everything (incl. the MENU glass toggle z63 and the Click chip z70) so the
+   cursor never sinks behind a UI pill. Constant size everywhere. hover-only; hidden on touch /
+   reduced-motion. */
 #cursorsq{position:fixed;left:0;top:0;width:10px;height:10px;margin:-5px 0 0 -5px;background:#fff;
-  mix-blend-mode:difference;pointer-events:none;z-index:62;opacity:0;
-  transform:translate3d(-100px,-100px,0);will-change:transform;
-  transition:opacity .3s ease,width .22s ease,height .22s ease,margin .22s ease}
+  mix-blend-mode:difference;pointer-events:none;z-index:120;opacity:0;
+  transform:translate3d(-100px,-100px,0);will-change:transform;transition:opacity .3s ease}
 #cursorsq.on{opacity:1}
-#cursorsq.is-link{width:24px;height:24px;margin:-12px 0 0 -12px}
-#cursorsq.is-down{width:7px;height:7px;margin:-3.5px 0 0 -3.5px}
 @media(hover:hover){html.sqcur,html.sqcur *{cursor:none !important}}
 @media(hover:none){#cursorsq{display:none}}
 @media(prefers-reduced-motion:reduce){#cursorsq{display:none}}
