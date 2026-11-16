@@ -78,6 +78,20 @@ html.strip-invert #strip{z-index:5;mix-blend-mode:difference}
 #halftone{position:fixed;inset:0;width:100%;height:100%;z-index:61;display:block;pointer-events:none;mix-blend-mode:difference}
 @media(hover:none){#halftone{display:none}}
 @media(prefers-reduced-motion:reduce){#halftone{display:none}}
+/* custom square cursor (cursor-square.js) — a small white square that difference-blends against
+   whatever is under it (강한 색반전, most visible over images), replacing the native crosshair.
+   z62: ABOVE the halftone trail(61), BELOW the glass toggle(63)/Click chip(70) so those
+   backdrop-filter pills are never inverted. hover-only; hidden on touch / reduced-motion. */
+#cursorsq{position:fixed;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;background:#fff;
+  mix-blend-mode:difference;pointer-events:none;z-index:62;opacity:0;
+  transform:translate3d(-100px,-100px,0);will-change:transform;
+  transition:opacity .3s ease,width .22s ease,height .22s ease,margin .22s ease}
+#cursorsq.on{opacity:1}
+#cursorsq.is-link{width:36px;height:36px;margin:-18px 0 0 -18px}
+#cursorsq.is-down{width:11px;height:11px;margin:-5.5px 0 0 -5.5px}
+@media(hover:hover){html.sqcur,html.sqcur *{cursor:none !important}}
+@media(hover:none){#cursorsq{display:none}}
+@media(prefers-reduced-motion:reduce){#cursorsq{display:none}}
 .hero__quote.refract-active,.wish__lead.refract-active,.about__line.refract-active{color:transparent}   /* ABOUT lines: hidden only WHILE the hover lens is live (JS toggles per-line); color inherits to the roll copies */
 
 .shell{position:relative;z-index:4;pointer-events:none}
@@ -772,6 +786,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <canvas id="strip"></canvas>
 <canvas id="refract"></canvas>
 <canvas id="halftone" aria-hidden="true"></canvas>   <!-- halftone-dot cursor trail (halftone-trail.js) -->
+<div id="cursorsq" aria-hidden="true"></div>   <!-- square color-inverting cursor (cursor-square.js) -->
 
 <div class="bar">
   <b>HWANG HYESEON<span style="color:var(--hi)">*</span></b>
@@ -892,5 +907,6 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <!-- nav-menu.js AFTER work-transition.js (reads window.WorkTransition.grid) -->
 <script src="./assets/js/nav-menu.js"></script>
 <script src="./assets/js/halftone-trail.js"></script>   <!-- halftone-dot cursor trail (site-wide) -->
+<script src="./assets/js/cursor-square.js"></script>   <!-- square color-inverting cursor (site-wide) -->
 </body>
 </html>
