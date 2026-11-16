@@ -212,8 +212,8 @@
     "company-renewal-row1": "assets/img/company_list_1.jpg",
     "company-renewal-row2": "assets/img/company_list_2.jpg",
     "company-renewal-row3": "assets/img/company_list_3.jpg",
-    // 해양수산 — 대형 단일(.wd__shot)은 marine_hero.png(정적 이미지). 행(3)은 marine_list1~3.mp4 영상(rows[].vid), 아래 jpg는 그 poster
-    "maritime-3": "assets/img/marine_hero.png",
+    // 해양수산 — 대형 단일(.wd__shot)은 marine_hero.jpg(정적 이미지, 원본 png를 경량화). 행(3)은 marine_list1~3.mp4 영상(rows[].vid), 아래 jpg는 그 poster
+    "maritime-3": "assets/img/marine_hero.jpg",
     "maritime-row1": "assets/img/marine_list1.jpg",
     "maritime-row2": "assets/img/marine_list2.jpg",
     "maritime-row3": "assets/img/marine_list3.jpg"
