@@ -129,7 +129,7 @@
       en: "Maritime Institute", title: "해양수산정책기술연구소 사이트", sub: "연구기관의 전문성과 신뢰를\n명확한 정보와 시각적 경험으로 전달하는 웹사이트",
       lead: "해양수산 분야의 전문성과 연구기관의 신뢰도를 직관적으로 전달할 수 있도록 해양수산정책기술연구소의 웹사이트를 디자인했습니다.\n기관의 정보 전달 구조를 명확하게 정리하는 동시에, 이미지와 그래픽 요소를 적극적으로 활용해 일반적인 연구기관 웹사이트의 정적인 인상에서 벗어난 시각적 경험을 구축했습니다.\n\n기관의 신뢰성과 전문성을 유지하면서, 정보 중심의 연구기관 웹사이트에 보다 선명한 시각적 정체성을 더했습니다.\n콘텐츠의 성격에 따라 다양한 레이아웃을 적용하되 공통된 디자인 언어를 유지해, 연구소가 가진 정보와 방향성을 일관된 경험으로 전달할 수 있도록 완성했습니다.",   // 마무리 문단(기존 outro)을 리드 아래에 단락(\n\n=빈 줄) 띄워 배치
       leadSm: true,   // 다른 서브페이지 소개 문구와 동일 크기·굵기(14px/weight 400)
-      shotVid: "assets/video/marine_hero.mp4",   // 큰 단일 이미지(.wd__shot)를 영상으로 (company_web과 동일 방식)
+      // 큰 단일 영역(.wd__shot)은 정적 이미지 marine_hero.png (IMG["maritime-3"]). 기존 marine_hero.mp4(shotVid)에서 교체.
       paras: [],
       caps: ["IA / Structure", "Accessibility", "Visual System", "Responsive"],
       rows: [
@@ -212,7 +212,8 @@
     "company-renewal-row1": "assets/img/company_list_1.jpg",
     "company-renewal-row2": "assets/img/company_list_2.jpg",
     "company-renewal-row3": "assets/img/company_list_3.jpg",
-    // 해양수산 — 텍스트+이미지 행(3)은 marine_list1~3.mp4 영상(rows[].vid). 아래 jpg는 그 영상의 poster(디코드 전 폴백)
+    // 해양수산 — 대형 단일(.wd__shot)은 marine_hero.png(정적 이미지). 행(3)은 marine_list1~3.mp4 영상(rows[].vid), 아래 jpg는 그 poster
+    "maritime-3": "assets/img/marine_hero.png",
     "maritime-row1": "assets/img/marine_list1.jpg",
     "maritime-row2": "assets/img/marine_list2.jpg",
     "maritime-row3": "assets/img/marine_list3.jpg"
