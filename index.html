@@ -369,15 +369,16 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 @media(max-width:620px){.work-gallery{grid-template-columns:1fr}}   /* 모바일: 1열로 스택(16:9 유지) */
 /* 클릭 재생 affordance — 호버 시 반투명 원 + 재생 삼각형. pointer-events:none이라 클릭은 셀이 받음. */
 .work-gallery__cell[data-video]{cursor:pointer}
-.work-gallery__play{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .28s ease;pointer-events:none}
+.work-gallery__play{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transform:scale(.9);
+  transition:opacity .26s ease,transform .26s cubic-bezier(.34,1.3,.64,1);pointer-events:none;will-change:opacity,transform}   /* compositor 승격 → 호버 페이드 버벅임 방지 */
 .work-gallery__tri{width:clamp(44px,5vw,60px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
   background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06)),rgba(20,20,20,.45);   /* MENU 버튼과 동일한 글래스모피즘 */
   border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
   -webkit-backdrop-filter:blur(12px) saturate(1.3);backdrop-filter:blur(12px) saturate(1.3)}
 /* 재생 삼각형 — CSS border 삼각형(각짐) 대신 stroke-linejoin:round SVG로 모서리 살짝 라운딩 */
 .work-gallery__tri::before{content:"";width:40%;height:40%;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 5.6L18.5 12L9 18.4Z' fill='%23fff' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E")}
-@media(hover:hover){.work-gallery__cell:hover .work-gallery__play{opacity:1}}
-@media(hover:none){.work-gallery__play{opacity:.9}}   /* 터치: 호버 없으니 재생 아이콘 항상 노출 */
+@media(hover:hover){.work-gallery__cell:hover .work-gallery__play{opacity:1;transform:scale(1)}}
+@media(hover:none){.work-gallery__play{opacity:.9;transform:scale(1)}}   /* 터치: 호버 없으니 재생 아이콘 항상 노출 */
 .work-gallery__cell:focus-visible{outline:2px solid var(--work-ink);outline-offset:3px}
 /* 영상 라이트박스 모달 (work-gallery.js) — 셀 클릭 시 16:9 영상 중앙 재생. z100: 콘텐츠 위, 커서(120) 아래. */
 .workvid{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;

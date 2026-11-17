@@ -14,11 +14,19 @@
   var cells = [].slice.call(document.querySelectorAll(".work-gallery__cell[data-video]"));
   if (!cells.length || !video) return;
 
+  // Pause the site's heavy background canvases (shader-bg / dandelion / blocks / nav fx) while the
+  // video plays — they all listen for this shared event (same one work-detail.js uses for its
+  // overlay). Freeing the GPU/CPU keeps playback smooth instead of stuttering behind the modal.
+  function signalBg(open) {
+    try { window.dispatchEvent(new CustomEvent("work:overlay", { detail: { open: open } })); } catch (e) {}
+  }
+
   function openVid(src) {
     if (!src) return;
     video.src = src;
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
+    signalBg(true);
     var pr = video.play();
     if (pr && pr.catch) pr.catch(function () {});   // ignore autoplay rejections (user can press play)
   }
@@ -30,6 +38,7 @@
     try { video.pause(); } catch (e) {}
     video.removeAttribute("src");
     try { video.load(); } catch (e) {}             // fully release the buffer
+    signalBg(false);                               // resume background animations
   }
 
   cells.forEach(function (c) {
