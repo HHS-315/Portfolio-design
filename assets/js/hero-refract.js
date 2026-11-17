@@ -322,12 +322,12 @@
   function onLeave() { for (var i = 0; i < quotes.length; i++) quotes[i].tPres = 0; releaseAboutSafety(); schedule(); }
 
   // ---- render loop (idles when settled) ------------------------------------
-  var raf = 0, lastNow = null, running = false, visible = true, inView = true;
-  function schedule() { if (running && visible && inView && raf === 0) raf = requestAnimationFrame(tick); }
+  var raf = 0, lastNow = null, running = false, visible = true, inView = true, overlayOpen = false;
+  function schedule() { if (running && visible && inView && !overlayOpen && raf === 0) raf = requestAnimationFrame(tick); }
 
   function tick(now) {
     raf = 0;
-    if (!running || !visible || !inView) { lastNow = null; return; }
+    if (!running || !visible || !inView || overlayOpen) { lastNow = null; return; }
     var dt = lastNow === null ? 0 : Math.min((now - lastNow) / 1000, 0.05);
     lastNow = now;
     var followK = 1 - Math.exp(-FOLLOW_LERP * dt);
@@ -440,6 +440,13 @@
     document.addEventListener("visibilitychange", function () {
       visible = document.visibilityState === "visible";
       if (visible) schedule(); else if (raf) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
+    });
+    // pause the WebGL lens while a full-screen overlay (video modal / WORK detail) is open — the hero
+    // text is covered anyway, so this stops the GL loop and frees the GPU for smooth video playback.
+    window.addEventListener("work:overlay", function (e) {
+      overlayOpen = !!(e.detail && e.detail.open);
+      if (overlayOpen) { if (raf) { cancelAnimationFrame(raf); raf = 0; lastNow = null; } }
+      else schedule();
     });
   }
 

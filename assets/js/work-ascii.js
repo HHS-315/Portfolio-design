@@ -501,10 +501,10 @@
   }
 
   // ---- single rAF loop: header + both ambient fields ----------------------
-  var raf = 0, onScreen = false, visible = document.visibilityState === "visible";
+  var raf = 0, onScreen = false, visible = document.visibilityState === "visible", overlayOpen = false;
   function paint(t) { draw(t); workField.draw(t); contactField.draw(t); }
-  function frame(t) { raf = 0; if (!onScreen || !visible) return; paint(t); if (!reduce) raf = requestAnimationFrame(frame); }
-  function kick() { if (!raf && onScreen && visible && !reduce) raf = requestAnimationFrame(frame); }
+  function frame(t) { raf = 0; if (!onScreen || !visible || overlayOpen) return; paint(t); if (!reduce) raf = requestAnimationFrame(frame); }
+  function kick() { if (!raf && onScreen && visible && !overlayOpen && !reduce) raf = requestAnimationFrame(frame); }
 
   build();
   paint(performance.now());
@@ -528,6 +528,13 @@
   document.addEventListener("visibilitychange", function () {
     visible = document.visibilityState === "visible";
     if (visible) kick(); else if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  });
+  // pause the ambient field while a full-screen overlay (video modal / WORK detail) is open — it is
+  // fully covered anyway, so this just stops the rAF churn and frees CPU for the video.
+  addEventListener("work:overlay", function (e) {
+    overlayOpen = !!(e.detail && e.detail.open);
+    if (overlayOpen) { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    else if (onScreen && visible) kick();
   });
   addEventListener("resize", function () { build(); paint(performance.now()); kick(); }, { passive: true });
 })();
