@@ -370,8 +370,12 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 /* 클릭 재생 affordance — 호버 시 반투명 원 + 재생 삼각형. pointer-events:none이라 클릭은 셀이 받음. */
 .work-gallery__cell[data-video]{cursor:pointer}
 .work-gallery__play{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .28s ease;pointer-events:none}
-.work-gallery__tri{width:clamp(44px,5vw,60px);aspect-ratio:1;border-radius:50%;background:rgba(20,20,20,.5);backdrop-filter:blur(2px);display:grid;place-items:center}
-.work-gallery__tri::before{content:"";width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;border-color:transparent transparent transparent #fff;margin-left:3px}
+.work-gallery__tri{width:clamp(44px,5vw,60px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06)),rgba(20,20,20,.45);   /* MENU 버튼과 동일한 글래스모피즘 */
+  border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+  -webkit-backdrop-filter:blur(12px) saturate(1.3);backdrop-filter:blur(12px) saturate(1.3)}
+/* 재생 삼각형 — CSS border 삼각형(각짐) 대신 stroke-linejoin:round SVG로 모서리 살짝 라운딩 */
+.work-gallery__tri::before{content:"";width:40%;height:40%;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 5.6L18.5 12L9 18.4Z' fill='%23fff' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E")}
 @media(hover:hover){.work-gallery__cell:hover .work-gallery__play{opacity:1}}
 @media(hover:none){.work-gallery__play{opacity:.9}}   /* 터치: 호버 없으니 재생 아이콘 항상 노출 */
 .work-gallery__cell:focus-visible{outline:2px solid var(--work-ink);outline-offset:3px}
@@ -382,10 +386,13 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 .workvid__frame{position:relative;width:min(92vw,calc(86vh*16/9));aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)}
 .workvid__video{width:100%;height:100%;display:block;background:#000}
 .workvid__close{position:absolute;top:clamp(12px,2.4vw,26px);right:clamp(12px,2.4vw,26px);z-index:1;
-  width:46px;height:46px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;
+  width:46px;height:46px;border:1px solid rgba(255,255,255,.28);border-radius:50%;color:#fff;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06)),rgba(20,20,20,.45);   /* MENU 버튼과 동일한 글래스모피즘 */
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+  -webkit-backdrop-filter:blur(12px) saturate(1.3);backdrop-filter:blur(12px) saturate(1.3);
   font-family:var(--hero-font);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;
-  transition:background .25s ease}
-.workvid__close:hover{background:rgba(255,255,255,.22)}
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.workvid__close:hover{transform:scale(1.06)}
 /* hover curtain-roll (work-list.js builds a 2-copy track inside .wbig__en and rAF-tweens its translateY
    ONCE per hover-enter). Mask = .wbig__en{overflow:hidden}; the track slides up one line so an identical
    copy rolls in. rAF (not a CSS keyframe) mirrors about-lines.js, the site's proven curtain mechanism. */
