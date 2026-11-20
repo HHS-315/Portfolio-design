@@ -12,7 +12,7 @@
 
   if (matchMedia("(prefers-reduced-motion:reduce)").matches) return;   // reduced motion → plain images
 
-  var COLS = 12, ROWS = 7;         // 12/7 ≈ 16/9 → square tiles
+  var COLS = 16, ROWS = 9;         // 16/9 → 완벽한 정사각형 타일, 촘촘하게
   var TILE_SPAN = 0.26;            // scroll-progress width over which one tile fades out
   var JITTER = 0.14;               // per-tile random scatter added to its threshold
   var RISE_PX = 16;                // how far a tile lifts as it clears
