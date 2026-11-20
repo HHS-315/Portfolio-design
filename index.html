@@ -366,6 +366,10 @@ body.nav-lock{position:fixed;left:0;width:100%;overflow:hidden}   /* menu scroll
 .work-gallery__cell{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:10px;   /* 서브페이지 이미지(.wd__shot/.wd__row-fig)와 동일 */
   background:color-mix(in srgb,var(--work-ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--work-ink) 16%,transparent)}
 .work-gallery__cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+/* 스크롤 연동 픽셀 reveal (work-gallery-reveal.js) — WORK 섹션 블록(--work-cell)과 동일한 정사각형 타일이
+   이미지를 덮었다가, 스크롤로 진입하면 아래→위로 흩뿌려지며 올라가 사라지고(reveal), 올려보면 다시 내려와 덮음. */
+.work-gallery__mosaic{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit}
+.work-gallery__px{position:absolute;background:var(--work-cell);will-change:transform,opacity}
 @media(max-width:620px){.work-gallery{grid-template-columns:1fr}}   /* 모바일: 1열로 스택(16:9 유지) */
 /* 클릭 재생 affordance — 호버 시 반투명 원 + 재생 삼각형. pointer-events:none이라 클릭은 셀이 받음. */
 .work-gallery__cell[data-video]{cursor:pointer}
@@ -960,6 +964,7 @@ body.intro-lock .bar{opacity:0;pointer-events:none}   /* nav hidden while the PO
 <script src="./assets/js/nav-menu.js"></script>
 <!-- halftone-dot cursor trail removed (square cursor only) -->
 <script src="./assets/js/work-gallery.js"></script>   <!-- WORK gallery video lightbox -->
+<script src="./assets/js/work-gallery-reveal.js"></script>   <!-- WORK gallery scroll pixel reveal -->
 <script src="./assets/js/cursor-square.js"></script>   <!-- square color-inverting cursor (site-wide) -->
 </body>
 </html>
